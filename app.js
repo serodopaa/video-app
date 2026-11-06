@@ -801,6 +801,13 @@
     }
   }, { passive: false });
   canvas.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+  // Pinching anywhere else on the page also zooms the board, not the web page.
+  window.addEventListener('wheel', (e) => {
+    if (e.target === canvas || !(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    zoomAt(Math.exp(-e.deltaY * 0.01), ...viewCenter(), true);
+  }, { passive: false });
+  window.addEventListener('gesturestart', (e) => e.preventDefault()); // Safari pinch
   canvas.addEventListener('pointerleave', () => { window.WB.pointer = null; });
   canvas.addEventListener('pointerup', finishStroke);
   canvas.addEventListener('pointercancel', finishStroke);
@@ -968,6 +975,14 @@
 
   const KEYS = { p: 'pen', h: 'hl', l: 'line', a: 'arrow', r: 'rect', o: 'ellipse', t: 'text', e: 'eraser', m: 'pan' };
   window.addEventListener('keydown', (e) => {
+    // Cmd/Ctrl + plus, minus, 0 would zoom the whole web page, which only you see and
+    // which is never recorded. Use them for the board's own zoom instead.
+    if ((e.metaKey || e.ctrlKey) && ['=', '+', '-', '_', '0'].includes(e.key)) {
+      e.preventDefault();
+      if (e.key === '0') zoomFit();
+      else zoomAt(e.key === '-' || e.key === '_' ? 1 / 1.5 : 1.5, ...viewCenter());
+      return;
+    }
     if (e.target.matches('input, select, textarea')) return;
     const k = e.key.toLowerCase();
     if ((e.metaKey || e.ctrlKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }

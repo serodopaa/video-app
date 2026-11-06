@@ -18,6 +18,7 @@ Open `index.html` in any browser. No install needed.
 - **Zoom:** pinch on the trackpad, use **− / ＋** in the toolbar, or press **+ / −**. Scroll with two
   fingers (or use **✋ Move**) to look around while zoomed. Click the **%** button or press **0** to
   see the whole slide again. Changing slides zooms back out. Recordings capture the zoom too.
+  Cmd + plus / minus / 0 control the board zoom too (not Chrome's page zoom, which isn't recorded).
 Keyboard: P pen · H marker · L line · A arrow · R box · O circle · T text · E eraser · M move · + / − / 0 zoom · Space play/pause.
 
 ## Recording videos (for YouTube)

@@ -18,6 +18,9 @@ dependencies. Open `index.html` in a browser.
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**
 
+Every local `<link>`/`<script>` in `index.html` has a `?v=` stamp so browsers fetch
+updates. **Bump it (all of them) whenever any file changes.**
+
 ## Scene format
 The board is **1600 × 900** (x right, y down). Scenes register themselves:
 
