@@ -567,7 +567,7 @@
         ctx.font = `700 72px ${SANS}`;
         ctx.fillText(`${rounded < 0 ? '−' : rounded > 0 ? '+' : ''}${Math.abs(rounded)} mV`, x + w / 2, y + 108);
         ctx.font = `600 20px ${SANS}`;
-        ctx.fillText(rounded > base0 ? 'Depolarized (less negative)' : rounded < base0 ? 'Hyperpolarized (more negative)' : 'Resting potential', x + w / 2, y + 160);
+        ctx.fillText(rounded > base0 ? item.upText || 'Depolarized (less negative)' : rounded < base0 ? item.downText || 'Hyperpolarized (more negative)' : item.restText || 'Resting potential', x + w / 2, y + 160);
         // graph
         const gx = x + 74, gy = y + 196, gw = w - 98, gh = item.graphH || 260;
         const Y = (val) => gy + ((vmax - clamp(val, vmin, vmax)) / (vmax - vmin)) * gh;

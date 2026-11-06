@@ -263,55 +263,123 @@
     ]),
   ];
 
-  // ---------- slide 3: synapse close-up ----------
-  const vesicles = [[700, 250], [785, 225], [875, 245], [955, 290], [735, 330], [870, 335], [1010, 355], [640, 360]];
-  const receptorsX = [560, 680, 800, 920, 1040];
-  const boundAt = [680, 920]; // receptors already holding a neurotransmitter
-  const dots = (cx, cy, color) => [[-8, -6], [7, -8], [0, 4], [-9, 9], [9, 7]]
-    .map(([a, b]) => `<circle cx="${cx + a}" cy="${cy + b}" r="4.5" fill="${color}" stroke="#b9650b" stroke-width="1"/>`).join('');
-  const synapseSvg = svgDoc(`<defs>
-    <linearGradient id="preG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#9cc0ea"/>
-    </linearGradient>
-    <linearGradient id="postG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e9d6f1"/><stop offset="1" stop-color="#b783cc"/>
-    </linearGradient>
-    <radialGradient id="vesG" cx="40%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4e5f8"/>
-    </radialGradient>
-    <filter id="sh3" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#13294a" flood-opacity="0.2"/>
-    </filter>
+  // ---------- slide 3: glutamate vs GABA synapse ----------
+  // Two synapses on the same receiving dendrite. Same membrane, ions and channel
+  // styles as slide 2: the glutamate receptor is a Na+ channel, the GABA receptor
+  // a Cl- channel. One live potential ('psp') shows EPSPs and IPSPs.
+  const M3 = { x0: 60, x1: 1160, top: 410, bot: 500, mid: 455 };
+  const SYN = {
+    glu: { x: 340, nt: '#f08c1a', ntEdge: '#b9650b', name: 'Glutamate synapse (excitatory)', nameColor: '#b05f00', ch: 'na', receptor: 'Glutamate receptor', lets: 'lets Na⁺ in' },
+    gaba: { x: 880, nt: '#16a3b8', ntEdge: '#0b6f7e', name: 'GABA synapse (inhibitory)', nameColor: '#0b6f7e', ch: 'cl', receptor: 'GABA receptor', lets: 'lets Cl⁻ in' },
+  };
+  const bulbD = (cx) => `M${cx - 180} 262 C${cx - 180} 172 ${cx - 92} 142 ${cx} 142 C${cx + 92} 142 ${cx + 180} 172 ${cx + 180} 262 Q${cx + 180} 300 ${cx + 140} 302 L${cx - 140} 302 Q${cx - 180} 300 ${cx - 180} 262 Z`;
+  const synAxons = { glu: 'M-30 250 Q80 246 185 236', gaba: 'M1190 250 Q1120 246 1035 236' }; // axons come in from the sides
+  const bilayer3 = (() => {
+    let out = '';
+    for (let x = M3.x0 + 10; x <= M3.x1 - 8; x += 20) {
+      for (const [hy, t0, t1] of [[M3.top + 8, M3.top + 17, M3.mid - 3], [M3.bot - 8, M3.bot - 17, M3.mid + 3]]) {
+        const d = (t1 - t0) / 2;
+        out += `<path d="M${x - 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d} M${x + 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d}" stroke="#c99a62" stroke-width="2" fill="none"/>`;
+        out += `<circle cx="${x}" cy="${hy}" r="9" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/>`;
+      }
+    }
+    return out;
+  })();
+  const synapsesSvg = svgDoc(`<defs>
+    <linearGradient id="preG3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#9cc0ea"/></linearGradient>
+    <filter id="sh3b" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#13294a" flood-opacity="0.2"/></filter>
   </defs>
-  <g filter="url(#sh3)">
-    <!-- axon of the sending neuron, coming in from the top right -->
-    <path d="M1560 -40 Q1400 110 980 250" stroke="#2c5a92" stroke-width="80" fill="none" stroke-linecap="round"/>
-    <path d="M1560 -40 Q1400 110 980 250" stroke="#bcd5f2" stroke-width="72" fill="none" stroke-linecap="round"/>
-    <!-- axon terminal (bulb) -->
-    <path d="M470 360 C470 205 640 160 800 160 C960 160 1130 205 1130 360 Q1130 422 1068 425 L532 425 Q470 422 470 360 Z" fill="url(#preG)" stroke="#2c5a92" stroke-width="6"/>
-    <!-- receiving dendrite -->
-    <path d="M280 940 L280 565 Q280 525 322 525 L1278 525 Q1320 525 1320 565 L1320 940 Z" fill="url(#postG)" stroke="#5e2f78" stroke-width="6"/>
+  <rect x="${M3.x0}" y="112" width="${M3.x1 - M3.x0}" height="${M3.top - 112}" rx="16" fill="#eef6fd"/>
+  <rect x="${M3.x0}" y="${M3.bot}" width="${M3.x1 - M3.x0}" height="${860 - M3.bot}" rx="16" fill="#f7f0fb"/>
+  <rect x="${M3.x0}" y="${M3.top}" width="${M3.x1 - M3.x0}" height="${M3.bot - M3.top}" fill="#fbecd6"/>
+  ${bilayer3}
+  ${Array.from({ length: 16 }, (_, i) => M3.x0 + 35 + i * 70).map((x) =>
+    `<text x="${x}" y="${M3.top - 7}" font-family="Arial, sans-serif" font-weight="700" font-size="22" fill="#e0453a" text-anchor="middle">+</text>` +
+    `<text x="${x}" y="${M3.bot + 25}" font-family="Arial, sans-serif" font-weight="700" font-size="26" fill="#2f6fde" text-anchor="middle">−</text>`).join('')}
+  <g filter="url(#sh3b)">
+    ${Object.entries(SYN).map(([k, s]) => `
+    <path d="${synAxons[k]}" stroke="#2c5a92" stroke-width="64" fill="none" stroke-linecap="round"/>
+    <path d="${synAxons[k]}" stroke="#bcd5f2" stroke-width="56" fill="none" stroke-linecap="round"/>
+    <path d="${bulbD(s.x)}" fill="url(#preG3)" stroke="#2c5a92" stroke-width="5"/>`).join('')}
   </g>
-  <!-- a mitochondrion powering the terminal -->
-  <ellipse cx="570" cy="300" rx="62" ry="28" fill="#f6c99a" stroke="#b9650b" stroke-width="3"/>
-  <path d="M528 300 q10 -18 20 0 t20 0 t20 0 t20 0" stroke="#b9650b" stroke-width="2.5" fill="none"/>
-  <!-- synaptic vesicles filled with neurotransmitters -->
-  ${vesicles.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="27" fill="url(#vesG)" stroke="#2c5a92" stroke-width="3"/>${dots(x, y, '#f0a24a')}`).join('')}
-  <!-- a vesicle fusing with the membrane and opening into the gap -->
-  <circle cx="800" cy="405" r="26" fill="url(#vesG)" stroke="#2c5a92" stroke-width="3"/>
-  <rect x="784" y="414" width="32" height="16" fill="#fdfdfb"/>
-  <path d="M784 425 Q790 418 784 412 M816 425 Q810 418 816 412" stroke="#2c5a92" stroke-width="3" fill="none"/>
-  ${[[792, 398], [806, 404], [798, 412]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.5" fill="#f0a24a" stroke="#b9650b" stroke-width="1"/>`).join('')}
-  <!-- receptors on the dendrite membrane -->
-  ${receptorsX.map((x) => `<rect x="${x - 26}" y="497" width="18" height="60" rx="8" fill="#47b26c" stroke="#226b3c" stroke-width="2.5"/>
-    <rect x="${x + 8}" y="497" width="18" height="60" rx="8" fill="#47b26c" stroke="#226b3c" stroke-width="2.5"/>`).join('')}
-  ${boundAt.map((x) => `<circle cx="${x}" cy="500" r="7" fill="#f08c1a" stroke="#b9650b" stroke-width="1.5"/>`).join('')}
 `);
-  const neurotransmitterMovers = receptorsX.filter((x) => !boundAt.includes(x)).concat([680, 920]).map((x, i) => ({
-    type: 'mover', r: 6, color: '#f08c1a', count: 2, speed: 1.7 + (i % 3) * 0.35, smooth: true,
-    path: [[800, 432], [(800 + x) / 2 + (i % 2 ? 20 : -20), 465], [x, 494]],
-    with: i > 0,
-  }));
+  // Vesicles inside each terminal (relative to its centre). Two of them fuse.
+  const VES = [[-110, 222], [-45, 192], [25, 196], [95, 218], [-75, 262], [5, 248], [80, 266], [140, 262]];
+  const FUSE3 = [[4, [-24, 290]], [6, [24, 290]]]; // [vesicle index, fuse point]
+  const synStaticIons = [
+    // outside the cell, around and between the terminals
+    ['na', 105, 168], ['cl', 100, 335], ['na', 565, 170], ['cl', 650, 225], ['na', 575, 300], ['cl', 655, 372],
+    ['na', 470, 362], ['cl', 745, 360], ['na', 1110, 168], ['cl', 1112, 335],
+    // inside the dendrite
+    ['k', 130, 630], ['k', 250, 720], ['a', 120, 760], ['k', 470, 640], ['a', 420, 780], ['k', 560, 730],
+    ['k', 690, 640], ['na', 640, 810], ['k', 760, 740], ['a', 990, 660], ['k', 1090, 730], ['cl', 1000, 800], ['k', 860, 805], ['k', 640, 720 - 0],
+  ];
+  // Ions each receptor lets through: [ion, from (outside), to (inside)]
+  const synFlows = {
+    glu: [['na', [255, 352], [260, 640]], ['na', [425, 350], [400, 700]], ['na', [180, 372], [350, 655]]],
+    gaba: [['cl', [795, 352], [800, 650]], ['cl', [965, 350], [960, 700]], ['cl', [1060, 355], [880, 760]]],
+  };
+  const synPore = (x, from, to) => [from, [x, M3.top - 40], [x, M3.mid], [x, M3.bot + 50], to];
+  // One synapse firing, starting at t0: vesicles fuse, neurotransmitter crosses and
+  // binds, the receptor channel opens, ions flow in, then it all closes again.
+  const synapseFires = (k, t0, actionId) => {
+    const s = SYN[k], x = s.x, site = [x - 28, M3.top - 22];
+    return [
+      ...FUSE3.map(([vi, [fx, fy]], i) => ({
+        type: 'vesicle', fuse: true, r: 13, color: '#2c5a92', dot: s.nt,
+        path: [[x + VES[vi][0], VES[vi][1]], [x + fx, fy]], duration: 1.2, at: t0 + i * 0.15,
+      })),
+      // neurotransmitter: one molecule binds the receptor, others drift in the cleft
+      { type: 'mover', once: true, r: 7, color: s.nt, smooth: true, path: [[x - 24, 304], [x - 30, 345], site], duration: 0.7, at: t0 + 0.8, until: 3.4 },
+      { type: 'mover', once: true, vanish: true, r: 7, color: s.nt, smooth: true, path: [site, [x - 70, 360], [x - 120, 330]], duration: 0.8, at: t0 + 4.2 },
+      ...[[-60, 340], [40, 330], [70, 365], [-100, 365]].map(([dx, dy], i) => ({
+        type: 'mover', once: true, vanish: true, r: 6, color: s.nt, smooth: true,
+        path: [[x + (i % 2 ? 24 : -24), 304], [x + dx * 0.6, (304 + dy) / 2 + 8], [x + dx, dy]], duration: 1.6, at: t0 + 0.85 + i * 0.1,
+      })),
+      { type: 'value', id: `ch-${k}`, from: 0, to: 1, at: t0 + 1.5, duration: 0.35 },
+      ...synFlows[k].map(([ion, from, to], i) => ({ type: 'ion', ion, smooth: true, path: synPore(x, from, to), duration: 1.4, at: t0 + 1.7 + i * 0.35 })),
+      { type: 'value', id: `ch-${k}`, from: 1, to: 0, at: t0 + 4.1, duration: 0.35 },
+    ];
+  };
+  const pspValue = (peak, t0) => [
+    { type: 'value', id: 'psp', from: REST, to: peak, at: t0 + 1.9, duration: 1.9 },
+    { type: 'value', id: 'psp', from: peak, to: REST, at: t0 + 4.6, duration: 2.2 },
+  ];
+  const synActions = [
+    { id: 'glu', label: 'Release glutamate', items: [...synapseFires('glu', 0), ...pspValue(-60, 0)] },
+    { id: 'gaba', label: 'Release GABA', items: [...synapseFires('gaba', 0), ...pspValue(-75, 0)] },
+    { id: 'both', label: 'Both at once', items: [...synapseFires('glu', 0), ...synapseFires('gaba', 0), ...pspValue(-66, 0)] },
+  ];
+  const synItems = [
+    title('Glutamate vs GABA'),
+    { type: 'svg', svg: synapsesSvg },
+    ...Object.values(SYN).map((s) => ({ type: 'text', x: s.x, y: 124, text: s.name, size: 24, font: 'sans', color: s.nameColor, align: 'center' })),
+    // vesicles (the fusing ones hide while an animation plays)
+    ...Object.entries(SYN).flatMap(([k, s]) => VES.map(([dx, y], vi) => ({
+      type: 'vesicle', x: s.x + dx, y, r: 13, color: '#2c5a92', dot: s.nt,
+      hideDuring: FUSE3.some(([fi]) => fi === vi) ? (k === 'glu' ? ['glu', 'both'] : ['gaba', 'both']) : undefined,
+    }))),
+    ...synStaticIons.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
+    ...Object.entries(synFlows).flatMap(([k, list]) => list.map(([ion, from]) => ({
+      type: 'ion', ion, x: from[0], y: from[1], hideDuring: k === 'glu' ? ['glu', 'both'] : ['gaba', 'both'],
+    }))),
+    ...Object.entries(SYN).flatMap(([k, s]) => [
+      { type: 'channel', id: `ch-${k}`, x: s.x, y: M3.mid, h: 130, ...CH_STYLE[s.ch], label: s.receptor },
+      { type: 'text', x: s.x, y: M3.mid + 65 + 54, text: s.lets, size: 20, font: 'sans', color: '#5b6270', align: 'center' },
+    ]),
+    { type: 'text', x: 80, y: 838, text: 'Inside the receiving neuron (dendrite)', size: 24, font: 'sans', color: '#6b3c87' },
+    {
+      type: 'meter', id: 'psp', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 230,
+      title: 'Postsynaptic potential', upText: 'EPSP: depolarized (excitatory)', downText: 'IPSP: hyperpolarized (inhibitory)',
+    },
+    ...[['ion', 'na', 'Sodium (Na⁺)'], ['ion', 'cl', 'Chloride (Cl⁻)'], ['ion', 'k', 'Potassium (K⁺)'], ['ion', 'a', 'Negative proteins'],
+      ['nt', SYN.glu.nt, 'Glutamate'], ['nt', SYN.gaba.nt, 'GABA']].flatMap(([kind, v, name], i) => [
+      kind === 'ion'
+        ? { type: 'ion', ion: v, x: 1228, y: 592 + i * 42, r: 15 }
+        : { type: 'circle', x: 1228, y: 592 + i * 42, r: 8, color: v, fill: v, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: 1258, y: 592 + i * 42, text: name, size: 22, font: 'sans', color: 'ink' },
+    ]),
+  ];
 
   // ---------- slide 4: signals flow from the dendrites to the cell body ----------
   const nums = (d) => d.match(/-?\d+(\.\d+)?/g).map(Number);
@@ -573,21 +641,12 @@
         actions: membraneActions,
         items: membraneItems,
       },
-      // Slide 3: how they receive signals (synapse close-up).
+      // Slide 3: glutamate vs GABA synapses and their effect on the postsynaptic potential.
       {
-        say: 'Neurotransmitters are released into the gap and attach to receptors on the dendrite.',
+        say: 'Glutamate opens Na⁺ channels and excites (EPSP); GABA opens Cl⁻ channels and inhibits (IPSP).',
         clear: true,
-        items: [
-          title('How dendrites receive signals'),
-          { type: 'svg', svg: synapseSvg },
-          ...neurotransmitterMovers,
-          ...label('Axon terminal\n(sending neuron)', 60, 200, [335, 222], [478, 300], 'left', 32),
-          ...label('Synaptic cleft (gap)', 60, 475, [385, 475], [520, 475], 'left', 32),
-          ...label('Synaptic vesicles', 1560, 300, [1258, 300], [982, 292], 'right', 32),
-          ...label('Neurotransmitters', 1560, 445, [1245, 448], [828, 455], 'right', 32),
-          ...label('Receptors', 1560, 600, [1380, 600], [1060, 540], 'right', 32),
-          { type: 'text', x: 800, y: 760, text: 'Dendrite (receiving neuron)', size: 36, font: 'sans', color: 'ink', align: 'center' },
-        ],
+        actions: synActions,
+        items: synItems,
       },
       // Slide 4: where signals go next (dendrites -> cell body, animated).
       {
