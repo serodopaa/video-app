@@ -54,7 +54,8 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
 Within a step, items animate **one after another**. Each item can have:
 `duration` (seconds), `wait` (extra delay before it starts), `with: true`
 (start at the same time as the previous item), or `at` (exact start time in
-seconds; handy for long chained action animations).
+seconds; handy for long chained action animations). In actions, `until: s` hides an
+item `s` seconds after it starts.
 
 Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS color.
 
@@ -71,6 +72,10 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `svg` | `svg` (full SVG markup string), `x, y, w, h` (default: whole board 0,0,1600,900). For detailed, realistic illustrations; use a `viewBox="0 0 1600 900"` so its coordinates match the board |
 | `vesicle` | `x, y`, `r`=11 (a bubble of neurotransmitters). With `path` it moves along it; with `fuse: true` it moves in the first 60% of its time, then merges into the membrane and disappears |
 | `flash` | `x, y, r`, `color`. One-off glow that grows and fades within its `duration` (e.g. a node firing) |
+| `ion` | `ion`: `na` / `k` / `cl` / `a` (negative protein), `x, y`; or `path` to travel along (eased, stays at the end, waits at the start before it begins) |
+| `channel` | `id`, `x, y` (membrane centre), `h`, `fill`, `edge`, `label`. Ligand-gated ion channel; how open it is (0–1) is live value `id` |
+| `meter` | `id`, `value` (resting), `x, y, w, h`, `graphH`, `min`/`max`. Membrane-potential panel: live number, state text and a graph of the last 8 s with 0 / threshold / resting lines |
+| `value` | (in actions) `id`, `from`, `to`, `at`, `duration`: animates live value `id` (used by `meter` and `channel`). Latest started segment wins |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.

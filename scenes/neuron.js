@@ -166,14 +166,102 @@
   const SIGNAL = '#e8890c'; // colour for signal arrows and moving signals
   const signalArrow = (from, to, bend = 0) => ({ type: 'arrow', from, to, bend, color: SIGNAL, width: 7, rough: false });
 
-  // ---------- slide 2: two neurons ----------
-  const S2 = 0.52;
-  const n1 = { tx: -4, ty: 236 };   // sending neuron (blue)
-  const n2 = { tx: 690, ty: 236 };  // receiving neuron (purple)
-  const at = (n, x, y) => [Math.round(x * S2 + n.tx), Math.round(y * S2 + n.ty)];
-  const twoNeuronsSvg = svgDoc(
-    `<g transform="translate(${n1.tx} ${n1.ty}) scale(${S2})">${neuronMarkup(BLUE, 'n1')}</g>` +
-    `<g transform="translate(${n2.tx} ${n2.ty}) scale(${S2})">${neuronMarkup(PURPLE, 'n2')}</g>`);
+  // ---------- slide 2: membrane potential ----------
+  // A close-up of the membrane: outside above, inside below, ions on both sides,
+  // three ligand-gated channels, and a live membrane-potential readout.
+  const MEM = { x0: 60, x1: 1110, top: 410, bot: 500, mid: 455 };
+  const CH = { na: 330, k: 620, cl: 910 }; // channel x positions
+  const CH_STYLE = {
+    na: { fill: '#f8cf8f', edge: '#a8640a', label: 'Na⁺ channel' },
+    k: { fill: '#c3b3f2', edge: '#47309a', label: 'K⁺ channel' },
+    cl: { fill: '#a6dfbc', edge: '#1d6a3c', label: 'Cl⁻ channel' },
+  };
+  const bilayer = (() => {
+    let out = '';
+    for (let x = MEM.x0 + 10; x <= MEM.x1 - 8; x += 20) {
+      // phospholipids: a head on each surface with two tails pointing inward
+      for (const [hy, t0, t1] of [[MEM.top + 8, MEM.top + 17, MEM.mid - 3], [MEM.bot - 8, MEM.bot - 17, MEM.mid + 3]]) {
+        const d = (t1 - t0) / 2;
+        out += `<path d="M${x - 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d} M${x + 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d}" stroke="#c99a62" stroke-width="2" fill="none"/>`;
+        out += `<circle cx="${x}" cy="${hy}" r="9" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/>`;
+      }
+    }
+    return out;
+  })();
+  const membraneSvg = svgDoc(`
+  <rect x="${MEM.x0}" y="112" width="${MEM.x1 - MEM.x0}" height="${MEM.top - 112}" rx="16" fill="#eef6fd"/>
+  <rect x="${MEM.x0}" y="${MEM.bot}" width="${MEM.x1 - MEM.x0}" height="${860 - MEM.bot}" rx="16" fill="#f7f0fb"/>
+  <rect x="${MEM.x0}" y="${MEM.top}" width="${MEM.x1 - MEM.x0}" height="${MEM.bot - MEM.top}" fill="#fbecd6"/>
+  ${bilayer}
+  ${Array.from({ length: 15 }, (_, i) => MEM.x0 + 40 + i * 70).map((x) =>
+    `<text x="${x}" y="${MEM.top - 7}" font-family="Arial, sans-serif" font-weight="700" font-size="22" fill="#e0453a" text-anchor="middle">+</text>` +
+    `<text x="${x}" y="${MEM.bot + 25}" font-family="Arial, sans-serif" font-weight="700" font-size="26" fill="#2f6fde" text-anchor="middle">−</text>`).join('')}
+`);
+
+  // Ions that stay put. [type, x, y]
+  const staticIons = [
+    // outside: lots of Na+ and Cl-, a little K+
+    ['na', 140, 230], ['na', 240, 320], ['na', 445, 205], ['na', 525, 300], ['na', 700, 225], ['na', 790, 325],
+    ['na', 1000, 215], ['na', 1070, 320], ['na', 610, 175],
+    ['cl', 190, 180], ['cl', 120, 320], ['cl', 360, 175], ['cl', 700, 320], ['cl', 820, 195], ['cl', 1075, 185], ['cl', 1010, 330],
+    ['k', 455, 365], ['k', 765, 380],
+    // inside: lots of K+ and negative proteins (A-), a little Na+ and Cl-
+    ['k', 140, 625], ['k', 230, 705], ['k', 445, 635], ['k', 520, 760], ['k', 760, 625], ['k', 840, 725],
+    ['k', 1000, 630], ['k', 1060, 740], ['k', 330, 800], ['k', 680, 805],
+    ['a', 120, 730], ['a', 420, 720], ['a', 770, 770], ['a', 1060, 640 - 0],
+    ['na', 250, 805], ['na', 905, 800],
+    ['cl', 590, 820], ['cl', 980, 805],
+  ];
+  // Ions that each channel lets through: [type, from, to].
+  const flows = {
+    na: [['na', [270, 350], [270, 620]], ['na', [395, 345], [385, 655]], ['na', [300, 262], [330, 705]]],
+    k: [['k', [570, 625], [575, 365]], ['k', [680, 655], [670, 345]], ['k', [615, 720], [625, 270]]],
+    cl: [['cl', [860, 345], [865, 630]], ['cl', [960, 350], [955, 690]], ['cl', [925, 262], [905, 760]]],
+  };
+  const throughPore = (x, from, to, inward) => (inward
+    ? [from, [x, MEM.top - 50], [x, MEM.mid], [x, MEM.bot + 50], to]
+    : [from, [x, MEM.bot + 50], [x, MEM.mid], [x, MEM.top - 50], to]);
+  const REST = -70;
+  // One button: a neurotransmitter binds, the channel opens, ions cross, the
+  // potential moves to `peak`, the channel closes and the potential recovers.
+  const channelAction = (kind, label, peak, inward) => {
+    const x = CH[kind];
+    const site = [x - 28, MEM.top - 22];
+    return {
+      id: `open-${kind}`,
+      label,
+      items: [
+        { type: 'mover', once: true, r: 8, color: '#e8890c', smooth: true, path: [[x + 95, 190], [x + 40, 300], site], duration: 0.8, at: 0, until: 3.3 },
+        { type: 'value', id: `ch-${kind}`, from: 0, to: 1, at: 0.8, duration: 0.35 },
+        ...flows[kind].map(([ion, from, to], i) => ({
+          type: 'ion', ion, smooth: true, path: throughPore(x, from, to, inward), duration: 1.4, at: 1.0 + i * 0.35,
+        })),
+        { type: 'value', id: 'vm', from: REST, to: peak, at: 1.2, duration: 1.9 },
+        { type: 'mover', once: true, vanish: true, r: 8, color: '#e8890c', smooth: true, path: [site, [x + 40, 300], [x + 95, 190]], duration: 0.8, at: 3.3 },
+        { type: 'value', id: `ch-${kind}`, from: 1, to: 0, at: 3.4, duration: 0.35 },
+        { type: 'value', id: 'vm', from: peak, to: REST, at: 3.9, duration: 2.2 },
+      ],
+    };
+  };
+  const membraneActions = [
+    channelAction('na', 'Open Na⁺ channel', -58, true),
+    channelAction('k', 'Open K⁺ channel', -80, false),
+    channelAction('cl', 'Open Cl⁻ channel', -76, true),
+  ];
+  const membraneItems = [
+    title('Membrane potential'),
+    { type: 'svg', svg: membraneSvg },
+    { type: 'text', x: 80, y: 140, text: 'Outside the cell', size: 26, font: 'sans', color: '#2c5a92' },
+    { type: 'text', x: 80, y: 838, text: 'Inside the cell', size: 26, font: 'sans', color: '#6b3c87' },
+    ...staticIons.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
+    ...Object.entries(flows).flatMap(([kind, list]) => list.map(([ion, from]) => ({ type: 'ion', ion, x: from[0], y: from[1], hideDuring: `open-${kind}` }))),
+    ...['na', 'k', 'cl'].map((kind) => ({ type: 'channel', id: `ch-${kind}`, x: CH[kind], y: MEM.mid, h: 130, ...CH_STYLE[kind] })),
+    { type: 'meter', id: 'vm', value: REST, x: 1150, y: 112, w: 410, h: 748, graphH: 250 },
+    ...[['na', 'Sodium'], ['k', 'Potassium'], ['cl', 'Chloride'], ['a', 'Negative proteins']].flatMap(([ion, name], i) => [
+      { type: 'ion', ion, x: 1200, y: 615 + i * 58 },
+      { type: 'text', x: 1236, y: 615 + i * 58, text: name, size: 24, font: 'sans', color: 'ink' },
+    ]),
+  ];
 
   // ---------- slide 3: synapse close-up ----------
   const vesicles = [[700, 250], [785, 225], [875, 245], [955, 290], [735, 330], [870, 335], [1010, 355], [640, 360]];
@@ -478,22 +566,12 @@
           ...label('Axon terminal of\nanother neuron', 600, 790, [592, 800], [496, 826], 'left', 30),
         ],
       },
-      // Slide 2: their main function. One neuron passes a signal to the next one's dendrites.
+      // Slide 2: membrane potential and how ion channels change it.
       {
-        say: "Dendrites' main job: receive signals sent by other neurons.",
+        say: 'Membrane potential is the voltage across the membrane. Opening ion channels changes it.',
         clear: true,
-        items: [
-          title("Dendrites: their main function"),
-          { type: 'svg', svg: twoNeuronsSvg },
-          signalArrow(at(n1, 560, 400), at(n1, 1220, 400)),
-          note('Signal travels down the axon', ...at(n1, 890, 340)),
-          signalArrow(at(n1, 1300, 390), at(n2, 230, 300), -45),
-          note('…and is picked up by the\nnext neuron’s dendrites', 780, 220),
-          { type: 'circle', x: 714, y: 480, r: 62, color: '#8a8f98', width: 3, dashed: true, rough: false },
-          ...label('Neuron 1 (sending)', ...at(n1, 760, 900), at(n1, 760, 830), at(n1, 760, 485), 'center', 32),
-          ...label('Neuron 2 (receiving)', ...at(n2, 760, 900), at(n2, 760, 830), at(n2, 760, 485), 'center', 32),
-          ...label('Dendrites', ...at(n2, 120, 905), at(n2, 140, 840), at(n2, 180, 690), 'center', 32),
-        ],
+        actions: membraneActions,
+        items: membraneItems,
       },
       // Slide 3: how they receive signals (synapse close-up).
       {

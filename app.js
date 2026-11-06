@@ -245,6 +245,33 @@
   }
 
   // ---------- scene items ----------
+  const ION_STYLES = {
+    na: { fill: '#f0a12e', stroke: '#a8640a', text: 'Na⁺', r: 18 },
+    k: { fill: '#7b5cd6', stroke: '#47309a', text: 'K⁺', r: 18 },
+    cl: { fill: '#39a866', stroke: '#1d6a3c', text: 'Cl⁻', r: 18 },
+    a: { fill: '#8f96a3', stroke: '#545b68', text: 'A⁻', r: 24 },
+  };
+
+  // Live values (e.g. a membrane potential or how open a channel is). Slide
+  // actions animate them with items { type: 'value', id, from, to, at, duration }.
+  // The most recently started segment wins; before any segment it's `base`.
+  function liveValue(id, base, t) {
+    let v = base, best = -Infinity;
+    for (const a of slideActions()) {
+      if (!actionRuns.has(a.id)) continue;
+      const t0 = actionRuns.get(a.id);
+      for (const it of a.items) {
+        if (it.type !== 'value' || it.id !== id) continue;
+        const s = t0 + it._start;
+        if (t >= s && s >= best) {
+          best = s;
+          v = it.from + (it.to - it.from) * easeInOut(clamp((t - s) / it._dur));
+        }
+      }
+    }
+    return v;
+  }
+
   const DEFAULT_DUR = { text: null, line: 0.7, arrow: 0.8, rect: 1, circle: 1, path: 1.2, highlight: 0.6, icon: 0.5, mover: 0.5, pulse: 0.5 };
   const STROKE_TYPES = new Set(['line', 'arrow', 'rect', 'circle', 'path']);
 
@@ -270,11 +297,12 @@
         pts = item.smooth ? catmull(item.path, false) : item.path.slice();
         break;
       case 'vesicle':
+      case 'ion':
         pts = item.path ? (item.smooth ? catmull(item.path, false) : item.path.slice()) : null;
         break;
     }
     if (pts) {
-      if (item.type === 'mover' || item.type === 'vesicle') {
+      if (item.type === 'mover' || item.type === 'vesicle' || item.type === 'ion') {
         item._pts = resample(pts, 6);
       } else {
         item._pts = item.rough === false || item._static ? resample(pts, 10) : wobble(resample(pts, 12), seed);
@@ -454,6 +482,139 @@
         }
         break;
       }
+      case 'ion': {
+        // An ion: a coloured ball with its symbol. With `path` it travels along
+        // it (eased) and stays at the end; before it starts it waits at the start.
+        const st = ION_STYLES[item.ion] || ION_STYLES.na;
+        let x = item.x, y = item.y;
+        if (item._pts) [x, y] = pointAt(item._pts, item._cum, easeInOut(clamp(p)));
+        else if (p <= 0) break;
+        const rr = item.r || st.r;
+        ctx.fillStyle = st.fill;
+        ctx.strokeStyle = st.stroke;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(x, y, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${Math.round(rr * 0.82)}px ${SANS}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(st.text, x, y + 1);
+        break;
+      }
+      case 'channel': {
+        // A ligand-gated ion channel spanning the membrane. Its opening (0-1)
+        // comes from live value `id`, which slide actions can animate.
+        const open = clamp(liveValue(item.id, 0, t));
+        const cx = item.x, cy = item.y, hh = (item.h || 130) / 2;
+        const gap = 22 + 16 * open, sw = 34;
+        const fill = item.fill || '#7fb7e8', edge = item.edge || '#2c5a92';
+        for (const sx of [cx - gap / 2 - sw, cx + gap / 2]) {
+          ctx.fillStyle = fill;
+          ctx.strokeStyle = edge;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(sx, cy - hh, sw, hh * 2, 14);
+          ctx.fill();
+          ctx.stroke();
+        }
+        // binding site for the neurotransmitter (a notch on the outer side)
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx - gap / 2 - sw / 2, cy - hh - 1, 8, 0, Math.PI);
+        ctx.stroke();
+        // the gate closing the pore
+        if (open < 1) {
+          ctx.globalAlpha = base * (1 - open);
+          ctx.fillStyle = edge;
+          ctx.beginPath();
+          ctx.roundRect(cx - gap / 2 - 2, cy - hh + 22, gap + 4, 10, 4);
+          ctx.fill();
+          ctx.globalAlpha = base;
+        }
+        if (item.label) {
+          ctx.fillStyle = '#1f2430';
+          ctx.font = `600 22px ${SANS}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.label + (open > 0.5 ? ' (open)' : ' (closed)'), cx, cy + hh + 24);
+        }
+        break;
+      }
+      case 'meter': {
+        // Live membrane-potential readout: number + graph of the last few seconds.
+        const vmin = item.min ?? -90, vmax = item.max ?? 40, base0 = item.value ?? -70;
+        const v = liveValue(item.id, base0, t);
+        const { x, y, w, h } = item;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#d9dce3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 18);
+        ctx.fill();
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#1f2430';
+        ctx.font = `600 28px ${SANS}`;
+        ctx.fillText(item.title || 'Membrane potential', x + w / 2, y + 38);
+        const rounded = Math.round(v);
+        const stateCol = rounded > base0 ? '#e8890c' : rounded < base0 ? '#2f6fde' : '#1f2430';
+        ctx.fillStyle = stateCol;
+        ctx.font = `700 72px ${SANS}`;
+        ctx.fillText(`${rounded < 0 ? '−' : rounded > 0 ? '+' : ''}${Math.abs(rounded)} mV`, x + w / 2, y + 108);
+        ctx.font = `600 20px ${SANS}`;
+        ctx.fillText(rounded > base0 ? 'Depolarized (less negative)' : rounded < base0 ? 'Hyperpolarized (more negative)' : 'Resting potential', x + w / 2, y + 160);
+        // graph
+        const gx = x + 74, gy = y + 196, gw = w - 98, gh = item.graphH || 260;
+        const Y = (val) => gy + ((vmax - clamp(val, vmin, vmax)) / (vmax - vmin)) * gh;
+        ctx.strokeStyle = '#c9ced8';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(gx, gy, gw, gh);
+        const refs = [[0, '0', '#8a8f98', [8, 6]], [-55, '−55', '#e0453a', [10, 6]], [-70, '−70', '#5b6270', [3, 5]]];
+        ctx.font = `600 17px ${SANS}`;
+        ctx.textAlign = 'right';
+        for (const [val, txt, c, dash] of refs) {
+          ctx.strokeStyle = c;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(gx, Y(val));
+          ctx.lineTo(gx + gw, Y(val));
+          ctx.stroke();
+          ctx.fillStyle = c;
+          ctx.fillText(txt, gx - 8, Y(val));
+        }
+        ctx.setLineDash([]);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#e0453a';
+        ctx.fillText('threshold', gx + 6, Y(-55) - 12);
+        ctx.fillStyle = '#5b6270';
+        ctx.fillText('resting', gx + 6, Y(-70) + 14);
+        ctx.fillStyle = '#8a8f98';
+        ctx.fillText('mV', gx - 52, gy + 10);
+        // trace over the last `window` seconds (animation time)
+        const win = item.window || 8, N = 160;
+        ctx.strokeStyle = '#2f6fde';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) {
+          const tt = t - win + (i / N) * win;
+          const px = gx + (i / N) * gw, py = Y(liveValue(item.id, base0, tt));
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        }
+        ctx.stroke();
+        ctx.fillStyle = stateCol;
+        ctx.beginPath();
+        ctx.arc(gx + gw, Y(v), 7, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case 'value':
+        break; // drives a live value (see liveValue); draws nothing
       case 'flash': {
         if (p <= 0 || p >= 1) break;
         const fr = (item.r || 40) * (0.4 + 0.8 * p);
@@ -1131,7 +1292,10 @@
       if (!actionRuns.has(a.id)) continue;
       const elapsed = t - actionRuns.get(a.id);
       if (elapsed > a._len + HOLD_AT_END * clock.rate) { actionRuns.delete(a.id); continue; } // finished: back to the start state
-      for (const item of a.items) renderItem(item, clamp((elapsed - item._start) / item._dur), t);
+      for (const item of a.items) {
+        if (item.until !== undefined && elapsed - item._start > item.until) continue; // its part is over
+        renderItem(item, clamp((elapsed - item._start) / item._dur), t);
+      }
     }
 
     // your ink
