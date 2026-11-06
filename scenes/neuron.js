@@ -69,10 +69,12 @@
 
   // Myelin sheath: insulating wraps along the axon, with small gaps between
   // them (nodes of Ranvier). The start of the axon and its very end are bare.
-  const SHEATH_LEN = 128, NODE_GAP = 18, SHEATH_START = 78;
+  // Lengths are what you see (rounded ends included), in px along the axon.
+  const SHEATH_START = 90, SHEATH_LEN = 117, NODE_GAP = 36, SHEATH_CAP = 19; // cap = half the sheath thickness
   const sheaths = [0, 1, 2, 3].map((i) => {
-    const a = SHEATH_START + i * (SHEATH_LEN + NODE_GAP);
-    return { a, b: a + SHEATH_LEN, pts: axonPointsBetween(a, a + SHEATH_LEN) };
+    const a = SHEATH_START + i * (SHEATH_LEN + NODE_GAP) + SHEATH_CAP;
+    const b = a + SHEATH_LEN - 2 * SHEATH_CAP;
+    return { a, b, pts: axonPointsBetween(a, b) };
   });
   const polyD = (pts) => 'M' + pts.map((p) => p.map(f1).join(',')).join(' L');
   const myelinMarkup = sheaths.map(({ pts }) =>
@@ -80,7 +82,7 @@
     `<path d="${polyD(pts)}" stroke="#f5e4b8" stroke-width="32" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
     `<path d="${polyD(pts.map(([x, y]) => [x, y - 7]))}" stroke="#fffaf0" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>` +
     `<path d="${polyD(pts.map(([x, y]) => [x, y + 8]))}" stroke="#e2c98a" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>`).join('');
-  const nodeOfRanvier = axonAt(SHEATH_START + SHEATH_LEN + NODE_GAP / 2 + 2 * (SHEATH_LEN + NODE_GAP));
+  const nodeOfRanvier = axonAt((sheaths[2].b + sheaths[3].a) / 2);
 
   // A single axon terminal: a rounded bulb at the end of the axon, packed
   // with vesicles full of neurotransmitters. One vesicle is releasing them.
@@ -367,7 +369,7 @@
           ...label('Dendrites', 70, 120, [150, 140], [205, 236], 'left', 34),
           ...label('Cell body', 560, 300, [545, 318], [425, 425], 'center', 34),
           ...label('Axon hillock', 560, 640, [555, 618], [500, 488], 'center', 34),
-          ...label('Myelin sheath', 880, 330, [880, 352], axonAt(sheaths[1].a + 70).map((v, k) => Math.round(v - [0, 16][k])), 'center', 34),
+          ...label('Myelin sheath', 880, 330, [880, 352], axonAt((sheaths[1].a + sheaths[1].b) / 2).map((v, k) => Math.round(v - [0, 16][k])), 'center', 34),
           ...label('Axon', 1060, 640, [1060, 618], nodeOfRanvier.map(Math.round), 'center', 34),
           ...label('Axon terminal', 1420, 300, [1395, 322], [1318, 428], 'center', 34),
           ...label('Vesicles with\nneurotransmitters', 1300, 640, [1300, 612], [1296, 512], 'center', 30),
