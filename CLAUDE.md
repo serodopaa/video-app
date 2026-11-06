@@ -20,6 +20,7 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
   id: 'unique-id',            // also used as the URL hash: index.html#unique-id
   title: '🧪 Title in the menu',
   intro: 'Optional caption before step 1',
+  audio: false,               // optional: never read captions aloud, hide Narrate
   steps: [
     {
       say: 'Caption shown (and read aloud if Narrate is on).',

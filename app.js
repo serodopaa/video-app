@@ -423,7 +423,7 @@
   });
 
   function speak(text) {
-    if (!els.narrate.checked || !('speechSynthesis' in window) || !text) return;
+    if (player.scene.audio === false || !els.narrate.checked || !('speechSynthesis' in window) || !text) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1;
@@ -459,6 +459,9 @@
     saveInk();
     player.scene = scenes[index];
     player.playing = false;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    // Scenes with audio: false are always silent, so hide the Narrate toggle.
+    els.narrate.parentElement.style.display = player.scene.audio === false ? 'none' : '';
     replay.active = false;
     loadInk();
     goTo(-1, false);
@@ -474,7 +477,7 @@
     const step = player.scene.steps[player.step];
     if (!step) return;
     const hold = step.hold ?? 1.5;
-    const talking = els.narrate.checked && 'speechSynthesis' in window && speechSynthesis.speaking;
+    const talking = player.scene.audio !== false && els.narrate.checked && 'speechSynthesis' in window && speechSynthesis.speaking;
     if (t - player.t0 > step._len + hold && !talking) {
       if (player.step < player.scene.steps.length - 1) goTo(player.step + 1);
       else setPlaying(false);
