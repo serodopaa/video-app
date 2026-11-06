@@ -14,7 +14,7 @@
   const FONT = '"Caveat", "Comic Sans MS", cursive';
   // Font for built-in titles and labels (text items with font: 'sans'). It must
   // also be loaded in index.html (Google Fonts link) with weights 600 and 700.
-  const LABEL_FONT = window.WB_LABEL_FONT || 'Manrope';
+  const LABEL_FONT = window.WB_LABEL_FONT || 'Lexend';
   const SANS = `"${LABEL_FONT}", system-ui, -apple-system, sans-serif`;
 
   const COLORS = {
