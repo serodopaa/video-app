@@ -1,29 +1,44 @@
 // Explainer: how a neuron works. Built slide by slide with the user.
 // The user does the drawing; these visuals simply appear (drawn: false).
+// Colour code used on every slide: purple = the receiving neuron (the one
+// whose dendrites we're studying), blue/other colours = neurons sending to it.
 // Board is 1600 x 900. See CLAUDE.md for every item type.
 (() => {
-  // ---------- realistic neuron illustration (SVG, board coordinates) ----------
-  const OUTLINE = '#5e2f78';
-  const FILL = '#c69ad8';
+  const f1 = (v) => v.toFixed(1);
+  const svgDoc = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">${inner}</svg>`;
 
-  // Dendrite tree: [path, thickness]. Thick trunks leave the cell body and
-  // split into thinner branches and twigs.
-  const dendrites = [
-    // trunks
+  // ---------- colour palettes ----------
+  const PURPLE = {
+    outline: '#5e2f78', fill: '#c69ad8', s0: '#f3e6f8', s1: '#d4afe2', s2: '#ad78c6',
+    n0: '#a274bd', n1: '#5a2b75', nStroke: '#4a2062', nl: '#3a1650', b0: '#f1e1f7', b1: '#b47fcb',
+    a0: '#e2c8ec', a1: '#b783cc', shine: '#f6ecfa', gran: '#7c4797', shadow: '#3b1452',
+  };
+  const BLUE = {
+    outline: '#2c5a92', fill: '#8fb6e6', s0: '#eef5fd', s1: '#bcd5f2', s2: '#7aa5dc',
+    n0: '#6f9fd8', n1: '#24508a', nStroke: '#1d3f6e', nl: '#14325a', b0: '#e3eefb', b1: '#6f9fd8',
+    a0: '#cfe1f7', a1: '#86afe2', shine: '#f2f7fd', gran: '#2c5a92', shadow: '#13294a',
+  };
+
+  // ---------- realistic whole neuron (board coordinates, ~x 65-1430, y 125-830) ----------
+  // Dendrite tree: [path, thickness]. Trunks leave the cell body and split
+  // into branches and twigs. Paths run from the cell body outward.
+  const trunks = [
     ['M340 400 Q300 330 255 280', 20],
     ['M310 440 Q230 420 170 380', 20],
     ['M300 485 Q220 500 150 505', 18],
     ['M320 535 Q270 600 220 650', 20],
     ['M365 560 Q360 640 330 710', 18],
     ['M400 380 Q410 310 390 250', 18],
-    // branches
+  ];
+  const branchesN = [
     ['M255 280 Q215 245 170 240', 11], ['M255 280 Q250 225 230 190', 10],
-    ['M390 250 Q360 210 345 175', 10], ['M390 250 Q420 210 455 195', 10],
     ['M170 380 Q130 350 95 345', 10], ['M170 380 Q140 400 105 420', 10],
     ['M150 505 Q110 480 80 470', 9], ['M150 505 Q110 530 85 555', 10],
     ['M220 650 Q180 670 140 668', 10], ['M220 650 Q215 700 190 735', 10],
     ['M330 710 Q300 750 285 790', 10], ['M330 710 Q360 755 385 780', 9],
-    // twigs
+    ['M390 250 Q360 210 345 175', 10], ['M390 250 Q420 210 455 195', 10],
+  ];
+  const twigs = [
     ['M170 240 Q145 225 120 228', 5], ['M170 240 Q150 258 128 272', 5],
     ['M230 190 Q222 168 228 145', 5], ['M345 175 Q330 150 332 125', 5],
     ['M455 195 Q482 180 505 186', 5], ['M95 345 Q75 330 66 312', 5],
@@ -31,10 +46,8 @@
     ['M140 668 Q115 660 95 672', 5], ['M190 735 Q176 760 172 790', 5],
     ['M285 790 Q268 815 248 828', 5], ['M385 780 Q405 805 428 814', 5],
   ];
-
+  const dendrites = [...trunks, ...branchesN, ...twigs];
   const axonPath = 'M535 470 C700 452 850 492 1000 468 S1180 474 1240 470';
-
-  // Axon terminal branches and the bulbs (synaptic boutons) at their tips.
   const terminalBranches = [
     ['M1240 470 Q1290 430 1330 380', 9], ['M1240 470 Q1300 465 1370 455', 9],
     ['M1240 470 Q1295 500 1340 545', 9], ['M1240 470 Q1268 540 1280 600', 8],
@@ -44,69 +57,152 @@
   ];
   const boutons = [[1368, 336], [1394, 376], [1430, 430], [1424, 490], [1400, 570], [1310, 655]];
 
-  // Slightly irregular, organic cell body outline.
   const soma = { x: 380, y: 470 };
   const somaPts = [];
   for (let i = 0; i < 48; i++) {
     const a = (i / 48) * Math.PI * 2;
     const r = 84 + 5 * Math.sin(3 * a + 0.5) + 3 * Math.cos(5 * a);
-    somaPts.push(`${(soma.x + Math.cos(a) * r).toFixed(1)},${(soma.y + Math.sin(a) * r).toFixed(1)}`);
+    somaPts.push(`${f1(soma.x + Math.cos(a) * r)},${f1(soma.y + Math.sin(a) * r)}`);
   }
   const somaD = `M${somaPts.join(' L')} Z`;
   const hillockD = 'M448 425 Q492 456 540 462 L540 478 Q492 486 448 517 Z';
-
-  // Small granules (Nissl bodies) scattered in the cell body.
-  const granules = [[340, 430], [420, 420], [430, 510], [345, 515], [400, 535], [320, 470], [445, 465], [365, 410]]
-    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="#7c4797" opacity="0.45"/>`).join('');
+  const granulePts = [[340, 430], [420, 420], [430, 510], [345, 515], [400, 535], [320, 470], [445, 465], [365, 410]];
 
   const strokes = (list, color, extra) => list
     .map(([d, w]) => `<path d="${d}" stroke="${color}" stroke-width="${w + extra}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
 
-  const neuronSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
-  <defs>
-    <radialGradient id="somaG" cx="40%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#f3e6f8"/><stop offset="0.55" stop-color="#d4afe2"/><stop offset="1" stop-color="#ad78c6"/>
+  // One neuron as SVG markup. `id` keeps gradient ids unique when several
+  // neurons share one picture.
+  function neuronMarkup(P, id) {
+    return `<defs>
+    <radialGradient id="somaG-${id}" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="${P.s0}"/><stop offset="0.55" stop-color="${P.s1}"/><stop offset="1" stop-color="${P.s2}"/>
     </radialGradient>
-    <radialGradient id="nucG" cx="38%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#a274bd"/><stop offset="1" stop-color="#5a2b75"/>
+    <radialGradient id="nucG-${id}" cx="38%" cy="35%" r="70%">
+      <stop offset="0" stop-color="${P.n0}"/><stop offset="1" stop-color="${P.n1}"/>
     </radialGradient>
-    <radialGradient id="boutonG" cx="35%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#f1e1f7"/><stop offset="1" stop-color="#b47fcb"/>
+    <radialGradient id="boutonG-${id}" cx="35%" cy="35%" r="70%">
+      <stop offset="0" stop-color="${P.b0}"/><stop offset="1" stop-color="${P.b1}"/>
     </radialGradient>
-    <linearGradient id="axonG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e2c8ec"/><stop offset="1" stop-color="#b783cc"/>
+    <linearGradient id="axonG-${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${P.a0}"/><stop offset="1" stop-color="${P.a1}"/>
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#3b1452" flood-opacity="0.22"/>
+    <filter id="shadow-${id}" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="${P.shadow}" flood-opacity="0.22"/>
     </filter>
   </defs>
-  <g filter="url(#shadow)">
-    <!-- outlines first, then fills on top, so every joint blends smoothly -->
-    ${strokes(dendrites, OUTLINE, 5)}
-    ${strokes(terminalBranches, OUTLINE, 5)}
-    <path d="${axonPath}" stroke="${OUTLINE}" stroke-width="19" fill="none" stroke-linecap="round"/>
-    <path d="${hillockD}" fill="${OUTLINE}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/>
-    <path d="${somaD}" fill="${OUTLINE}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/>
-    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="${OUTLINE}"/>`).join('')}
-
-    ${strokes(dendrites, FILL, 0)}
-    ${strokes(terminalBranches, FILL, 0)}
-    <path d="${axonPath}" stroke="url(#axonG)" stroke-width="13" fill="none" stroke-linecap="round"/>
-    <path d="${hillockD}" fill="${FILL}"/>
-    <path d="${somaD}" fill="url(#somaG)"/>
-    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13" fill="url(#boutonG)"/>`).join('')}
+  <g filter="url(#shadow-${id})">
+    ${strokes(dendrites, P.outline, 5)}
+    ${strokes(terminalBranches, P.outline, 5)}
+    <path d="${axonPath}" stroke="${P.outline}" stroke-width="19" fill="none" stroke-linecap="round"/>
+    <path d="${hillockD}" fill="${P.outline}" stroke="${P.outline}" stroke-width="6" stroke-linejoin="round"/>
+    <path d="${somaD}" fill="${P.outline}" stroke="${P.outline}" stroke-width="6" stroke-linejoin="round"/>
+    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="${P.outline}"/>`).join('')}
+    ${strokes(dendrites, P.fill, 0)}
+    ${strokes(terminalBranches, P.fill, 0)}
+    <path d="${axonPath}" stroke="url(#axonG-${id})" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path d="${hillockD}" fill="${P.fill}"/>
+    <path d="${somaD}" fill="url(#somaG-${id})"/>
+    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13" fill="url(#boutonG-${id})"/>`).join('')}
   </g>
-  <!-- shine along the axon to make it look round -->
-  <path d="${axonPath}" transform="translate(0,-3)" stroke="#f6ecfa" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
-  ${granules}
-  <!-- nucleus and nucleolus -->
-  <circle cx="${soma.x}" cy="${soma.y}" r="32" fill="url(#nucG)" stroke="#4a2062" stroke-width="2"/>
-  <circle cx="${soma.x + 8}" cy="${soma.y - 6}" r="9" fill="#3a1650"/>
-  <ellipse cx="${soma.x - 10}" cy="${soma.y - 12}" rx="9" ry="5" fill="#ffffff" opacity="0.25"/>
-</svg>`;
+  <path d="${axonPath}" transform="translate(0,-3)" stroke="${P.shine}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
+  ${granulePts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${P.gran}" opacity="0.45"/>`).join('')}
+  <circle cx="${soma.x}" cy="${soma.y}" r="32" fill="url(#nucG-${id})" stroke="${P.nStroke}" stroke-width="2"/>
+  <circle cx="${soma.x + 8}" cy="${soma.y - 6}" r="9" fill="${P.nl}"/>
+  <ellipse cx="${soma.x - 10}" cy="${soma.y - 12}" rx="9" ry="5" fill="#ffffff" opacity="0.25"/>`;
+  }
 
+  // ---------- labels ----------
+  const DARK = '#3b4252';
+  // Textbook-style label: clean text with a thin leader line ending in a dot.
+  const label = (text, x, y, lineFrom, target, align = 'center', size = 36) => [
+    { type: 'text', x, y, text, size, font: 'sans', color: 'ink', align },
+    { type: 'line', from: lineFrom, to: target, color: DARK, width: 2.5, rough: false },
+    { type: 'circle', x: target[0], y: target[1], r: 5, color: DARK, width: 2, fill: DARK, fillOpacity: 1, rough: false },
+  ];
+  const title = (text) => ({ type: 'text', x: 800, y: 66, text, size: 56, font: 'sans', bold: true, align: 'center', color: 'ink' });
+  const note = (text, x, y, align = 'center', color = '#5b6270') => ({ type: 'text', x, y, text, size: 28, font: 'sans', color, align });
+  const SIGNAL = '#e8890c'; // colour for signal arrows and moving signals
+  const signalArrow = (from, to, bend = 0) => ({ type: 'arrow', from, to, bend, color: SIGNAL, width: 7, rough: false });
 
-  // ---------- slide 2: dendrites up close ----------
+  // ---------- slide 2: two neurons ----------
+  const S2 = 0.52;
+  const n1 = { tx: -4, ty: 236 };   // sending neuron (blue)
+  const n2 = { tx: 726, ty: 236 };  // receiving neuron (purple)
+  const at = (n, x, y) => [Math.round(x * S2 + n.tx), Math.round(y * S2 + n.ty)];
+  const twoNeuronsSvg = svgDoc(
+    `<g transform="translate(${n1.tx} ${n1.ty}) scale(${S2})">${neuronMarkup(BLUE, 'n1')}</g>` +
+    `<g transform="translate(${n2.tx} ${n2.ty}) scale(${S2})">${neuronMarkup(PURPLE, 'n2')}</g>`);
+
+  // ---------- slide 3: synapse close-up ----------
+  const vesicles = [[700, 250], [785, 225], [875, 245], [955, 290], [735, 330], [870, 335], [1010, 355], [640, 360]];
+  const receptorsX = [560, 680, 800, 920, 1040];
+  const boundAt = [680, 920]; // receptors already holding a neurotransmitter
+  const dots = (cx, cy, color) => [[-8, -6], [7, -8], [0, 4], [-9, 9], [9, 7]]
+    .map(([a, b]) => `<circle cx="${cx + a}" cy="${cy + b}" r="4.5" fill="${color}" stroke="#b9650b" stroke-width="1"/>`).join('');
+  const synapseSvg = svgDoc(`<defs>
+    <linearGradient id="preG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#9cc0ea"/>
+    </linearGradient>
+    <linearGradient id="postG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9d6f1"/><stop offset="1" stop-color="#b783cc"/>
+    </linearGradient>
+    <radialGradient id="vesG" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4e5f8"/>
+    </radialGradient>
+    <filter id="sh3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#13294a" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <g filter="url(#sh3)">
+    <!-- axon of the sending neuron, coming in from the top right -->
+    <path d="M1560 -40 Q1400 110 980 250" stroke="#2c5a92" stroke-width="80" fill="none" stroke-linecap="round"/>
+    <path d="M1560 -40 Q1400 110 980 250" stroke="#bcd5f2" stroke-width="72" fill="none" stroke-linecap="round"/>
+    <!-- axon terminal (bulb) -->
+    <path d="M470 360 C470 205 640 160 800 160 C960 160 1130 205 1130 360 Q1130 422 1068 425 L532 425 Q470 422 470 360 Z" fill="url(#preG)" stroke="#2c5a92" stroke-width="6"/>
+    <!-- receiving dendrite -->
+    <path d="M280 940 L280 565 Q280 525 322 525 L1278 525 Q1320 525 1320 565 L1320 940 Z" fill="url(#postG)" stroke="#5e2f78" stroke-width="6"/>
+  </g>
+  <!-- a mitochondrion powering the terminal -->
+  <ellipse cx="570" cy="300" rx="62" ry="28" fill="#f6c99a" stroke="#b9650b" stroke-width="3"/>
+  <path d="M528 300 q10 -18 20 0 t20 0 t20 0 t20 0" stroke="#b9650b" stroke-width="2.5" fill="none"/>
+  <!-- synaptic vesicles filled with neurotransmitters -->
+  ${vesicles.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="27" fill="url(#vesG)" stroke="#2c5a92" stroke-width="3"/>${dots(x, y, '#f0a24a')}`).join('')}
+  <!-- a vesicle fusing with the membrane and opening into the gap -->
+  <circle cx="800" cy="405" r="26" fill="url(#vesG)" stroke="#2c5a92" stroke-width="3"/>
+  <rect x="784" y="414" width="32" height="16" fill="#fdfdfb"/>
+  <path d="M784 425 Q790 418 784 412 M816 425 Q810 418 816 412" stroke="#2c5a92" stroke-width="3" fill="none"/>
+  ${[[792, 398], [806, 404], [798, 412]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.5" fill="#f0a24a" stroke="#b9650b" stroke-width="1"/>`).join('')}
+  <!-- receptors on the dendrite membrane -->
+  ${receptorsX.map((x) => `<rect x="${x - 26}" y="497" width="18" height="60" rx="8" fill="#47b26c" stroke="#226b3c" stroke-width="2.5"/>
+    <rect x="${x + 8}" y="497" width="18" height="60" rx="8" fill="#47b26c" stroke="#226b3c" stroke-width="2.5"/>`).join('')}
+  ${boundAt.map((x) => `<circle cx="${x}" cy="500" r="7" fill="#f08c1a" stroke="#b9650b" stroke-width="1.5"/>`).join('')}
+`);
+  const neurotransmitterMovers = receptorsX.filter((x) => !boundAt.includes(x)).concat([680, 920]).map((x, i) => ({
+    type: 'mover', r: 6, color: '#f08c1a', count: 2, speed: 1.7 + (i % 3) * 0.35, smooth: true,
+    path: [[800, 432], [(800 + x) / 2 + (i % 2 ? 20 : -20), 465], [x, 494]],
+    with: i > 0,
+  }));
+
+  // ---------- slide 4: signals flow from the dendrites to the cell body ----------
+  const nums = (d) => d.match(/-?\d+(\.\d+)?/g).map(Number);
+  const trunkGeom = trunks.map(([d]) => { const [x0, y0, cx, cy, x1, y1] = nums(d); return { s: [x0, y0], c: [cx, cy], e: [x1, y1] }; });
+  // One moving signal per branch: tip -> trunk -> cell body.
+  const inwardPaths = branchesN.map(([d]) => {
+    const [bx0, by0, bcx, bcy, bx1, by1] = nums(d);
+    const t = trunkGeom.find((g) => Math.abs(g.e[0] - bx0) < 1 && Math.abs(g.e[1] - by0) < 1);
+    return [[bx1, by1], [bcx, bcy], [bx0, by0], t.c, t.s, [soma.x, soma.y]];
+  });
+  // Arrows run beside each trunk, pointing toward the cell body.
+  const inwardArrows = trunkGeom.map((g) => {
+    const dx = g.e[0] - g.s[0], dy = g.e[1] - g.s[1], len = Math.hypot(dx, dy);
+    const nx = -dy / len, ny = dx / len, off = 30;
+    const from = [g.e[0] + nx * off - (dx / len) * 10, g.e[1] + ny * off - (dy / len) * 10];
+    const to = [g.s[0] + nx * off + (dx / len) * 12, g.s[1] + ny * off + (dy / len) * 12];
+    return { type: 'arrow', from: from.map(Math.round), to: to.map(Math.round), color: SIGNAL, width: 6, rough: false };
+  });
+
+  // ---------- slide 5: many branches, many connections ----------
   const quad = (b, t) => [0, 1].map((k) => (1 - t) ** 2 * b.p0[k] + 2 * (1 - t) * t * b.c[k] + t * t * b.p1[k]);
   const normal = (b, t) => {
     const d = [0, 1].map((k) => 2 * (1 - t) * (b.c[k] - b.p0[k]) + 2 * t * (b.p1[k] - b.c[k]));
@@ -115,9 +211,6 @@
   };
   const widthAt = (b, t) => b.w0 + (b.w1 - b.w0) * t;
   const add = (p, n, k) => [p[0] + n[0] * k, p[1] + n[1] * k];
-  const f1 = (v) => v.toFixed(1);
-
-  // Tapered branch outline (thick near the cell body, thin at the tip).
   function taperD(b) {
     const L = [], R = [];
     for (let i = 0; i <= 48; i++) {
@@ -127,104 +220,100 @@
     }
     return 'M' + L.concat(R.reverse()).map((p) => p.map(f1).join(',')).join(' L') + ' Z';
   }
-
-  // Branches start inside the cell body / parent branch and run to their tips.
+  // A branch growing out of a point on its parent.
+  const sprout = (parent, t, dc, d1, w0, w1) => {
+    const p0 = quad(parent, t);
+    return { p0, c: [p0[0] + dc[0], p0[1] + dc[1]], p1: [p0[0] + d1[0], p0[1] + d1[1]], w0, w1 };
+  };
   const trunk = { p0: [1390, 520], c: [850, 560], p1: [240, 450], w0: 80, w1: 26 };
-  const upper = { p0: [840, 512], c: [650, 380], p1: [430, 235], w0: 38, w1: 14 };
-  const lower = { p0: [717, 516], c: [600, 650], p1: [430, 790], w0: 34, w1: 14 };
-  const branches = [trunk, upper, lower];
+  // Main branches alternate up and down along the trunk, angled away from the cell body.
+  const bA = sprout(trunk, 0.25, [-20, -200], [-140, -330], 34, 12);
+  const bB = sprout(trunk, 0.38, [-10, 170], [-90, 300], 30, 12);
+  const bC = sprout(trunk, 0.55, [-60, -220], [-220, -345], 34, 12);
+  const bD = sprout(trunk, 0.67, [-20, 170], [-170, 310], 30, 12);
+  const bE = sprout(trunk, 0.8, [-30, -160], [-150, -285], 26, 11);
+  const bF = sprout(trunk, 0.91, [-20, 130], [-130, 250], 20, 9);
+  // Smaller forks off some branches.
+  const fA = sprout(bA, 0.55, [60, -60], [150, -90], 16, 8);
+  const fB = sprout(bB, 0.55, [70, 30], [150, 60], 15, 8);
+  const fC = sprout(bC, 0.5, [70, -50], [150, -70], 16, 8);
+  const fD = sprout(bD, 0.55, [-70, 20], [-150, 30], 15, 8);
+  const fE = sprout(bE, 0.55, [-70, -10], [-150, 10], 13, 7);
+  const sideBranches = [fA, fB, fC, fD, fE, bA, bB, bC, bD, bE, bF];
+  const allBranches = [...sideBranches, trunk];
 
-  // Dendritic spines: little mushroom-shaped bumps where other neurons connect.
   function spineAt(b, t, side, len, r) {
     const n = normal(b, t).map((v) => v * side);
     const base = add(quad(b, t), n, widthAt(b, t) / 2 - 3);
     return { base, head: add(base, n, len), n, r };
   }
   const spines = [];
-  branches.forEach((b, bi) => {
-    const ts = bi === 0 ? [0.12, 0.2, 0.38, 0.45, 0.55, 0.63, 0.72, 0.8, 0.88, 0.95] : [0.18, 0.28, 0.36, 0.6, 0.7, 0.8, 0.9];
+  allBranches.forEach((b, bi) => {
+    const ts = b === trunk ? [0.12, 0.2, 0.45, 0.55, 0.74, 0.9, 0.96] : [0.3, 0.45, 0.62, 0.78, 0.92];
     ts.forEach((t, i) => {
       const side = (i + bi) % 2 ? 1 : -1;
       const kind = (i * 7 + bi * 3) % 3; // mushroom, thin, stubby
-      spines.push(spineAt(b, t, side, [26, 30, 14][kind], [11, 7, 10][kind]));
+      spines.push(spineAt(b, t, side, [24, 28, 13][kind], [10, 7, 9][kind]));
     });
   });
 
-  // Synapses: an axon terminal from another neuron meets a spine.
-  const synapses = [
-    spineAt(trunk, 0.3, 1, 36, 15),
-    spineAt(upper, 0.48, 1, 34, 15),
-    spineAt(lower, 0.52, -1, 34, 15),
-  ].map((sp) => {
-    const bouton = add(sp.head, sp.n, sp.r + 14 + 26);
+  // Incoming axon terminals, each from a different neuron (different colours).
+  const AXON_COLORS = [
+    ['#2c5a92', '#8fb6e6', '#e3eefb', '#6f9fd8'], // blue
+    ['#1f6f6b', '#7cc7c0', '#e0f4f2', '#4fa9a1'], // teal
+    ['#2f6b2a', '#9bd18f', '#eaf7e6', '#6db35f'], // green
+    ['#9a4f0d', '#f2b46d', '#fdf0e1', '#e08a2c'], // orange
+    ['#9c2a5c', '#ef9cc0', '#fde8f1', '#d76a99'], // pink
+    ['#7a6200', '#e8cf5a', '#fbf5d9', '#c9a923'], // gold
+  ];
+  const synapseSpecs = [
+    [bA, 0.85, -1, 110], [fA, 0.9, 1, 100], [bB, 0.8, 1, 110], [fB, 0.9, -1, 100],
+    [bC, 0.8, 1, 70], [fC, 0.9, -1, 70], [bD, 0.85, -1, 110], [fD, 0.9, 1, 100],
+    [bE, 0.85, 1, 70], [bF, 0.85, -1, 100],
+  ];
+  const incoming = synapseSpecs.map(([b, t, side, axonLen], i) => {
+    const sp = spineAt(b, t, side, 30, 13);
+    const bouton = add(sp.head, sp.n, sp.r + 12 + 22);
     const perp = [-sp.n[1], sp.n[0]];
-    const axonEnd = add(add(bouton, sp.n, 190), perp, 40);
-    const gap = add(sp.head, sp.n, sp.r + 7);
-    return { ...sp, bouton, axonEnd, gap, perp };
+    const axonEnd = add(add(bouton, sp.n, axonLen), perp, i % 2 ? 30 : -30);
+    const ctrl = add(add(bouton, sp.n, axonLen * 0.5), perp, i % 2 ? -20 : 20);
+    return { ...sp, bouton, axonEnd, ctrl, perp, col: AXON_COLORS[i % AXON_COLORS.length] };
   });
 
   const spineMarkup = (list, color, extra) => list.map((sp) =>
     `<path d="M${sp.base.map(f1)} L${sp.head.map(f1)}" stroke="${color}" stroke-width="${7 + extra}" stroke-linecap="round"/>` +
     `<circle cx="${f1(sp.head[0])}" cy="${f1(sp.head[1])}" r="${sp.r + extra / 2}" fill="${color}"/>`).join('');
 
-  const dendriteSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
-  <defs>
+  const SHIFT5 = 45; // artwork sits a little lower, clear of the title
+  const branchesSvg = svgDoc(`<g transform="translate(0 ${SHIFT5})"><defs>
     <linearGradient id="dG" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#e4cdee"/><stop offset="0.5" stop-color="#c69ad8"/><stop offset="1" stop-color="#ad78c6"/>
     </linearGradient>
     <radialGradient id="cbG" cx="30%" cy="40%" r="75%">
       <stop offset="0" stop-color="#f3e6f8"/><stop offset="0.6" stop-color="#d4afe2"/><stop offset="1" stop-color="#ad78c6"/>
     </radialGradient>
-    <radialGradient id="axG" cx="35%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#6f9fd8"/>
-    </radialGradient>
-    <filter id="sh2" x="-10%" y="-10%" width="120%" height="120%">
+    ${AXON_COLORS.map((c, i) => `<radialGradient id="bt${i}" cx="35%" cy="35%" r="70%"><stop offset="0" stop-color="${c[2]}"/><stop offset="1" stop-color="${c[3]}"/></radialGradient>`).join('')}
+    <filter id="sh5" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#3b1452" flood-opacity="0.22"/>
     </filter>
   </defs>
-  <g filter="url(#sh2)">
-    <!-- axons from other neurons -->
-    ${synapses.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${add(add(s.bouton, s.n, 90), s.perp, -30).map(f1)} ${s.bouton.map(f1)}" stroke="#2c5a92" stroke-width="18" fill="none" stroke-linecap="round"/>`).join('')}
-    ${synapses.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${add(add(s.bouton, s.n, 90), s.perp, -30).map(f1)} ${s.bouton.map(f1)}" stroke="#8fb6e6" stroke-width="12" fill="none" stroke-linecap="round"/>`).join('')}
-    ${synapses.map((s) => `<circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="29" fill="#2c5a92"/><circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="26" fill="url(#axG)"/>`).join('')}
-    ${synapses.map((s) => [[-9, -6], [7, 8], [-4, 10], [10, -9], [2, -2]].map(([a, b]) => { const p = add(add(s.bouton, s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="4.5" fill="#f0a24a" stroke="#c46f12" stroke-width="1"/>`; }).join('')).join('')}
+  <g filter="url(#sh5)">
+    ${incoming.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${s.ctrl.map(f1)} ${s.bouton.map(f1)}" stroke="${s.col[0]}" stroke-width="16" fill="none" stroke-linecap="round"/>`).join('')}
+    ${incoming.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${s.ctrl.map(f1)} ${s.bouton.map(f1)}" stroke="${s.col[1]}" stroke-width="10" fill="none" stroke-linecap="round"/>`).join('')}
+    ${incoming.map((s, i) => `<circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="25" fill="${s.col[0]}"/><circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="22" fill="url(#bt${i % AXON_COLORS.length})"/>`).join('')}
 
-    <!-- dendrite: outlines first, then fills, so joints blend -->
-    ${branches.map((b) => `<path d="${taperD(b)}" fill="${OUTLINE}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2 + 3}" fill="${OUTLINE}"/>`).join('')}
-    ${spineMarkup(spines.concat(synapses), OUTLINE, 6)}
-    <circle cx="1560" cy="520" r="233" fill="${OUTLINE}"/>
-    <!-- side branches and spines first, main trunk last so the joints are seamless -->
-    ${[upper, lower, trunk].map((b) => `<path d="${taperD(b)}" fill="url(#dG)"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2}" fill="#c69ad8"/>`).join('')}
-    ${spineMarkup(spines.concat(synapses), FILL, 0)}
+    ${allBranches.map((b) => `<path d="${taperD(b)}" fill="${PURPLE.outline}" stroke="${PURPLE.outline}" stroke-width="6" stroke-linejoin="round"/><circle cx="${f1(b.p1[0])}" cy="${f1(b.p1[1])}" r="${b.w1 / 2 + 3}" fill="${PURPLE.outline}"/>`).join('')}
+    ${spineMarkup(spines.concat(incoming), PURPLE.outline, 6)}
+    <circle cx="1560" cy="520" r="233" fill="${PURPLE.outline}"/>
+    ${sideBranches.map((b) => `<path d="${taperD(b)}" fill="url(#dG)"/><circle cx="${f1(b.p1[0])}" cy="${f1(b.p1[1])}" r="${b.w1 / 2}" fill="${PURPLE.fill}"/>`).join('')}
+    ${spineMarkup(spines.concat(incoming), PURPLE.fill, 0)}
     <path d="${taperD(trunk)}" fill="url(#dG)"/>
     <circle cx="1560" cy="520" r="230" fill="url(#cbG)"/>
   </g>
-  <!-- receptors on the spine heads, facing each terminal -->
-  ${synapses.map((s) => { const c = add(s.head, s.n, s.r - 2); const a = add(c, s.perp, 11), b = add(c, s.perp, -11); return `<path d="M${a.map(f1)} L${b.map(f1)}" stroke="#2e9e5b" stroke-width="6" stroke-linecap="round"/>`; }).join('')}
-  <!-- neurotransmitter molecules crossing the gap -->
-  ${synapses.map((s) => [[-6, 0], [5, 3], [0, -4]].map(([a, b]) => { const p = add(add(s.gap, s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="3" fill="#f08c1a"/>`; }).join('')).join('')}
-  ${[[1450, 420], [1500, 600], [1420, 650], [1530, 380], [1470, 520]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="#7c4797" opacity="0.4"/>`).join('')}
-</svg>`;
-
-  // Textbook-style label: clean text with a thin leader line ending in a dot.
-  const label = (text, x, y, lineFrom, target, align = 'center') => [
-    { type: 'text', x, y, text, size: 36, font: 'sans', color: 'ink', align },
-    { type: 'line', from: lineFrom, to: target, color: '#3b4252', width: 2.5, rough: false },
-    { type: 'circle', x: target[0], y: target[1], r: 5, color: '#3b4252', width: 2, fill: '#3b4252', fillOpacity: 1, rough: false },
-  ];
-
-  const [syn1, , syn3] = synapses;
-  const DENDRITE_LABELS = [
-    ...label('Dendrite', 1226, 300, [1226, 322], quad(trunk, 0.15).map(Math.round)),
-    ...label('Synapse', 985, 360, [990, 372], syn1.gap.map(Math.round), 'right'),
-    ...label('Dendritic spine', 250, 625, [290, 605], [381, 505]),
-    { type: 'text', x: 800, y: 770, text: 'Axon terminal\n(from another neuron)', size: 32, font: 'sans', color: 'ink' },
-    { type: 'line', from: [794, 772], to: syn3.bouton.map((v, k) => Math.round(v + [22, 6][k])), color: '#3b4252', width: 2.5, rough: false },
-    { type: 'circle', x: Math.round(syn3.bouton[0] + 22), y: Math.round(syn3.bouton[1] + 6), r: 5, color: '#3b4252', width: 2, fill: '#3b4252', fillOpacity: 1, rough: false },
-    ...label('Cell body', 1460, 822, [1460, 798], [1460, 712]),
-    { type: 'arrow', from: [830, 628], to: [1290, 628], color: 'gray', width: 4, rough: false },
-    { type: 'text', x: 1060, y: 664, text: 'Signals travel toward the cell body', size: 28, font: 'sans', color: 'gray', align: 'center' },
-  ];
+  ${incoming.map((s) => { const c = add(s.head, s.n, s.r - 2); const a = add(c, s.perp, 10), b = add(c, s.perp, -10); return `<path d="M${a.map(f1)} L${b.map(f1)}" stroke="#2e9e5b" stroke-width="6" stroke-linecap="round"/>`; }).join('')}
+  ${incoming.map((s) => [[-6, 0], [5, 3], [0, -4]].map(([a, b]) => { const p = add(add(add(s.head, s.n, s.r + 6), s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="3" fill="#f08c1a"/>`; }).join('')).join('')}
+  ${[[1450, 420], [1500, 600], [1420, 650], [1530, 380], [1470, 520]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="${PURPLE.gran}" opacity="0.4"/>`).join('')}
+</g>`);
 
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
@@ -237,23 +326,82 @@
         say: 'A neuron has four main parts: dendrites, a cell body, an axon, and axon terminals.',
         items: [
           { type: 'text', x: 800, y: 80, text: 'How a neuron works', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
-          { type: 'svg', svg: neuronSvg },
+          { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'main')) },
           ...label('Dendrites', 70, 120, [150, 140], [205, 236], 'left'),
           ...label('Cell body', 610, 330, [600, 348], [425, 425]),
           ...label('Axon', 850, 620, [850, 598], [850, 480]),
           ...label('Axon terminals', 1440, 250, [1420, 272], [1382, 340]),
         ],
       },
-      // Slide 2: dendrites in more detail.
+      // Slide 2: their main function. One neuron passes a signal to the next one's dendrites.
       {
-        say: 'Dendrites are covered in tiny spines. Each spine is a spot where another neuron passes on its signal.',
+        say: "Dendrites' main job: receive signals sent by other neurons.",
         clear: true,
         items: [
-          { type: 'text', x: 800, y: 70, text: 'Dendrites up close', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
-          { type: 'svg', svg: dendriteSvg },
-          ...DENDRITE_LABELS,
+          title("Dendrites: their main function"),
+          { type: 'svg', svg: twoNeuronsSvg },
+          signalArrow(at(n1, 560, 400), at(n1, 1220, 400)),
+          note('Signal travels down the axon', ...at(n1, 890, 340)),
+          signalArrow([712, 380], [850, 360], -45),
+          note('…and is picked up by the\nnext neuron’s dendrites', 780, 220),
+          { type: 'circle', x: 772, y: 485, r: 78, color: '#8a8f98', width: 3, dashed: true, rough: false },
+          ...label('Neuron 1 (sending)', ...at(n1, 760, 900), at(n1, 760, 830), at(n1, 760, 485), 'center', 32),
+          ...label('Neuron 2 (receiving)', ...at(n2, 760, 900), at(n2, 760, 830), at(n2, 760, 485), 'center', 32),
+          ...label('Dendrites', ...at(n2, 120, 905), at(n2, 140, 840), at(n2, 180, 690), 'center', 32),
+        ],
+      },
+      // Slide 3: how they receive signals (synapse close-up).
+      {
+        say: 'Neurotransmitters are released into the gap and attach to receptors on the dendrite.',
+        clear: true,
+        items: [
+          title('How dendrites receive signals'),
+          { type: 'svg', svg: synapseSvg },
+          ...neurotransmitterMovers,
+          ...label('Axon terminal\n(sending neuron)', 60, 200, [335, 222], [478, 300], 'left', 32),
+          ...label('Synaptic cleft (gap)', 60, 475, [365, 475], [520, 475], 'left', 32),
+          ...label('Synaptic vesicles', 1560, 300, [1285, 300], [982, 292], 'right', 32),
+          ...label('Neurotransmitters', 1560, 445, [1275, 448], [828, 455], 'right', 32),
+          ...label('Receptors', 1560, 600, [1392, 600], [1060, 540], 'right', 32),
+          { type: 'text', x: 800, y: 760, text: 'Dendrite (receiving neuron)', size: 36, font: 'sans', color: 'ink', align: 'center' },
+        ],
+      },
+      // Slide 4: where signals go next (dendrites -> cell body, animated).
+      {
+        say: 'From the dendrites, signals flow inward to the cell body.',
+        clear: true,
+        items: [
+          title('Where signals go next'),
+          { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'flow')) },
+          ...inwardArrows,
+          ...inwardPaths.map((path, i) => ({ type: 'mover', path, smooth: true, r: 8, color: SIGNAL, speed: 2.2 + (i % 4) * 0.3, with: i > 0 })),
+          { type: 'pulse', x: soma.x, y: soma.y, r: 95, color: SIGNAL, speed: 2, with: true },
+          ...label('Dendrites', 70, 845, [130, 820], [175, 745], 'left', 32),
+          ...label('Cell body', 640, 300, [620, 318], [445, 420], 'center', 32),
+          note('Signals flow from the dendrites\ninto the cell body', 1000, 650),
+        ],
+      },
+      // Slide 5: why their shape matters (many branches, many connections).
+      {
+        say: 'Lots of branches mean lots of connections, so one neuron can listen to many others.',
+        clear: true,
+        items: [
+          title('Why dendrites’ shape matters'),
+          { type: 'svg', svg: branchesSvg },
+          ...SHAPE_LABELS(),
         ],
       },
     ],
   });
+
+  function SHAPE_LABELS() {
+    return [
+      ...label('Branches', 80, 175, [195, 192], [372, 292], 'left', 32),
+      ...label('Cell body', 1470, 285, [1470, 307], [1470, 372], 'center', 32),
+      note('More branches = more connections\n= more signals received', 1290, 160, 'center', 'ink'),
+      note('Each colour is a signal coming\nfrom a different neuron', 1340, 820),
+      { type: 'line', from: [1190, 805], to: [1112, 752], color: DARK, width: 2.5, rough: false },
+      { type: 'circle', x: 1112, y: 752, r: 5, color: DARK, width: 2, fill: DARK, fillOpacity: 1, rough: false },
+    ];
+  }
 })();
