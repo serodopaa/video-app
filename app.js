@@ -12,7 +12,10 @@
   const W = 1600;
   const H = 900;
   const FONT = '"Caveat", "Comic Sans MS", cursive';
-  const SANS = 'Inter, system-ui, -apple-system, sans-serif';
+  // Font for built-in titles and labels (text items with font: 'sans'). It must
+  // also be loaded in index.html (Google Fonts link) with weights 600 and 700.
+  const LABEL_FONT = window.WB_LABEL_FONT || 'Inter';
+  const SANS = `"${LABEL_FONT}", system-ui, -apple-system, sans-serif`;
 
   const COLORS = {
     ink: '#1f2430',
