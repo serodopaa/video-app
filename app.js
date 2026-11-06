@@ -14,7 +14,7 @@
   const FONT = '"Caveat", "Comic Sans MS", cursive';
   // Font for built-in titles and labels (text items with font: 'sans'). It must
   // also be loaded in index.html (Google Fonts link) with weights 600 and 700.
-  const LABEL_FONT = window.WB_LABEL_FONT || 'Inter';
+  const LABEL_FONT = window.WB_LABEL_FONT || 'Manrope';
   const SANS = `"${LABEL_FONT}", system-ui, -apple-system, sans-serif`;
 
   const COLORS = {
@@ -800,7 +800,7 @@
     ctx.save();
     if (s.kind === 'text') {
       ctx.globalAlpha = f;
-      ctx.font = `500 ${s.size}px ${FONT}`;
+      ctx.font = s.font === 'sans' ? `600 ${s.size}px ${SANS}` : `500 ${s.size}px ${FONT}`;
       ctx.fillStyle = col(s.color);
       ctx.textBaseline = 'top';
       String(s.text).split('\n').forEach((line, i) => ctx.fillText(line, s.pts[0][0], s.pts[0][1] + i * s.size * 1.15));
@@ -844,7 +844,7 @@
   function hits(s, x, y, rad) {
     if (s.kind === 'text') {
       const lines = String(s.text).split('\n');
-      measureCtx.font = `500 ${s.size}px ${FONT}`;
+      measureCtx.font = s.font === 'sans' ? `600 ${s.size}px ${SANS}` : `500 ${s.size}px ${FONT}`;
       const w = Math.max(...lines.map((l) => measureCtx.measureText(l).width));
       const h = lines.length * s.size * 1.15;
       return x >= s.pts[0][0] - rad && x <= s.pts[0][0] + w + rad && y >= s.pts[0][1] - rad && y <= s.pts[0][1] + h + rad;
@@ -1036,7 +1036,7 @@
   function openTextEntry(x, y) {
     const r = canvas.getBoundingClientRect();
     const sr = stage.getBoundingClientRect();
-    const size = (state.size * 6 + 12) / view.z;
+    const size = (state.size * 4 + 12) / view.z; // ~24 / 36 / 60 px for thin / medium / thick
     const input = document.createElement('input');
     input.className = 'text-entry';
     input.placeholder = 'Type, then Enter';
@@ -1052,7 +1052,7 @@
       done = true;
       if (keep && input.value.trim()) {
         snapshot();
-        strokes.push({ kind: 'text', color: state.color, size, text: input.value, pts: [[x, y]], dur: 0.6 });
+        strokes.push({ kind: 'text', font: 'sans', color: state.color, size, text: input.value, pts: [[x, y]], dur: 0.6 });
         saveInk();
       }
       input.remove();

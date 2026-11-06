@@ -147,7 +147,8 @@ button, select {
   background: rgba(255, 255, 255, 0.9);
   outline: none;
   padding: 0 4px;
-  font-family: Caveat, cursive;
+  font-family: Manrope, Inter, system-ui, sans-serif;
+  font-weight: 600;
   z-index: 5;
 }
 

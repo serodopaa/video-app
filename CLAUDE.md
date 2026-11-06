@@ -60,7 +60,7 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 
 | type | props |
 |---|---|
-| `text` | `x, y` (y = middle of first line), `text` (`\n` for new lines), `size`=48, `color`, `align` left/center/right, `bold`, `font: 'sans'` (clean font instead of handwriting), `anim` type/fade/pop |
+| `text` | `x, y` (y = middle of first line), `text` (`\n` for new lines), `size`=48, `color`, `align` left/center/right, `bold`, `font: 'sans'` (the clean label font, Manrope = `LABEL_FONT` in app.js; use it for all built-in text), `anim` type/fade/pop |
 | `line` / `arrow` | `from:[x,y]`, `to:[x,y]`, `bend` (curve, px, ±), `color`, `width`=5, `dashed` |
 | `rect` | `x, y, w, h`, `color`, `width`, `fill`, `fillOpacity`=0.25, `dashed` |
 | `circle` | `x, y, r` (or `rx, ry`), same style props as rect |
