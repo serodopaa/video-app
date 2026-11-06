@@ -48,14 +48,51 @@
   ];
   const dendrites = [...trunks, ...branchesN, ...twigs];
   const axonPath = 'M535 470 C700 452 850 492 1000 468 S1180 474 1240 470';
-  const terminalBranches = [
-    ['M1240 470 Q1290 430 1330 380', 9], ['M1240 470 Q1300 465 1370 455', 9],
-    ['M1240 470 Q1295 500 1340 545', 9], ['M1240 470 Q1268 540 1280 600', 8],
-    ['M1330 380 Q1345 350 1368 336', 5], ['M1330 380 Q1365 386 1394 376', 5],
-    ['M1370 455 Q1405 440 1430 430', 5], ['M1370 455 Q1400 476 1424 490', 5],
-    ['M1340 545 Q1370 556 1400 570', 5], ['M1280 600 Q1290 630 1310 655', 5],
+  // Sample the axon so things can be placed along it by distance from the cell body.
+  const axonSegs = [
+    [[535, 470], [700, 452], [850, 492], [1000, 468]],
+    [[1000, 468], [1150, 444], [1180, 474], [1240, 470]], // 'S' = mirrored first control point
   ];
-  const boutons = [[1368, 336], [1394, 376], [1430, 430], [1424, 490], [1400, 570], [1310, 655]];
+  const axonSamples = [];
+  axonSegs.forEach(([a, b, c, d], si) => {
+    for (let i = si ? 1 : 0; i <= 120; i++) {
+      const t = i / 120, u = 1 - t;
+      axonSamples.push([0, 1].map((k) => u * u * u * a[k] + 3 * u * u * t * b[k] + 3 * u * t * t * c[k] + t * t * t * d[k]));
+    }
+  });
+  const axonLen = [0];
+  for (let i = 1; i < axonSamples.length; i++) {
+    axonLen.push(axonLen[i - 1] + Math.hypot(axonSamples[i][0] - axonSamples[i - 1][0], axonSamples[i][1] - axonSamples[i - 1][1]));
+  }
+  const axonPointsBetween = (from, to) => axonSamples.filter((_, i) => axonLen[i] >= from && axonLen[i] <= to);
+  const axonAt = (d) => axonSamples[Math.max(0, axonLen.findIndex((l) => l >= d))];
+
+  // Myelin sheath: insulating wraps along the axon, with small gaps between
+  // them (nodes of Ranvier). The start of the axon and its very end are bare.
+  const SHEATH_LEN = 128, NODE_GAP = 18, SHEATH_START = 78;
+  const sheaths = [0, 1, 2, 3].map((i) => {
+    const a = SHEATH_START + i * (SHEATH_LEN + NODE_GAP);
+    return { a, b: a + SHEATH_LEN, pts: axonPointsBetween(a, a + SHEATH_LEN) };
+  });
+  const polyD = (pts) => 'M' + pts.map((p) => p.map(f1).join(',')).join(' L');
+  const myelinMarkup = sheaths.map(({ pts }) =>
+    `<path d="${polyD(pts)}" stroke="#a9802f" stroke-width="38" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="${polyD(pts)}" stroke="#f5e4b8" stroke-width="32" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="${polyD(pts.map(([x, y]) => [x, y - 7]))}" stroke="#fffaf0" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>` +
+    `<path d="${polyD(pts.map(([x, y]) => [x, y + 8]))}" stroke="#e2c98a" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>`).join('');
+  const nodeOfRanvier = axonAt(SHEATH_START + SHEATH_LEN + NODE_GAP / 2 + 2 * (SHEATH_LEN + NODE_GAP));
+
+  // A single axon terminal: a rounded bulb at the end of the axon, packed
+  // with vesicles full of neurotransmitters. One vesicle is releasing them.
+  const terminal = { x: 1290, y: 470 };
+  const terminalD = 'M1228 462 C1248 457 1252 418 1290 416 C1328 414 1348 444 1348 470 C1348 496 1328 526 1290 524 C1252 522 1248 483 1228 478 Z';
+  const vesiclePts = [[1268, 447], [1297, 438], [1324, 452], [1282, 473], [1311, 479], [1266, 499], [1296, 505], [1324, 498]];
+  const vesicleMarkup = (P) => vesiclePts.map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="11" fill="#ffffff" fill-opacity="0.85" stroke="${P.outline}" stroke-width="2"/>` +
+    [[-4, -3], [4, -2], [0, 4]].map(([a, b]) => `<circle cx="${x + a}" cy="${y + b}" r="2.6" fill="#f08c1a"/>`).join('')).join('') +
+    // vesicle fusing with the membrane at the tip, spilling neurotransmitters out
+    `<circle cx="1336" cy="470" r="10" fill="#ffffff" fill-opacity="0.85" stroke="${P.outline}" stroke-width="2"/>` +
+    [[1352, 462], [1358, 474], [1351, 482], [1364, 466]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#f08c1a"/>`).join('');
 
   const soma = { x: 380, y: 470 };
   const somaPts = [];
@@ -81,7 +118,7 @@
     <radialGradient id="nucG-${id}" cx="38%" cy="35%" r="70%">
       <stop offset="0" stop-color="${P.n0}"/><stop offset="1" stop-color="${P.n1}"/>
     </radialGradient>
-    <radialGradient id="boutonG-${id}" cx="35%" cy="35%" r="70%">
+    <radialGradient id="boutonG-${id}" cx="40%" cy="35%" r="75%">
       <stop offset="0" stop-color="${P.b0}"/><stop offset="1" stop-color="${P.b1}"/>
     </radialGradient>
     <linearGradient id="axonG-${id}" x1="0" y1="0" x2="0" y2="1">
@@ -93,19 +130,19 @@
   </defs>
   <g filter="url(#shadow-${id})">
     ${strokes(dendrites, P.outline, 5)}
-    ${strokes(terminalBranches, P.outline, 5)}
     <path d="${axonPath}" stroke="${P.outline}" stroke-width="19" fill="none" stroke-linecap="round"/>
     <path d="${hillockD}" fill="${P.outline}" stroke="${P.outline}" stroke-width="6" stroke-linejoin="round"/>
     <path d="${somaD}" fill="${P.outline}" stroke="${P.outline}" stroke-width="6" stroke-linejoin="round"/>
-    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="${P.outline}"/>`).join('')}
+    <path d="${terminalD}" fill="${P.outline}" stroke="${P.outline}" stroke-width="6" stroke-linejoin="round"/>
     ${strokes(dendrites, P.fill, 0)}
-    ${strokes(terminalBranches, P.fill, 0)}
     <path d="${axonPath}" stroke="url(#axonG-${id})" stroke-width="13" fill="none" stroke-linecap="round"/>
     <path d="${hillockD}" fill="${P.fill}"/>
     <path d="${somaD}" fill="url(#somaG-${id})"/>
-    ${boutons.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13" fill="url(#boutonG-${id})"/>`).join('')}
+    <path d="${terminalD}" fill="url(#boutonG-${id})"/>
   </g>
   <path d="${axonPath}" transform="translate(0,-3)" stroke="${P.shine}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <g filter="url(#shadow-${id})">${myelinMarkup}</g>
+  ${vesicleMarkup(P)}
   ${granulePts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${P.gran}" opacity="0.45"/>`).join('')}
   <circle cx="${soma.x}" cy="${soma.y}" r="32" fill="url(#nucG-${id})" stroke="${P.nStroke}" stroke-width="2"/>
   <circle cx="${soma.x + 8}" cy="${soma.y - 6}" r="9" fill="${P.nl}"/>
@@ -128,7 +165,7 @@
   // ---------- slide 2: two neurons ----------
   const S2 = 0.52;
   const n1 = { tx: -4, ty: 236 };   // sending neuron (blue)
-  const n2 = { tx: 726, ty: 236 };  // receiving neuron (purple)
+  const n2 = { tx: 690, ty: 236 };  // receiving neuron (purple)
   const at = (n, x, y) => [Math.round(x * S2 + n.tx), Math.round(y * S2 + n.ty)];
   const twoNeuronsSvg = svgDoc(
     `<g transform="translate(${n1.tx} ${n1.ty}) scale(${S2})">${neuronMarkup(BLUE, 'n1')}</g>` +
@@ -327,10 +364,13 @@
         items: [
           { type: 'text', x: 800, y: 80, text: 'How a neuron works', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
           { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'main')) },
-          ...label('Dendrites', 70, 120, [150, 140], [205, 236], 'left'),
-          ...label('Cell body', 610, 330, [600, 348], [425, 425]),
-          ...label('Axon', 850, 620, [850, 598], [850, 480]),
-          ...label('Axon terminals', 1440, 250, [1420, 272], [1382, 340]),
+          ...label('Dendrites', 70, 120, [150, 140], [205, 236], 'left', 34),
+          ...label('Cell body', 560, 300, [545, 318], [425, 425], 'center', 34),
+          ...label('Axon hillock', 560, 640, [555, 618], [500, 488], 'center', 34),
+          ...label('Myelin sheath', 880, 330, [880, 352], axonAt(sheaths[1].a + 70).map((v, k) => Math.round(v - [0, 16][k])), 'center', 34),
+          ...label('Axon', 1060, 640, [1060, 618], nodeOfRanvier.map(Math.round), 'center', 34),
+          ...label('Axon terminal', 1420, 300, [1395, 322], [1318, 428], 'center', 34),
+          ...label('Vesicles with\nneurotransmitters', 1300, 640, [1300, 612], [1296, 512], 'center', 30),
         ],
       },
       // Slide 2: their main function. One neuron passes a signal to the next one's dendrites.
@@ -342,9 +382,9 @@
           { type: 'svg', svg: twoNeuronsSvg },
           signalArrow(at(n1, 560, 400), at(n1, 1220, 400)),
           note('Signal travels down the axon', ...at(n1, 890, 340)),
-          signalArrow([712, 380], [850, 360], -45),
+          signalArrow(at(n1, 1300, 390), at(n2, 230, 300), -45),
           note('…and is picked up by the\nnext neuron’s dendrites', 780, 220),
-          { type: 'circle', x: 772, y: 485, r: 78, color: '#8a8f98', width: 3, dashed: true, rough: false },
+          { type: 'circle', x: 714, y: 480, r: 62, color: '#8a8f98', width: 3, dashed: true, rough: false },
           ...label('Neuron 1 (sending)', ...at(n1, 760, 900), at(n1, 760, 830), at(n1, 760, 485), 'center', 32),
           ...label('Neuron 2 (receiving)', ...at(n2, 760, 900), at(n2, 760, 830), at(n2, 760, 485), 'center', 32),
           ...label('Dendrites', ...at(n2, 120, 905), at(n2, 140, 840), at(n2, 180, 690), 'center', 32),
