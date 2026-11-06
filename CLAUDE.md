@@ -37,6 +37,11 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
       clear: false,           // true = start a new slide (hides earlier steps)
       drawn: false,           // optional per-step override of the scene setting
+      // Animation buttons for this slide: shown in the toolbar (never recorded) only
+      // while the slide is on screen; keys 1-9 press them, Shift+R / ↺ resets.
+      // Pressing plays `items` (normal animated timing); pressing again replays.
+      // A slide item with `hideDuring: '<id>'` is hidden once that action runs.
+      actions: [{ id: 'release', label: 'Release neurotransmitters', items: [ /* items */ ] }],
       items: [ /* items below */ ],
     },
   ],
@@ -60,6 +65,7 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `highlight` | `x, y, w, h`, `color`=yellow, `opacity`. Marker sweep behind text |
 | `mover` | `path:[[x,y],...]`, `char` (emoji) or dot (`r`, `color`), `count`, `speed` (s per trip), `smooth`, `showPath`, `once`. Loops forever |
 | `svg` | `svg` (full SVG markup string), `x, y, w, h` (default: whole board 0,0,1600,900). For detailed, realistic illustrations; use a `viewBox="0 0 1600 900"` so its coordinates match the board |
+| `vesicle` | `x, y`, `r`=11 (a bubble of neurotransmitters). With `path` it moves along it; with `fuse: true` it moves in the first 60% of its time, then merges into the membrane and disappears |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.

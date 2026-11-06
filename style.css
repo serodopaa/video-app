@@ -81,6 +81,16 @@ button, select {
 
 .zoom-label { min-width: 58px !important; justify-content: center; font-size: 13px !important; font-variant-numeric: tabular-nums; }
 
+.group[hidden] { display: none; }
+.toolbar button.action-btn {
+  background: #fff4e5;
+  border-color: #f0b46a;
+  color: #8a4b00;
+  font-size: 13px;
+  font-weight: 600;
+}
+.toolbar button.action-btn:hover { background: #ffe8c7; }
+
 .size i {
   display: block;
   border-radius: 50%;

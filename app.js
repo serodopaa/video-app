@@ -266,9 +266,12 @@
       case 'mover':
         pts = item.smooth ? catmull(item.path, false) : item.path.slice();
         break;
+      case 'vesicle':
+        pts = item.path ? (item.smooth ? catmull(item.path, false) : item.path.slice()) : null;
+        break;
     }
     if (pts) {
-      if (item.type === 'mover') {
+      if (item.type === 'mover' || item.type === 'vesicle') {
         item._pts = resample(pts, 6);
       } else {
         item._pts = item.rough === false || item._static ? resample(pts, 10) : wobble(resample(pts, 12), seed);
@@ -420,6 +423,33 @@
         }
         break;
       }
+      case 'vesicle': {
+        // A vesicle (bubble of neurotransmitters). With a `path` it travels to
+        // the membrane in the first 60% of its time; with `fuse` it then merges
+        // into the membrane and disappears.
+        let x = item.x, y = item.y, k = 1;
+        if (item._pts) {
+          [x, y] = pointAt(item._pts, item._cum, easeInOut(clamp(p / (item.fuse ? 0.6 : 1))));
+          if (item.fuse) k = 1 - clamp((p - 0.6) / 0.4);
+        }
+        if (k <= 0 || (!item._pts && p <= 0)) break;
+        const rr = (item.r || 11) * (0.55 + 0.45 * k);
+        ctx.globalAlpha = base * Math.min(1, k * 1.4);
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.strokeStyle = col(item.color || '#5e2f78');
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = col(item.dot || '#f08c1a');
+        for (const [a, b] of [[-4, -3], [4, -2], [0, 4]]) {
+          ctx.beginPath();
+          ctx.arc(x + a * (rr / 11), y + b * (rr / 11), 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
       case 'pulse': {
         const r = item.r || 40;
         const period = item.speed || 1.6;
@@ -465,7 +495,11 @@
 
   // ---------- scenes ----------
   const scenes = [{ id: 'blank', title: '✏️ Blank board', steps: [] }, ...(window.WB_SCENES || [])];
-  scenes.forEach((s) => s.steps.forEach((step, i) => layoutStep(step, i, s)));
+  scenes.forEach((s) => s.steps.forEach((step, i) => {
+    layoutStep(step, i, s);
+    // Action buttons: their items animate normally (never "static").
+    (step.actions || []).forEach((act, j) => { act.id = act.id || `a${i}-${j}`; layoutStep(act, i * 10 + j, { drawn: true }); });
+  }));
 
   const player = { scene: scenes[0], step: -1, slide: 0, t0: 0, playing: false, waitingForVoice: false };
 
@@ -505,12 +539,54 @@
     return player.scene.steps.length ? slideOf(player.scene.steps.length - 1) + 1 : 0;
   }
 
+  // ---------- slide action buttons ----------
+  // A step can have `actions: [{ label, items }]`. Each becomes a button in the
+  // toolbar (never in the recording) while its slide is shown. Pressing it plays
+  // the items; pressing again replays. Items with `hideDuring: '<action id>'`
+  // are hidden while that action is playing/played (e.g. a vesicle that moves).
+  const actionRuns = new Map(); // action id -> start time
+  const actionsBox = document.getElementById('slideActions');
+  function slideActions() {
+    const steps = player.scene.steps;
+    if (player.step < 0) return [];
+    let first = player.step;
+    while (first > 0 && !steps[first].clear) first--;
+    const list = [];
+    for (let i = first; i <= player.step; i++) list.push(...(steps[i].actions || []));
+    return list;
+  }
+  function runAction(a) {
+    actionRuns.set(a.id, now());
+  }
+  function renderActionButtons() {
+    if (!actionsBox) return;
+    const list = slideActions();
+    actionsBox.innerHTML = '';
+    actionsBox.hidden = !list.length;
+    list.forEach((a, k) => {
+      const b = document.createElement('button');
+      b.className = 'action-btn';
+      b.textContent = `▶ ${a.label}`;
+      b.title = `Play this animation (key ${k + 1}). It only appears on this slide and is not shown in recordings.`;
+      b.addEventListener('click', () => runAction(a));
+      actionsBox.appendChild(b);
+    });
+    if (list.length) {
+      const reset = document.createElement('button');
+      reset.textContent = '↺';
+      reset.title = 'Reset this slide’s animations (R)';
+      reset.addEventListener('click', () => actionRuns.clear());
+      actionsBox.appendChild(reset);
+    }
+  }
+
   function goTo(i, animate = true) {
     const steps = player.scene.steps;
     player.step = clamp(i, -1, steps.length - 1);
     const slide = slideOf(player.step);
     if (slide !== player.slide) {
       zoomFit();
+      actionRuns.clear();
       stashHistory();
       saveInk();
       player.slide = slide;
@@ -523,6 +599,7 @@
     els.caption.textContent = step ? step.say || '' : player.scene.intro || (steps.length ? 'Press ▶ Play or ⏭ to start the explainer. You can draw on the board at any time.' : 'Draw anything. Pick an explainer from the menu to watch an animation.');
     if (step && animate) speak(step.say);
     updateLabels();
+    renderActionButtons();
   }
 
   function updateLabels() {
@@ -561,6 +638,7 @@
     els.narrate.parentElement.style.display = player.scene.audio === false ? 'none' : '';
     replay.active = false;
     player.slide = 0;
+    actionRuns.clear();
     zoomFit(true);
     loadInk();
     // Slide-based explainers (drawn: false) open straight on slide 1.
@@ -946,10 +1024,17 @@
     for (let i = first; i <= player.step; i++) {
       const elapsed = i < player.step ? Infinity : t - player.t0;
       for (const item of steps[i].items || []) {
+        if (item.hideDuring && actionRuns.has(item.hideDuring)) continue; // an action is animating it
         const p = clamp((elapsed - item._start) / item._dur);
         const tip = renderItem(item, p, t);
         if (tip) tips.push(tip);
       }
+    }
+    // animations started with the slide's action buttons
+    for (const a of slideActions()) {
+      if (!actionRuns.has(a.id)) continue;
+      const elapsed = t - actionRuns.get(a.id);
+      for (const item of a.items) renderItem(item, clamp((elapsed - item._start) / item._dur), t);
     }
 
     // your ink
@@ -1041,6 +1126,8 @@
     else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());
     else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.5, ...viewCenter());
     else if (e.key === '0') zoomFit();
+    else if (/^[1-9]$/.test(e.key) && slideActions()[+e.key - 1]) runAction(slideActions()[+e.key - 1]);
+    else if (e.key === 'R' && e.shiftKey) actionRuns.clear();
     else if (KEYS[k]) setTool(KEYS[k]);
   });
   document.getElementById('zoomIn').addEventListener('click', () => zoomAt(1.5, ...viewCenter()));
