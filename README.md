@@ -19,6 +19,8 @@ Open `index.html` in any browser. No install needed.
   fingers (or use **✋ Move**) to look around while zoomed. Click the **%** button or press **0** to
   see the whole slide again. Changing slides zooms back out. Recordings capture the zoom too.
   Cmd + plus / minus / 0 control the board zoom too (not Chrome's page zoom, which isn't recorded).
+- **✋ Move:** drag any of your drawings or text boxes to move them (undo puts them back). Drag
+  empty space to look around when zoomed in.
 Keyboard: P pen · H marker · L line · A arrow · R box · O circle · T text · E eraser · M move · + / − / 0 zoom · Space play/pause.
 
 ## Recording videos (for YouTube)

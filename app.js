@@ -689,10 +689,12 @@
     return [view.x + ((e.clientX - r.left) / r.width) * W / view.z, view.y + ((e.clientY - r.top) / r.height) * H / view.z];
   }
 
+  const measureCtx = document.createElement('canvas').getContext('2d');
   function hits(s, x, y, rad) {
     if (s.kind === 'text') {
       const lines = String(s.text).split('\n');
-      const w = Math.max(...lines.map((l) => l.length)) * s.size * 0.45;
+      measureCtx.font = `500 ${s.size}px ${FONT}`;
+      const w = Math.max(...lines.map((l) => measureCtx.measureText(l).width));
       const h = lines.length * s.size * 1.15;
       return x >= s.pts[0][0] - rad && x <= s.pts[0][0] + w + rad && y >= s.pts[0][1] - rad && y <= s.pts[0][1] + h + rad;
     }
@@ -707,7 +709,31 @@
     return strokes.length !== before;
   }
 
+  // Your topmost drawing or text under a board point (within a few screen pixels).
+  function inkAt(x, y) {
+    for (let i = strokes.length - 1; i >= 0; i--) if (hits(strokes[i], x, y, 8 / view.z)) return i;
+    return -1;
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
+    // Move tool: drag one of your drawings / text boxes to move it.
+    if (state.tool === 'pan' && e.button === 0) {
+      const [x, y] = toBoard(e);
+      const i = inkAt(x, y);
+      if (i >= 0) {
+        e.preventDefault();
+        canvas.setPointerCapture(e.pointerId);
+        snapshot();
+        // Work on a copy so undo still has the original position.
+        const copy = { ...strokes[i], pts: strokes[i].pts.map((p) => p.slice()) };
+        strokes = strokes.slice();
+        strokes[i] = copy;
+        current = { kind: 'drag', s: copy, last: [x, y], moved: false };
+        canvas.style.cursor = 'move';
+        return;
+      }
+    }
+    // Move tool on empty space (or middle mouse button): look around when zoomed.
     if (state.tool === 'pan' || e.button === 1) {
       e.preventDefault();
       canvas.setPointerCapture(e.pointerId);
@@ -731,7 +757,17 @@
   canvas.addEventListener('pointermove', (e) => {
     const [px, py] = toBoard(e);
     window.WB.pointer = { x: px, y: py, t: now() };
-    if (!current) return;
+    if (!current) {
+      if (state.tool === 'pan') canvas.style.cursor = inkAt(px, py) >= 0 ? 'move' : 'grab';
+      return;
+    }
+    if (current.kind === 'drag') {
+      const dx = px - current.last[0], dy = py - current.last[1];
+      current.s.pts.forEach((p) => { p[0] += dx; p[1] += dy; });
+      current.last = [px, py];
+      if (dx || dy) current.moved = true;
+      return;
+    }
     if (current.kind === 'pan') {
       const r = canvas.getBoundingClientRect();
       target.x = current.vx - ((e.clientX - current.sx) / r.width) * W / target.z;
@@ -756,6 +792,17 @@
 
   function finishStroke() {
     if (!current) return;
+    if (current.kind === 'drag') {
+      if (current.moved) {
+        current.s.pts = current.s.pts.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
+        saveInk();
+      } else {
+        strokes = undoStack.pop(); // just a click: nothing changed
+      }
+      current = null;
+      setTool(state.tool);
+      return;
+    }
     if (current.kind === 'pan') {
       current = null;
       setTool(state.tool);
@@ -925,7 +972,7 @@
     } else {
       for (const s of strokes) drawStroke(s);
     }
-    if (current && current.kind !== 'eraser' && current.kind !== 'pan') drawStroke(current);
+    if (current && !['eraser', 'pan', 'drag'].includes(current.kind)) drawStroke(current);
 
     tips.forEach((tip) => drawPenTip(tip, tip.color));
   }
