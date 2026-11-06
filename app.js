@@ -617,7 +617,7 @@
     const pause = document.createElement('button');
     pause.className = 'pause-btn' + (clock.paused ? ' active' : '');
     pause.textContent = clock.paused ? '⏵ Resume' : '⏸ Pause';
-    pause.title = 'Pause / resume all animations on the board (K). Not shown in recordings.';
+    pause.title = 'Pause / resume all animations on the board (Q). Not shown in recordings.';
     pause.addEventListener('click', () => setAnimPaused(!clock.paused));
     actionsBox.appendChild(pause);
     const speed = document.createElement('select');
@@ -1195,7 +1195,7 @@
     else if (e.key === 'ArrowLeft') { player.playing = false; goTo(player.step - 1, false); }
     else if (e.key === ' ' && player.scene.drawn === false) { e.preventDefault(); setAnimPaused(!clock.paused); }
     else if (e.key === ' ') { e.preventDefault(); if (player.scene.steps.length) setPlaying(!player.playing); }
-    else if (k === 'k') setAnimPaused(!clock.paused);
+    else if (k === 'k' || k === 'q') setAnimPaused(!clock.paused);
     else if (e.key === '[') stepSpeed(-1);
     else if (e.key === ']') stepSpeed(1);
     else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());

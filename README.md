@@ -25,7 +25,7 @@ Open `index.html` in any browser. No install needed.
   (e.g. slide 1: *Release neurotransmitters*). They only appear on their own slide and are not in
   recordings. Press one (or keys **1–9**) to play it. When it finishes it holds the last frame for
   a second, then the slide resets by itself; **↺** (or **Shift + R**) resets it early.
-- **⏸ Pause** (or **Space** / **K**) freezes every animation mid-way so you can point things out or
+- **⏸ Pause** (or **Q**, **Space** or **K**) freezes every animation mid-way so you can point things out or
   draw on it; press again to carry on.
 - **Speed** (next to Pause, or **[** slower / **]** faster) sets one speed for every animation:
   ¼×, ½×, ¾×, 1×, 1.5×, 2×. It's remembered next time.
