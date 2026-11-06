@@ -105,11 +105,125 @@
   <ellipse cx="${soma.x - 10}" cy="${soma.y - 12}" rx="9" ry="5" fill="#ffffff" opacity="0.25"/>
 </svg>`;
 
+
+  // ---------- slide 2: dendrites up close ----------
+  const quad = (b, t) => [0, 1].map((k) => (1 - t) ** 2 * b.p0[k] + 2 * (1 - t) * t * b.c[k] + t * t * b.p1[k]);
+  const normal = (b, t) => {
+    const d = [0, 1].map((k) => 2 * (1 - t) * (b.c[k] - b.p0[k]) + 2 * t * (b.p1[k] - b.c[k]));
+    const len = Math.hypot(d[0], d[1]) || 1;
+    return [-d[1] / len, d[0] / len];
+  };
+  const widthAt = (b, t) => b.w0 + (b.w1 - b.w0) * t;
+  const add = (p, n, k) => [p[0] + n[0] * k, p[1] + n[1] * k];
+  const f1 = (v) => v.toFixed(1);
+
+  // Tapered branch outline (thick near the cell body, thin at the tip).
+  function taperD(b) {
+    const L = [], R = [];
+    for (let i = 0; i <= 48; i++) {
+      const t = i / 48, p = quad(b, t), n = normal(b, t), w = widthAt(b, t) / 2;
+      L.push(add(p, n, w));
+      R.push(add(p, n, -w));
+    }
+    return 'M' + L.concat(R.reverse()).map((p) => p.map(f1).join(',')).join(' L') + ' Z';
+  }
+
+  // Branches start inside the cell body / parent branch and run to their tips.
+  const trunk = { p0: [1390, 520], c: [850, 560], p1: [240, 450], w0: 80, w1: 26 };
+  const upper = { p0: [840, 512], c: [650, 380], p1: [430, 235], w0: 38, w1: 14 };
+  const lower = { p0: [717, 516], c: [600, 650], p1: [430, 790], w0: 34, w1: 14 };
+  const branches = [trunk, upper, lower];
+
+  // Dendritic spines: little mushroom-shaped bumps where other neurons connect.
+  function spineAt(b, t, side, len, r) {
+    const n = normal(b, t).map((v) => v * side);
+    const base = add(quad(b, t), n, widthAt(b, t) / 2 - 3);
+    return { base, head: add(base, n, len), n, r };
+  }
+  const spines = [];
+  branches.forEach((b, bi) => {
+    const ts = bi === 0 ? [0.12, 0.2, 0.38, 0.45, 0.55, 0.63, 0.72, 0.8, 0.88, 0.95] : [0.18, 0.28, 0.36, 0.6, 0.7, 0.8, 0.9];
+    ts.forEach((t, i) => {
+      const side = (i + bi) % 2 ? 1 : -1;
+      const kind = (i * 7 + bi * 3) % 3; // mushroom, thin, stubby
+      spines.push(spineAt(b, t, side, [26, 30, 14][kind], [11, 7, 10][kind]));
+    });
+  });
+
+  // Synapses: an axon terminal from another neuron meets a spine.
+  const synapses = [
+    spineAt(trunk, 0.3, 1, 36, 15),
+    spineAt(upper, 0.48, 1, 34, 15),
+    spineAt(lower, 0.52, -1, 34, 15),
+  ].map((sp) => {
+    const bouton = add(sp.head, sp.n, sp.r + 14 + 26);
+    const perp = [-sp.n[1], sp.n[0]];
+    const axonEnd = add(add(bouton, sp.n, 190), perp, 40);
+    const gap = add(sp.head, sp.n, sp.r + 7);
+    return { ...sp, bouton, axonEnd, gap, perp };
+  });
+
+  const spineMarkup = (list, color, extra) => list.map((sp) =>
+    `<path d="M${sp.base.map(f1)} L${sp.head.map(f1)}" stroke="${color}" stroke-width="${7 + extra}" stroke-linecap="round"/>` +
+    `<circle cx="${f1(sp.head[0])}" cy="${f1(sp.head[1])}" r="${sp.r + extra / 2}" fill="${color}"/>`).join('');
+
+  const dendriteSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="dG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e4cdee"/><stop offset="0.5" stop-color="#c69ad8"/><stop offset="1" stop-color="#ad78c6"/>
+    </linearGradient>
+    <radialGradient id="cbG" cx="30%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#f3e6f8"/><stop offset="0.6" stop-color="#d4afe2"/><stop offset="1" stop-color="#ad78c6"/>
+    </radialGradient>
+    <radialGradient id="axG" cx="35%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#6f9fd8"/>
+    </radialGradient>
+    <filter id="sh2" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#3b1452" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <g filter="url(#sh2)">
+    <!-- axons from other neurons -->
+    ${synapses.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${add(add(s.bouton, s.n, 90), s.perp, -30).map(f1)} ${s.bouton.map(f1)}" stroke="#2c5a92" stroke-width="18" fill="none" stroke-linecap="round"/>`).join('')}
+    ${synapses.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${add(add(s.bouton, s.n, 90), s.perp, -30).map(f1)} ${s.bouton.map(f1)}" stroke="#8fb6e6" stroke-width="12" fill="none" stroke-linecap="round"/>`).join('')}
+    ${synapses.map((s) => `<circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="29" fill="#2c5a92"/><circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="26" fill="url(#axG)"/>`).join('')}
+    ${synapses.map((s) => [[-9, -6], [7, 8], [-4, 10], [10, -9], [2, -2]].map(([a, b]) => { const p = add(add(s.bouton, s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="4.5" fill="#f0a24a" stroke="#c46f12" stroke-width="1"/>`; }).join('')).join('')}
+
+    <!-- dendrite: outlines first, then fills, so joints blend -->
+    ${branches.map((b) => `<path d="${taperD(b)}" fill="${OUTLINE}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2 + 3}" fill="${OUTLINE}"/>`).join('')}
+    ${spineMarkup(spines.concat(synapses), OUTLINE, 6)}
+    <circle cx="1560" cy="520" r="233" fill="${OUTLINE}"/>
+    <!-- side branches and spines first, main trunk last so the joints are seamless -->
+    ${[upper, lower, trunk].map((b) => `<path d="${taperD(b)}" fill="url(#dG)"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2}" fill="#c69ad8"/>`).join('')}
+    ${spineMarkup(spines.concat(synapses), FILL, 0)}
+    <path d="${taperD(trunk)}" fill="url(#dG)"/>
+    <circle cx="1560" cy="520" r="230" fill="url(#cbG)"/>
+  </g>
+  <!-- receptors on the spine heads, facing each terminal -->
+  ${synapses.map((s) => { const c = add(s.head, s.n, s.r - 2); const a = add(c, s.perp, 11), b = add(c, s.perp, -11); return `<path d="M${a.map(f1)} L${b.map(f1)}" stroke="#2e9e5b" stroke-width="6" stroke-linecap="round"/>`; }).join('')}
+  <!-- neurotransmitter molecules crossing the gap -->
+  ${synapses.map((s) => [[-6, 0], [5, 3], [0, -4]].map(([a, b]) => { const p = add(add(s.gap, s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="3" fill="#f08c1a"/>`; }).join('')).join('')}
+  ${[[1450, 420], [1500, 600], [1420, 650], [1530, 380], [1470, 520]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="#7c4797" opacity="0.4"/>`).join('')}
+</svg>`;
+
   // Textbook-style label: clean text with a thin leader line ending in a dot.
   const label = (text, x, y, lineFrom, target, align = 'center') => [
     { type: 'text', x, y, text, size: 36, font: 'sans', color: 'ink', align },
     { type: 'line', from: lineFrom, to: target, color: '#3b4252', width: 2.5, rough: false },
     { type: 'circle', x: target[0], y: target[1], r: 5, color: '#3b4252', width: 2, fill: '#3b4252', fillOpacity: 1, rough: false },
+  ];
+
+  const [syn1, , syn3] = synapses;
+  const DENDRITE_LABELS = [
+    ...label('Dendrite', 1226, 300, [1226, 322], quad(trunk, 0.15).map(Math.round)),
+    ...label('Synapse', 985, 360, [990, 372], syn1.gap.map(Math.round), 'right'),
+    ...label('Dendritic spine', 250, 625, [290, 605], [381, 505]),
+    { type: 'text', x: 800, y: 770, text: 'Axon terminal\n(from another neuron)', size: 32, font: 'sans', color: 'ink' },
+    { type: 'line', from: [794, 772], to: syn3.bouton.map((v, k) => Math.round(v + [22, 6][k])), color: '#3b4252', width: 2.5, rough: false },
+    { type: 'circle', x: Math.round(syn3.bouton[0] + 22), y: Math.round(syn3.bouton[1] + 6), r: 5, color: '#3b4252', width: 2, fill: '#3b4252', fillOpacity: 1, rough: false },
+    ...label('Cell body', 1460, 822, [1460, 798], [1460, 712]),
+    { type: 'arrow', from: [830, 628], to: [1290, 628], color: 'gray', width: 4, rough: false },
+    { type: 'text', x: 1060, y: 664, text: 'Signals travel toward the cell body', size: 28, font: 'sans', color: 'gray', align: 'center' },
   ];
 
   (window.WB_SCENES = window.WB_SCENES || []).push({
@@ -128,6 +242,16 @@
           ...label('Cell body', 610, 330, [600, 348], [425, 425]),
           ...label('Axon', 850, 620, [850, 598], [850, 480]),
           ...label('Axon terminals', 1440, 250, [1420, 272], [1382, 340]),
+        ],
+      },
+      // Slide 2: dendrites in more detail.
+      {
+        say: 'Dendrites are covered in tiny spines. Each spine is a spot where another neuron passes on its signal.',
+        clear: true,
+        items: [
+          { type: 'text', x: 800, y: 70, text: 'Dendrites up close', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
+          { type: 'svg', svg: dendriteSvg },
+          ...DENDRITE_LABELS,
         ],
       },
     ],

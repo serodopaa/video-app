@@ -424,7 +424,7 @@
   const scenes = [{ id: 'blank', title: '✏️ Blank board', steps: [] }, ...(window.WB_SCENES || [])];
   scenes.forEach((s) => s.steps.forEach((step, i) => layoutStep(step, i, s)));
 
-  const player = { scene: scenes[0], step: -1, t0: 0, playing: false, waitingForVoice: false };
+  const player = { scene: scenes[0], step: -1, slide: 0, t0: 0, playing: false, waitingForVoice: false };
 
   const els = {
     select: document.getElementById('sceneSelect'),
@@ -451,9 +451,29 @@
     speechSynthesis.speak(u);
   }
 
+  // Slides: a step with `clear: true` starts a new slide. Each slide has its
+  // own drawing layer, so your ink stays with the slide you drew it on.
+  function slideOf(stepIndex) {
+    let s = 0;
+    for (let j = 1; j <= stepIndex; j++) if (player.scene.steps[j].clear) s++;
+    return s;
+  }
+  function slideCount() {
+    return player.scene.steps.length ? slideOf(player.scene.steps.length - 1) + 1 : 0;
+  }
+
   function goTo(i, animate = true) {
     const steps = player.scene.steps;
     player.step = clamp(i, -1, steps.length - 1);
+    const slide = slideOf(player.step);
+    if (slide !== player.slide) {
+      stashHistory();
+      saveInk();
+      player.slide = slide;
+      replay.active = false;
+      current = null;
+      loadInk();
+    }
     player.t0 = animate ? now() : -Infinity;
     const step = steps[player.step];
     els.caption.textContent = step ? step.say || '' : player.scene.intro || (steps.length ? 'Press ▶ Play or ⏭ to start the explainer. You can draw on the board at any time.' : 'Draw anything. Pick an explainer from the menu to watch an animation.');
@@ -463,7 +483,18 @@
 
   function updateLabels() {
     const n = player.scene.steps.length;
-    els.label.textContent = n ? `Step ${Math.max(0, player.step + 1)} / ${n}` : '';
+    if (!n) {
+      els.label.textContent = '';
+    } else {
+      const steps = player.scene.steps;
+      const si = Math.max(0, player.step);
+      let first = si, last = si;
+      while (first > 0 && !steps[first].clear) first--;
+      while (last + 1 < n && !steps[last + 1].clear) last++;
+      const inSlide = last - first + 1;
+      els.label.textContent = `Slide ${player.step < 0 ? 0 : slideOf(si) + 1} / ${slideCount()}` +
+        (inSlide > 1 && player.step >= 0 ? ` · part ${si - first + 1}/${inSlide}` : '');
+    }
     els.play.textContent = player.playing ? '⏸ Pause' : '▶ Play';
     els.play.disabled = els.prev.disabled = els.next.disabled = n === 0;
   }
@@ -477,6 +508,7 @@
   }
 
   function loadScene(index) {
+    stashHistory();
     saveInk();
     player.scene = scenes[index];
     player.playing = false;
@@ -484,6 +516,7 @@
     // Scenes with audio: false are always silent, so hide the Narrate toggle.
     els.narrate.parentElement.style.display = player.scene.audio === false ? 'none' : '';
     replay.active = false;
+    player.slide = 0;
     loadInk();
     goTo(-1, false);
   }
@@ -513,15 +546,21 @@
   let current = null;
   let inkLoaded = false;
 
-  const storeKey = () => 'wb-ink-' + player.scene.id;
+  const storeKey = () => 'wb-ink-' + player.scene.id + (player.slide ? '-s' + player.slide : '');
+  const historyBySlide = new Map(); // undo/redo kept per slide while the page is open
+  // Call before switching slide/scene: remembers undo/redo for the old one.
+  function stashHistory() {
+    if (inkLoaded) historyBySlide.set(storeKey(), { undo: undoStack, redo: redoStack });
+  }
   function saveInk() {
     if (!inkLoaded) return;
     try { localStorage.setItem(storeKey(), JSON.stringify(strokes)); } catch (_) { /* storage unavailable */ }
   }
   function loadInk() {
     strokes = [];
-    undoStack = [];
-    redoStack = [];
+    const h = historyBySlide.get(storeKey());
+    undoStack = h ? h.undo : [];
+    redoStack = h ? h.redo : [];
     try {
       const raw = localStorage.getItem(storeKey());
       if (raw) strokes = JSON.parse(raw);

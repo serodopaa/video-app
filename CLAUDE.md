@@ -32,7 +32,7 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
     {
       say: 'Caption shown (and read aloud if Narrate is on).',
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
-      clear: false,           // true = hide everything from earlier steps
+      clear: false,           // true = start a new slide (hides earlier steps)
       drawn: false,           // optional per-step override of the scene setting
       items: [ /* items below */ ],
     },
@@ -73,4 +73,10 @@ Stroke items show a marker pen following the line while drawing.
 - Keep each step short (2–6 items) with a one-sentence `say`.
 - Check new scenes in a headless browser (Playwright) and look at screenshots
   for overlaps before committing.
-- User drawings are saved in `localStorage` per scene (`wb-ink-<id>`).
+- **Slides:** a step with `clear: true` starts a new slide; steps without it add to
+  the current slide. The player shows "Slide N / M". To add a slide, append a
+  step with `clear: true` (comment it `// Slide N: ...`).
+- User drawings belong to a slide: `localStorage` key `wb-ink-<id>` for slide 1,
+  `wb-ink-<id>-s<index>` for later slides (index is 0-based). Undo/redo is per slide.
+  Inserting a slide in the middle shifts which saved drawing goes with which slide,
+  so prefer adding slides at the end.
