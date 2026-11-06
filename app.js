@@ -562,12 +562,14 @@
         ctx.font = `600 28px ${SANS}`;
         ctx.fillText(item.title || 'Membrane potential', x + w / 2, y + 38);
         const rounded = Math.round(v);
-        const stateCol = rounded > base0 ? '#e8890c' : rounded < base0 ? '#2f6fde' : '#1f2430';
+        // With `fireText`, reaching threshold shows it in red (an action potential).
+        const fired = item.fireText && v >= (item.threshold ?? -55);
+        const stateCol = fired ? '#e0453a' : rounded > base0 ? '#e8890c' : rounded < base0 ? '#2f6fde' : '#1f2430';
         ctx.fillStyle = stateCol;
         ctx.font = `700 72px ${SANS}`;
         ctx.fillText(`${rounded < 0 ? '−' : rounded > 0 ? '+' : ''}${Math.abs(rounded)} mV`, x + w / 2, y + 108);
         ctx.font = `600 20px ${SANS}`;
-        ctx.fillText(rounded > base0 ? item.upText || 'Depolarized (less negative)' : rounded < base0 ? item.downText || 'Hyperpolarized (more negative)' : item.restText || 'Resting potential', x + w / 2, y + 160);
+        ctx.fillText(fired ? item.fireText : rounded > base0 ? item.upText || 'Depolarized (less negative)' : rounded < base0 ? item.downText || 'Hyperpolarized (more negative)' : item.restText || 'Resting potential', x + w / 2, y + 160);
         // graph
         const gx = x + 74, gy = y + 196, gw = w - 98, gh = item.graphH || 260;
         const Y = (val) => gy + ((vmax - clamp(val, vmin, vmax)) / (vmax - vmin)) * gh;

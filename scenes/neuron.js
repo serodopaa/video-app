@@ -381,24 +381,6 @@
     ]),
   ];
 
-  // ---------- slide 4: signals flow from the dendrites to the cell body ----------
-  const nums = (d) => d.match(/-?\d+(\.\d+)?/g).map(Number);
-  const trunkGeom = trunks.map(([d]) => { const [x0, y0, cx, cy, x1, y1] = nums(d); return { s: [x0, y0], c: [cx, cy], e: [x1, y1] }; });
-  // One moving signal per branch: tip -> trunk -> cell body.
-  const inwardPaths = branchesN.map(([d]) => {
-    const [bx0, by0, bcx, bcy, bx1, by1] = nums(d);
-    const t = trunkGeom.find((g) => Math.abs(g.e[0] - bx0) < 1 && Math.abs(g.e[1] - by0) < 1);
-    return [[bx1, by1], [bcx, bcy], [bx0, by0], t.c, t.s, [soma.x, soma.y]];
-  });
-  // Arrows run beside each trunk, pointing toward the cell body.
-  const inwardArrows = trunkGeom.map((g) => {
-    const dx = g.e[0] - g.s[0], dy = g.e[1] - g.s[1], len = Math.hypot(dx, dy);
-    const nx = -dy / len, ny = dx / len, off = 30;
-    const from = [g.e[0] + nx * off - (dx / len) * 10, g.e[1] + ny * off - (dy / len) * 10];
-    const to = [g.s[0] + nx * off + (dx / len) * 12, g.s[1] + ny * off + (dy / len) * 12];
-    return { type: 'arrow', from: from.map(Math.round), to: to.map(Math.round), color: SIGNAL, width: 6, rough: false };
-  });
-
   // ---------- slide 5: many branches, many connections ----------
   const quad = (b, t) => [0, 1].map((k) => (1 - t) ** 2 * b.p0[k] + 2 * (1 - t) * t * b.c[k] + t * t * b.p1[k]);
   const normal = (b, t) => {
@@ -605,6 +587,127 @@
     ...releaseFrom(AP_START + AP_TIME + 0.3),
   ];
 
+  // ---------- slide 4: adding up inputs at the axon hillock ----------
+  // The main neuron (scaled down) with two excitatory synapses on top dendrites,
+  // and at the bottom an excitatory synapse at a dendrite tip with an inhibitory
+  // one between it and the cell body. The panel shows the axon hillock potential.
+  const K4 = 0.82, TX4 = 10, TY4 = 85;
+  const S4 = ([x, y]) => [Math.round(x * K4 + TX4), Math.round(y * K4 + TY4)];
+  const EXC = { fill: '#f8cf8f', edge: '#a8640a', nt: '#f08c1a' };
+  const INH = { fill: '#a8e2ea', edge: '#0b6f7e', nt: '#16a3b8' };
+  const norm = ([x, y]) => { const l = Math.hypot(x, y); return [x / l, y / l]; };
+  // [name, contact point on the dendrite (neuron coords), direction the axon comes from, style]
+  const inputs = {
+    E1: { at: [228, 145], dir: norm([-0.35, -1]), st: EXC },
+    E2: { at: [332, 125], dir: norm([0.25, -1]), st: EXC },
+    E3: { at: [248, 828], dir: norm([-0.45, 1]), st: EXC },
+    I: { at: [362, 640], dir: norm([0.75, 1]), st: INH },
+  };
+  for (const s of Object.values(inputs)) {
+    const p = S4(s.at);
+    s.p = p;
+    s.c = [p[0] + s.dir[0] * 30, p[1] + s.dir[1] * 30];               // terminal centre
+    s.axonEnd = [p[0] + s.dir[0] * 700, p[1] + s.dir[1] * 700];       // runs off the board
+  }
+  const terminalsSvg = svgDoc(`<defs>
+    <filter id="sh4" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#13294a" flood-opacity="0.25"/></filter>
+  </defs>
+  <g filter="url(#sh4)">
+  ${Object.values(inputs).map((s) => `
+    <path d="M${s.c.map(f1)} L${s.axonEnd.map(f1)}" stroke="${s.st.edge}" stroke-width="16" stroke-linecap="round"/>
+    <path d="M${s.c.map(f1)} L${s.axonEnd.map(f1)}" stroke="${s.st.fill}" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="${f1(s.c[0])}" cy="${f1(s.c[1])}" r="21" fill="${s.st.edge}"/>
+    <circle cx="${f1(s.c[0])}" cy="${f1(s.c[1])}" r="18" fill="${s.st.fill}"/>
+    ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${f1(s.c[0] + a)}" cy="${f1(s.c[1] + b)}" r="3.2" fill="${s.st.nt}"/>`).join('')}`).join('')}
+  </g>`);
+  // Paths (neuron coords) a signal takes from each synapse to the axon hillock.
+  const HILLOCK = [478, 470];
+  const routes = {
+    E1: [[228, 145], [230, 190], [250, 225], [255, 280], [300, 330], [340, 400], [380, 470], HILLOCK],
+    E2: [[332, 125], [345, 175], [360, 210], [390, 250], [410, 310], [400, 380], [380, 470], HILLOCK],
+    E3: [[248, 828], [268, 815], [285, 790], [300, 750], [330, 710], [360, 640], [365, 560], [380, 470], HILLOCK],
+    I: [[362, 640], [365, 560], [380, 470], HILLOCK],
+  };
+  const BLOCK_AT = 5; // index in E3's route where the inhibitory synapse sits
+  const hillockPt = S4(HILLOCK);
+
+  // A synapse firing at t0: the terminal flashes and an EPSP/IPSP heads to the hillock.
+  const fire = (name, t0, { travel = 1.4, stopAt } = {}) => {
+    const s = inputs[name];
+    const route = (stopAt ? routes[name].slice(0, stopAt + 1) : routes[name]).map(S4);
+    const col = s.st === INH ? INH.nt : SPARK;
+    return [
+      { type: 'flash', x: s.c[0], y: s.c[1], r: 30, color: s.st.nt, duration: 0.5, at: t0 },
+      { type: 'flash', x: s.p[0], y: s.p[1], r: 22, color: col, duration: 0.6, at: t0 + 0.3 },
+      { type: 'mover', once: true, vanish: true, r: 8, color: col, smooth: true, path: route, duration: travel, at: t0 + 0.4 },
+    ];
+  };
+  // The hillock reaches threshold: an action potential fires and runs down the axon.
+  const actionPotential = (t0) => [
+    { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 60, color: AP, duration: 0.8, at: t0 },
+    { type: 'value', id: 'axh', from: -50, to: 30, at: t0, duration: 0.25 },
+    { type: 'value', id: 'axh', from: 30, to: -80, at: t0 + 0.25, duration: 0.55 },
+    { type: 'value', id: 'axh', from: -80, to: REST, at: t0 + 0.8, duration: 1.8 },
+    { type: 'mover', once: true, vanish: true, r: 9, color: AP, path: axonSamples.map(S4), duration: 1.4, at: t0 + 0.1 },
+    ...nodesAlongAxon.map((d) => {
+      const [x, y] = S4(axonAt(d));
+      return { type: 'flash', x, y, r: 22, color: AP, duration: 0.45, at: t0 + 0.1 + (1.4 * d) / 707 };
+    }),
+    { type: 'flash', x: S4([terminal.x, terminal.y])[0], y: S4([terminal.x, terminal.y])[1], r: 55, color: AP, duration: 0.7, at: t0 + 1.5 },
+  ];
+  const bump = (to, t0, back = 1.8) => [
+    { type: 'value', id: 'axh', from: REST, to, at: t0, duration: 0.6 },
+    { type: 'value', id: 'axh', from: to, to: REST, at: t0 + 0.9, duration: back },
+  ];
+  const sumActions = [
+    { id: 'e1', label: 'E1 alone', items: [...fire('E1', 0), ...bump(-62, 1.6), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 34, color: SPARK, duration: 0.6, at: 1.75 }] },
+    {
+      id: 'e1e2', label: 'E1 + E2 together',
+      items: [...fire('E1', 0), ...fire('E2', 0),
+        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 40, color: SPARK, duration: 0.5, at: 1.75 },
+        { type: 'value', id: 'axh', from: REST, to: -50, at: 1.6, duration: 0.45 }, ...actionPotential(2.05)],
+    },
+    {
+      id: 'e3', label: 'E3 alone',
+      items: [...fire('E3', 0, { travel: 1.9 }),
+        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 40, color: SPARK, duration: 0.5, at: 2.25 },
+        { type: 'value', id: 'axh', from: REST, to: -50, at: 2.1, duration: 0.45 }, ...actionPotential(2.55)],
+    },
+    {
+      id: 'e3i', label: 'E3 + I together',
+      items: [...fire('I', 0, { travel: 0.8 }), ...fire('E3', 0, { travel: 0.95, stopAt: BLOCK_AT }),
+        { type: 'pulse', x: inputs.I.p[0], y: inputs.I.p[1], r: 30, color: INH.nt, speed: 1.2, at: 0.3 },
+        { type: 'flash', x: inputs.I.p[0], y: inputs.I.p[1], r: 40, color: INH.nt, duration: 0.7, at: 1.3 },
+        { type: 'text', x: inputs.I.p[0] + 64, y: inputs.I.p[1] - 46, text: 'blocked!', size: 26, font: 'sans', bold: true, color: INH.edge, anim: 'pop', duration: 0.4, at: 1.35, until: 2.6 },
+        ...bump(-72, 1.2, 2.0)],
+    },
+  ];
+  const sumItems = [
+    title('Adding up signals'),
+    { type: 'svg', svg: svgDoc(`<g transform="translate(${TX4} ${TY4}) scale(${K4})">${neuronMarkup(PURPLE, 'sum', { releasing: false })}</g>`) },
+    { type: 'svg', svg: terminalsSvg },
+    // the trigger zone
+    { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: AP, width: 3, dashed: true, rough: false },
+    ...label('Axon hillock\n(adds up all the inputs)', 620, 320, [560, 382], [hillockPt[0] + 22, hillockPt[1] - 30], 'center', 28),
+    ...Object.entries(inputs).map(([name, s]) => ({
+      type: 'text', x: s.c[0] + (name === 'I' ? 30 : s.dir[0] < 0 ? -36 : 36), y: s.c[1] - (name === 'I' ? 26 : 0), text: name,
+      size: 26, font: 'sans', bold: true, color: s.st.edge, align: s.dir[0] < 0 ? 'right' : 'left',
+    })),
+    { type: 'text', x: 385, y: 152, text: 'Excitatory synapses (E1, E2)', size: 24, font: 'sans', color: EXC.edge },
+    { type: 'text', x: 238, y: 822, text: 'Excitatory\nsynapse (E3)', size: 24, font: 'sans', color: EXC.edge },
+    { type: 'text', x: 470, y: 760, text: 'Inhibitory synapse (I),\ncloser to the cell body', size: 24, font: 'sans', color: INH.edge },
+    {
+      type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
+      title: 'Axon hillock potential', upText: 'EPSP: closer to threshold', downText: 'Pushed away from threshold',
+      fireText: 'Action potential fired!',
+    },
+    { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 24, font: 'sans', color: '#3b4252', align: 'center' },
+    { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
+    { type: 'text', x: 1256, y: 790, text: 'Excitatory (glutamate)', size: 21, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
+    { type: 'text', x: 1256, y: 828, text: 'Inhibitory (GABA)', size: 21, font: 'sans', color: 'ink' },
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
@@ -648,20 +751,12 @@
         actions: synActions,
         items: synItems,
       },
-      // Slide 4: where signals go next (dendrites -> cell body, animated).
+      // Slide 4: adding up inputs - the axon hillock decides whether to fire.
       {
-        say: 'From the dendrites, signals flow inward to the cell body.',
+        say: 'Inputs add up at the axon hillock; if it reaches threshold, the neuron fires an action potential.',
         clear: true,
-        items: [
-          title('Where signals go next'),
-          { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'flow')) },
-          ...inwardArrows,
-          ...inwardPaths.map((path, i) => ({ type: 'mover', path, smooth: true, r: 8, color: SIGNAL, speed: 2.2 + (i % 4) * 0.3, with: i > 0 })),
-          { type: 'pulse', x: soma.x, y: soma.y, r: 95, color: SIGNAL, speed: 2, with: true },
-          ...label('Dendrites', 70, 845, [130, 820], [175, 745], 'left', 32),
-          ...label('Cell body', 640, 300, [620, 318], [445, 420], 'center', 32),
-          note('Signals flow from the dendrites\ninto the cell body', 1000, 650),
-        ],
+        actions: sumActions,
+        items: sumItems,
       },
       // Slide 5: why their shape matters (many branches, many connections).
       {
