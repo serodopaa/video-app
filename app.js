@@ -518,7 +518,8 @@
     replay.active = false;
     player.slide = 0;
     loadInk();
-    goTo(-1, false);
+    // Slide-based explainers (drawn: false) open straight on slide 1.
+    goTo(player.scene.drawn === false && player.scene.steps.length ? 0 : -1, false);
   }
 
   els.select.addEventListener('change', () => loadScene(+els.select.value));
