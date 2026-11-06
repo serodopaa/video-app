@@ -109,12 +109,12 @@
     if (!$('showPointer').checked || !p || WB.now() - p.t > 3) return;
     const s = RW / WB.W;
     rctx.save();
-    rctx.setTransform(s, 0, 0, s, 0, 0);
+    rctx.setTransform(...WB.viewMatrix(s));
     rctx.fillStyle = 'rgba(230, 40, 40, 0.9)';
     rctx.shadowColor = 'rgba(230, 40, 40, 0.8)';
     rctx.shadowBlur = 14;
     rctx.beginPath();
-    rctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+    rctx.arc(p.x, p.y, 8 / WB.view.z, 0, Math.PI * 2);
     rctx.fill();
     rctx.restore();
   }

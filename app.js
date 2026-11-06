@@ -135,6 +135,49 @@
     scale = (w * dpr) / W;
   }
   window.addEventListener('resize', resize);
+  // Also refit when the space around the board changes (toolbar wrapping, timeline growing).
+  if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(stage);
+
+  // ---------- zoom & pan ----------
+  // `view` is what's shown: zoom z (1 = whole slide) and the board point at
+  // the top-left corner. `target` is where the view is gliding to.
+  const MAX_ZOOM = 6;
+  const view = { z: 1, x: 0, y: 0 };
+  const target = { z: 1, x: 0, y: 0 };
+  function clampView(v) {
+    v.z = clamp(v.z, 1, MAX_ZOOM);
+    v.x = clamp(v.x, 0, W - W / v.z);
+    v.y = clamp(v.y, 0, H - H / v.z);
+    return v;
+  }
+  const viewMatrix = (s) => [s * view.z, 0, 0, s * view.z, -view.x * s * view.z, -view.y * s * view.z];
+  // Zoom by `factor`, keeping board point (bx, by) under the same spot on screen.
+  function zoomAt(factor, bx, by, instant) {
+    const nz = clamp(target.z * factor, 1, MAX_ZOOM);
+    target.x = bx - ((bx - target.x) * target.z) / nz;
+    target.y = by - ((by - target.y) * target.z) / nz;
+    target.z = nz;
+    clampView(target);
+    if (instant) Object.assign(view, target);
+  }
+  const viewCenter = () => [target.x + W / target.z / 2, target.y + H / target.z / 2];
+  function zoomFit(instant) {
+    Object.assign(target, { z: 1, x: 0, y: 0 });
+    if (instant) Object.assign(view, target);
+  }
+  let lastFrame = 0;
+  function stepView(t) {
+    const dt = Math.min(0.1, t - lastFrame || 0.016);
+    lastFrame = t;
+    const k = 1 - Math.pow(0.00005, dt); // smooth glide that settles in about half a second
+    for (const p of ['z', 'x', 'y']) {
+      view[p] += (target[p] - view[p]) * k;
+      if (Math.abs(target[p] - view[p]) < (p === 'z' ? 0.002 : 0.3)) view[p] = target[p];
+    }
+    const label = document.getElementById('zoomLabel');
+    const pct = Math.round(target.z * 100) + '%';
+    if (label && label.textContent !== pct) label.textContent = pct;
+  }
 
   // Stroke a polyline up to fraction p of its length. Returns the pen tip.
   function strokePartial(pts, cum, p) {
@@ -467,6 +510,7 @@
     player.step = clamp(i, -1, steps.length - 1);
     const slide = slideOf(player.step);
     if (slide !== player.slide) {
+      zoomFit();
       stashHistory();
       saveInk();
       player.slide = slide;
@@ -517,6 +561,7 @@
     els.narrate.parentElement.style.display = player.scene.audio === false ? 'none' : '';
     replay.active = false;
     player.slide = 0;
+    zoomFit(true);
     loadInk();
     // Slide-based explainers (drawn: false) open straight on slide 1.
     goTo(player.scene.drawn === false && player.scene.steps.length ? 0 : -1, false);
@@ -641,7 +686,7 @@
 
   function toBoard(e) {
     const r = canvas.getBoundingClientRect();
-    return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
+    return [view.x + ((e.clientX - r.left) / r.width) * W / view.z, view.y + ((e.clientY - r.top) / r.height) * H / view.z];
   }
 
   function hits(s, x, y, rad) {
@@ -658,11 +703,18 @@
 
   function eraseAt(x, y) {
     const before = strokes.length;
-    strokes = strokes.filter((s) => !hits(s, x, y, 14));
+    strokes = strokes.filter((s) => !hits(s, x, y, 14 / view.z));
     return strokes.length !== before;
   }
 
   canvas.addEventListener('pointerdown', (e) => {
+    if (state.tool === 'pan' || e.button === 1) {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      current = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: target.x, vy: target.y };
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const [x, y] = toBoard(e);
     replay.active = false;
@@ -673,13 +725,21 @@
       current.changed = eraseAt(x, y);
       return;
     }
-    current = { kind: state.tool, color: state.color, size: state.size, pts: [[x, y]], t0: now() };
+    current = { kind: state.tool, color: state.color, size: state.size / view.z, pts: [[x, y]], t0: now() };
   });
 
   canvas.addEventListener('pointermove', (e) => {
     const [px, py] = toBoard(e);
     window.WB.pointer = { x: px, y: py, t: now() };
     if (!current) return;
+    if (current.kind === 'pan') {
+      const r = canvas.getBoundingClientRect();
+      target.x = current.vx - ((e.clientX - current.sx) / r.width) * W / target.z;
+      target.y = current.vy - ((e.clientY - current.sy) / r.height) * H / target.z;
+      clampView(target);
+      Object.assign(view, target);
+      return;
+    }
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ev of events.length ? events : [e]) {
       const [x, y] = toBoard(ev);
@@ -696,6 +756,11 @@
 
   function finishStroke() {
     if (!current) return;
+    if (current.kind === 'pan') {
+      current = null;
+      setTool(state.tool);
+      return;
+    }
     if (current.kind === 'eraser') {
       if (current.changed) {
         undoStack.push(current.before);
@@ -719,6 +784,23 @@
     const [x, y] = toBoard(e);
     openTextEntry(x, y);
   });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const [bx, by] = toBoard(e);
+    if (e.ctrlKey || e.metaKey) {
+      zoomAt(Math.exp(-e.deltaY * 0.01), bx, by, true);
+    } else if (target.z > 1) {
+      const r = canvas.getBoundingClientRect();
+      const k = W / r.width / target.z;
+      target.x += e.deltaX * k;
+      target.y += e.deltaY * k;
+      clampView(target);
+      Object.assign(view, target);
+    } else if (Math.abs(e.deltaY) >= 50 && e.deltaX === 0) {
+      zoomAt(Math.exp(-e.deltaY * 0.002), bx, by, true); // a mouse wheel at full view zooms in
+    }
+  }, { passive: false });
+  canvas.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
   canvas.addEventListener('pointerleave', () => { window.WB.pointer = null; });
   canvas.addEventListener('pointerup', finishStroke);
   canvas.addEventListener('pointercancel', finishStroke);
@@ -726,13 +808,13 @@
   function openTextEntry(x, y) {
     const r = canvas.getBoundingClientRect();
     const sr = stage.getBoundingClientRect();
-    const size = state.size * 6 + 12;
+    const size = (state.size * 6 + 12) / view.z;
     const input = document.createElement('input');
     input.className = 'text-entry';
     input.placeholder = 'Type, then Enter';
-    input.style.left = r.left - sr.left + (x / W) * r.width + 'px';
-    input.style.top = r.top - sr.top + (y / H) * r.height + 'px';
-    input.style.fontSize = (size / W) * r.width + 'px';
+    input.style.left = r.left - sr.left + (((x - view.x) * view.z) / W) * r.width + 'px';
+    input.style.top = r.top - sr.top + (((y - view.y) * view.z) / H) * r.height + 'px';
+    input.style.fontSize = ((size * view.z) / W) * r.width + 'px';
     input.style.color = col(state.color);
     stage.appendChild(input);
     input.focus();
@@ -783,7 +865,8 @@
   function frame() {
     const t = now();
     tickPlayer(t);
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    stepView(t);
+    ctx.setTransform(...viewMatrix(scale));
     drawBoard(t);
     if (window.WB.onFrame) window.WB.onFrame(t);
     requestAnimationFrame(frame);
@@ -793,7 +876,7 @@
   function renderTo(targetCtx, s, t = now()) {
     const prev = ctx;
     ctx = targetCtx;
-    ctx.setTransform(s, 0, 0, s, 0, 0);
+    ctx.setTransform(...viewMatrix(s));
     drawBoard(t);
     ctx = prev;
   }
@@ -835,7 +918,7 @@
     } else {
       for (const s of strokes) drawStroke(s);
     }
-    if (current && current.kind !== 'eraser') drawStroke(current);
+    if (current && current.kind !== 'eraser' && current.kind !== 'pan') drawStroke(current);
 
     tips.forEach((tip) => drawPenTip(tip, tip.color));
   }
@@ -845,7 +928,7 @@
   function setTool(tool) {
     state.tool = tool;
     toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === tool));
-    canvas.style.cursor = tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : 'crosshair';
+    canvas.style.cursor = tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : tool === 'pan' ? 'grab' : 'crosshair';
   }
   toolButtons.forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
@@ -883,7 +966,7 @@
     a.click();
   });
 
-  const KEYS = { p: 'pen', h: 'hl', l: 'line', a: 'arrow', r: 'rect', o: 'ellipse', t: 'text', e: 'eraser' };
+  const KEYS = { p: 'pen', h: 'hl', l: 'line', a: 'arrow', r: 'rect', o: 'ellipse', t: 'text', e: 'eraser', m: 'pan' };
   window.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;
     const k = e.key.toLowerCase();
@@ -893,8 +976,14 @@
     if (e.key === 'ArrowRight') { player.playing = false; goTo(player.step + 1); }
     else if (e.key === 'ArrowLeft') { player.playing = false; goTo(player.step - 1, false); }
     else if (e.key === ' ') { e.preventDefault(); if (player.scene.steps.length) setPlaying(!player.playing); }
+    else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());
+    else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.5, ...viewCenter());
+    else if (e.key === '0') zoomFit();
     else if (KEYS[k]) setTool(KEYS[k]);
   });
+  document.getElementById('zoomIn').addEventListener('click', () => zoomAt(1.5, ...viewCenter()));
+  document.getElementById('zoomOut').addEventListener('click', () => zoomAt(1 / 1.5, ...viewCenter()));
+  document.getElementById('zoomLabel').addEventListener('click', () => zoomFit());
 
   // Start on the first explainer if there is one, otherwise the blank board.
   // A link like index.html#photosynthesis opens that scene directly.
@@ -902,7 +991,7 @@
   const startIndex = fromHash >= 0 ? fromHash : scenes.length > 1 ? 1 : 0;
   els.select.value = startIndex;
   // Hooks used by recorder.js.
-  window.WB = { W, H, renderTo, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
+  window.WB = { W, H, renderTo, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
 
   resize();
   loadScene(startIndex);

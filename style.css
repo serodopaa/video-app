@@ -79,6 +79,8 @@ button, select {
 }
 .swatch.active { box-shadow: 0 0 0 2px var(--ink); }
 
+.zoom-label { min-width: 58px !important; justify-content: center; font-size: 13px !important; font-variant-numeric: tabular-nums; }
+
 .size i {
   display: block;
   border-radius: 50%;
