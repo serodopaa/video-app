@@ -7,7 +7,13 @@ dependencies. Open `index.html` in a browser.
 ## Files
 - `index.html` – layout and the `<script>` list of scenes.
 - `style.css` – UI styling.
-- `app.js` – engine: drawing tools, animation player, rendering.
+- `app.js` – engine: drawing tools, animation player, rendering. Exposes
+  `window.WB` (renderTo, onFrame, pointer) for the recorder.
+- `recorder.js` – recording studio: records the board at 1920×1080 + mic into
+  clips (MediaRecorder), timeline (reorder/trim/re-record/delete, stored in
+  IndexedDB), preview, and export (plays trimmed clips in order and re-records
+  them into one file, in real time). Prefers H.264 MP4, else WebM.
+- `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**

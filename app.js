@@ -112,7 +112,10 @@
 
   // ---------- canvas ----------
   const canvas = document.getElementById('board');
-  const ctx = canvas.getContext('2d');
+  const screenCtx = canvas.getContext('2d');
+  // All drawing goes through `ctx`. The recorder temporarily points it at its
+  // own 1920x1080 canvas to render the same board for the video.
+  let ctx = screenCtx;
   const stage = document.getElementById('stage');
   let scale = 1;
 
@@ -634,6 +637,8 @@
   });
 
   canvas.addEventListener('pointermove', (e) => {
+    const [px, py] = toBoard(e);
+    window.WB.pointer = { x: px, y: py, t: now() };
     if (!current) return;
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ev of events.length ? events : [e]) {
@@ -674,6 +679,7 @@
     const [x, y] = toBoard(e);
     openTextEntry(x, y);
   });
+  canvas.addEventListener('pointerleave', () => { window.WB.pointer = null; });
   canvas.addEventListener('pointerup', finishStroke);
   canvas.addEventListener('pointercancel', finishStroke);
 
@@ -738,6 +744,21 @@
     const t = now();
     tickPlayer(t);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    drawBoard(t);
+    if (window.WB.onFrame) window.WB.onFrame(t);
+    requestAnimationFrame(frame);
+  }
+
+  // Draw the whole board (background, scene, your ink) into a canvas context.
+  function renderTo(targetCtx, s, t = now()) {
+    const prev = ctx;
+    ctx = targetCtx;
+    ctx.setTransform(s, 0, 0, s, 0, 0);
+    drawBoard(t);
+    ctx = prev;
+  }
+
+  function drawBoard(t) {
     drawBackground();
 
     // scene animation
@@ -777,7 +798,6 @@
     if (current && current.kind !== 'eraser') drawStroke(current);
 
     tips.forEach((tip) => drawPenTip(tip, tip.color));
-    requestAnimationFrame(frame);
   }
 
   // ---------- toolbar ----------
@@ -841,6 +861,9 @@
   const fromHash = scenes.findIndex((s) => '#' + s.id === location.hash);
   const startIndex = fromHash >= 0 ? fromHash : scenes.length > 1 ? 1 : 0;
   els.select.value = startIndex;
+  // Hooks used by recorder.js.
+  window.WB = { W, H, renderTo, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
+
   resize();
   loadScene(startIndex);
   requestAnimationFrame(frame);

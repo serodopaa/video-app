@@ -38,6 +38,8 @@
 
   <main class="stage" id="stage">
     <canvas id="board" aria-label="Whiteboard"></canvas>
+    <div id="countdown" class="countdown" hidden></div>
+    <div id="recBadge" class="rec-badge" hidden><i></i> REC</div>
   </main>
 
   <footer class="player">
@@ -52,8 +54,53 @@
     <p id="caption" class="caption"></p>
   </footer>
 
+  <section class="studio" aria-label="Recording">
+    <div class="rec-controls">
+      <button id="recBtn" class="rec" title="Record a new clip (only the board is recorded, plus your microphone)">⏺ Record</button>
+      <button id="pauseBtn" title="Pause / resume this clip" disabled>⏸ Pause</button>
+      <button id="stopBtn" title="Stop and add the clip to the timeline" disabled>⏹ Stop</button>
+      <span id="recTime" class="rec-time">0:00</span>
+      <span class="meter" title="Microphone level"><i id="meterFill"></i></span>
+      <label class="opt" title="Show a red dot where your pointer is, in the video"><input type="checkbox" id="showPointer" checked /> Pointer in video</label>
+      <span class="spacer"></span>
+      <span id="tlInfo" class="tl-info"></span>
+      <button id="previewAll" title="Watch all clips in order, with trims applied">▶ Preview all</button>
+      <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export video</button>
+      <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
+    </div>
+    <div id="timeline" class="timeline"></div>
+  </section>
+
+  <dialog id="clipDialog" class="clip-dialog">
+    <h3 id="dlgTitle">Clip</h3>
+    <video id="dlgVideo" playsinline></video>
+    <div id="trimUI" class="trim">
+      <div class="trim-bar" id="trimBar">
+        <div class="trim-range" id="trimRange"></div>
+        <div class="trim-head" id="trimHead"></div>
+      </div>
+      <div class="trim-row">
+        <button id="setIn">⇤ Start here</button>
+        <span id="trimText"></span>
+        <button id="setOut">End here ⇥</button>
+      </div>
+      <div class="trim-row">
+        <button id="dlgPlay">▶ Play</button>
+        <button id="dlgPlayTrim">▶ Play trimmed part</button>
+        <button id="resetTrim">Reset</button>
+      </div>
+      <p class="hint">Play or click on the bar to find a spot, then press "Start here" or "End here". The cut-off parts are left out of the final video.</p>
+    </div>
+    <div class="dlg-actions">
+      <button id="dlgCancel">Close</button>
+      <button id="dlgSave" class="primary">Save trim</button>
+    </div>
+  </dialog>
+
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
   <script src="scenes/neuron.js"></script>
   <script src="app.js"></script>
+  <script src="vendor/fix-webm-duration.js"></script>
+  <script src="recorder.js"></script>
 </body>
 </html>
