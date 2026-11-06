@@ -560,20 +560,32 @@
   // ---------- animation clock (can be paused) ----------
   // Everything that moves on the board runs on this clock, so pausing freezes
   // all animations mid-way while you keep drawing, zooming and recording.
-  const clock = { paused: false, offset: 0, pausedAt: 0 };
-  const animNow = () => (clock.paused ? clock.pausedAt : now() - clock.offset);
+  // Animation time = anchorAnim + (real time since anchorReal) x rate. Changing
+  // speed or pausing re-anchors, so nothing jumps.
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+  let savedSpeed = 1;
+  try { savedSpeed = parseFloat(localStorage.getItem('wb-anim-speed')) || 1; } catch (_) { /* storage unavailable */ }
+  const clock = { paused: false, rate: SPEEDS.includes(savedSpeed) ? savedSpeed : 1, anchorReal: now(), anchorAnim: now() };
+  const animNow = () => (clock.paused ? clock.anchorAnim : clock.anchorAnim + (now() - clock.anchorReal) * clock.rate);
   const pausedBadge = document.getElementById('pausedBadge');
   function setAnimPaused(on) {
     if (on === clock.paused) return;
-    if (on) {
-      clock.pausedAt = animNow();
-      clock.paused = true;
-    } else {
-      clock.offset = now() - clock.pausedAt;
-      clock.paused = false;
-    }
+    clock.anchorAnim = animNow();
+    clock.anchorReal = now();
+    clock.paused = on;
     if (pausedBadge) pausedBadge.hidden = !clock.paused;
     renderActionButtons();
+  }
+  function setAnimSpeed(rate) {
+    clock.anchorAnim = animNow();
+    clock.anchorReal = now();
+    clock.rate = rate;
+    try { localStorage.setItem('wb-anim-speed', String(rate)); } catch (_) { /* storage unavailable */ }
+    renderActionButtons();
+  }
+  function stepSpeed(dir) {
+    const i = SPEEDS.indexOf(clock.rate);
+    setAnimSpeed(SPEEDS[clamp(i + dir, 0, SPEEDS.length - 1)]);
   }
 
   // ---------- slide action buttons ----------
@@ -608,6 +620,18 @@
     pause.title = 'Pause / resume all animations on the board (K). Not shown in recordings.';
     pause.addEventListener('click', () => setAnimPaused(!clock.paused));
     actionsBox.appendChild(pause);
+    const speed = document.createElement('select');
+    speed.className = 'speed-select';
+    speed.title = 'Animation speed for every animation ([ slower, ] faster). Not shown in recordings.';
+    SPEEDS.forEach((s) => {
+      const o = document.createElement('option');
+      o.value = s;
+      o.textContent = `Speed ${s}×`;
+      o.selected = s === clock.rate;
+      speed.appendChild(o);
+    });
+    speed.addEventListener('change', () => { setAnimSpeed(parseFloat(speed.value)); speed.blur(); });
+    actionsBox.appendChild(speed);
     list.forEach((a, k) => {
       const b = document.createElement('button');
       b.className = 'action-btn';
@@ -1080,7 +1104,7 @@
     for (const a of slideActions()) {
       if (!actionRuns.has(a.id)) continue;
       const elapsed = t - actionRuns.get(a.id);
-      if (elapsed > a._len + HOLD_AT_END) { actionRuns.delete(a.id); continue; } // finished: back to the start state
+      if (elapsed > a._len + HOLD_AT_END * clock.rate) { actionRuns.delete(a.id); continue; } // finished: back to the start state
       for (const item of a.items) renderItem(item, clamp((elapsed - item._start) / item._dur), t);
     }
 
@@ -1172,6 +1196,8 @@
     else if (e.key === ' ' && player.scene.drawn === false) { e.preventDefault(); setAnimPaused(!clock.paused); }
     else if (e.key === ' ') { e.preventDefault(); if (player.scene.steps.length) setPlaying(!player.playing); }
     else if (k === 'k') setAnimPaused(!clock.paused);
+    else if (e.key === '[') stepSpeed(-1);
+    else if (e.key === ']') stepSpeed(1);
     else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());
     else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.5, ...viewCenter());
     else if (e.key === '0') zoomFit();
