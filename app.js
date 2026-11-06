@@ -863,6 +863,29 @@
     return -1;
   }
 
+  // Press and hold on the board while an animation button's animation is playing:
+  // it pauses until you let go (you can still draw meanwhile).
+  let holdPaused = false;
+  function actionPlaying() {
+    const t = animNow();
+    return slideActions().some((a) => actionRuns.has(a.id) && t - actionRuns.get(a.id) < a._len);
+  }
+  canvas.addEventListener('pointerdown', () => {
+    if (!clock.paused && actionPlaying()) {
+      setAnimPaused(true);
+      holdPaused = true;
+    }
+  });
+  const releaseHold = () => {
+    if (holdPaused) {
+      holdPaused = false;
+      setAnimPaused(false);
+    }
+  };
+  window.addEventListener('pointerup', releaseHold);
+  window.addEventListener('pointercancel', releaseHold);
+  window.addEventListener('blur', releaseHold);
+
   canvas.addEventListener('pointerdown', (e) => {
     // Move tool: drag one of your drawings / text boxes to move it.
     if (state.tool === 'pan' && e.button === 0) {

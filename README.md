@@ -27,6 +27,8 @@ Open `index.html` in any browser. No install needed.
   a second, then the slide resets by itself; **↺** (or **Shift + R**) resets it early.
 - **⏸ Pause** (or **Q**, **Space** or **K**) freezes every animation mid-way so you can point things out or
   draw on it; press again to carry on.
+- **Hold the mouse down on the board** while an animation button's animation is playing to pause
+  it; let go to carry on (you can draw while holding).
 - **Speed** (next to Pause, or **[** slower / **]** faster) sets one speed for every animation:
   ¼×, ½×, ¾×, 1×, 1.5×, 2×. It's remembered next time.
 Keyboard: P pen · H marker · L line · A arrow · R box · O circle · T text · E eraser · M move · + / − / 0 zoom · Space play/pause.
