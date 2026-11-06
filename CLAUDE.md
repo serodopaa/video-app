@@ -73,9 +73,11 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `vesicle` | `x, y`, `r`=11 (a bubble of neurotransmitters). With `path` it moves along it; with `fuse: true` it moves in the first 60% of its time, then merges into the membrane and disappears |
 | `flash` | `x, y, r`, `color`. One-off glow that grows and fades within its `duration` (e.g. a node firing) |
 | `ion` | `ion`: `na` / `k` / `cl` / `a` (negative protein), `x, y`; or `path` to travel along (eased, stays at the end, waits at the start before it begins) |
-| `channel` | `id`, `x, y` (membrane centre), `h`, `fill`, `edge`, `label`. Ligand-gated ion channel; how open it is (0–1) is live value `id` |
+| `channel` | `id`, `x, y` (membrane centre), `h`, `fill`, `edge`, `label` (`\n` allowed; state is appended). Ion channel; how open it is (0–1) is live value `id`. `ligand: false` = voltage-gated (shows + sensors, no binding site); `inactId` = live value (0–1) for an inactivation ball that plugs the pore |
 | `meter` | `id`, `value` (resting), `x, y, w, h`, `graphH`, `min`/`max`. Membrane-potential panel: live number, state text and a graph of the last 8 s with 0 / threshold / resting lines |
-| `value` | (in actions) `id`, `from`, `to`, `at`, `duration`: animates live value `id` (used by `meter` and `channel`). Latest started segment wins |
+| `charges` | `id` (live mV value), `value`, `x0, x1, top, bot`, `step`. +/− signs on both membrane faces that flip when the inside goes above 0 mV |
+| `apgraph` | `id` (live value = seconds along the curve, −1 idle), `keys` [[t, mV]…], `phases` [{from, to, title, text, color, dot, mark}], `x, y, w, h`, `graphH`, `title`, `idleText`. Action-potential panel: full curve, cursor tracing it, phase bands, numbered markers and a caption for the current phase |
+| `value` | (in actions) `id`, `from`, `to`, `at`, `duration`, `linear`: animates live value `id` (used by `meter`, `channel`, `charges`, `apgraph`). Eased unless `linear: true`. Latest started segment wins |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.

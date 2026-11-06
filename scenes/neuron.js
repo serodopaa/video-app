@@ -381,7 +381,7 @@
     ]),
   ];
 
-  // ---------- slide 5: many branches, many connections ----------
+  // ---------- shared geometry helpers (tapered branches) ----------
   const quad = (b, t) => [0, 1].map((k) => (1 - t) ** 2 * b.p0[k] + 2 * (1 - t) * t * b.c[k] + t * t * b.p1[k]);
   const normal = (b, t) => {
     const d = [0, 1].map((k) => 2 * (1 - t) * (b.c[k] - b.p0[k]) + 2 * t * (b.p1[k] - b.c[k]));
@@ -399,101 +399,6 @@
     }
     return 'M' + L.concat(R.reverse()).map((p) => p.map(f1).join(',')).join(' L') + ' Z';
   }
-  // A branch growing out of a point on its parent.
-  const sprout = (parent, t, dc, d1, w0, w1) => {
-    const p0 = quad(parent, t);
-    return { p0, c: [p0[0] + dc[0], p0[1] + dc[1]], p1: [p0[0] + d1[0], p0[1] + d1[1]], w0, w1 };
-  };
-  const trunk = { p0: [1390, 520], c: [850, 560], p1: [240, 450], w0: 80, w1: 26 };
-  // Main branches alternate up and down along the trunk, angled away from the cell body.
-  const bA = sprout(trunk, 0.25, [-20, -200], [-140, -330], 34, 12);
-  const bB = sprout(trunk, 0.38, [-10, 170], [-90, 300], 30, 12);
-  const bC = sprout(trunk, 0.55, [-60, -220], [-220, -345], 34, 12);
-  const bD = sprout(trunk, 0.67, [-20, 170], [-170, 310], 30, 12);
-  const bE = sprout(trunk, 0.8, [-30, -160], [-150, -285], 26, 11);
-  const bF = sprout(trunk, 0.91, [-20, 130], [-130, 250], 20, 9);
-  // Smaller forks off some branches.
-  const fA = sprout(bA, 0.55, [60, -60], [150, -90], 16, 8);
-  const fB = sprout(bB, 0.55, [70, 30], [150, 60], 15, 8);
-  const fC = sprout(bC, 0.5, [70, -50], [150, -70], 16, 8);
-  const fD = sprout(bD, 0.55, [-70, 20], [-150, 30], 15, 8);
-  const fE = sprout(bE, 0.55, [-70, -10], [-150, 10], 13, 7);
-  const sideBranches = [fA, fB, fC, fD, fE, bA, bB, bC, bD, bE, bF];
-  const allBranches = [...sideBranches, trunk];
-
-  function spineAt(b, t, side, len, r) {
-    const n = normal(b, t).map((v) => v * side);
-    const base = add(quad(b, t), n, widthAt(b, t) / 2 - 3);
-    return { base, head: add(base, n, len), n, r };
-  }
-  const spines = [];
-  allBranches.forEach((b, bi) => {
-    const ts = b === trunk ? [0.12, 0.2, 0.45, 0.55, 0.74, 0.9, 0.96] : [0.3, 0.45, 0.62, 0.78, 0.92];
-    ts.forEach((t, i) => {
-      const side = (i + bi) % 2 ? 1 : -1;
-      const kind = (i * 7 + bi * 3) % 3; // mushroom, thin, stubby
-      spines.push(spineAt(b, t, side, [24, 28, 13][kind], [10, 7, 9][kind]));
-    });
-  });
-
-  // Incoming axon terminals, each from a different neuron (different colours).
-  const AXON_COLORS = [
-    ['#2c5a92', '#8fb6e6', '#e3eefb', '#6f9fd8'], // blue
-    ['#1f6f6b', '#7cc7c0', '#e0f4f2', '#4fa9a1'], // teal
-    ['#2f6b2a', '#9bd18f', '#eaf7e6', '#6db35f'], // green
-    ['#9a4f0d', '#f2b46d', '#fdf0e1', '#e08a2c'], // orange
-    ['#9c2a5c', '#ef9cc0', '#fde8f1', '#d76a99'], // pink
-    ['#7a6200', '#e8cf5a', '#fbf5d9', '#c9a923'], // gold
-  ];
-  const synapseSpecs = [
-    [bA, 0.85, -1, 110], [fA, 0.9, 1, 100], [bB, 0.8, 1, 110], [fB, 0.9, -1, 100],
-    [bC, 0.8, 1, 70], [fC, 0.9, -1, 70], [bD, 0.85, -1, 110], [fD, 0.9, 1, 100],
-    [bE, 0.85, 1, 70], [bF, 0.85, -1, 100],
-  ];
-  const incoming = synapseSpecs.map(([b, t, side, axonLen], i) => {
-    const sp = spineAt(b, t, side, 30, 13);
-    const bouton = add(sp.head, sp.n, sp.r + 12 + 22);
-    const perp = [-sp.n[1], sp.n[0]];
-    const axonEnd = add(add(bouton, sp.n, axonLen), perp, i % 2 ? 30 : -30);
-    const ctrl = add(add(bouton, sp.n, axonLen * 0.5), perp, i % 2 ? -20 : 20);
-    return { ...sp, bouton, axonEnd, ctrl, perp, col: AXON_COLORS[i % AXON_COLORS.length] };
-  });
-
-  const spineMarkup = (list, color, extra) => list.map((sp) =>
-    `<path d="M${sp.base.map(f1)} L${sp.head.map(f1)}" stroke="${color}" stroke-width="${7 + extra}" stroke-linecap="round"/>` +
-    `<circle cx="${f1(sp.head[0])}" cy="${f1(sp.head[1])}" r="${sp.r + extra / 2}" fill="${color}"/>`).join('');
-
-  const SHIFT5 = 45; // artwork sits a little lower, clear of the title
-  const branchesSvg = svgDoc(`<g transform="translate(0 ${SHIFT5})"><defs>
-    <linearGradient id="dG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e4cdee"/><stop offset="0.5" stop-color="#c69ad8"/><stop offset="1" stop-color="#ad78c6"/>
-    </linearGradient>
-    <radialGradient id="cbG" cx="30%" cy="40%" r="75%">
-      <stop offset="0" stop-color="#f3e6f8"/><stop offset="0.6" stop-color="#d4afe2"/><stop offset="1" stop-color="#ad78c6"/>
-    </radialGradient>
-    ${AXON_COLORS.map((c, i) => `<radialGradient id="bt${i}" cx="35%" cy="35%" r="70%"><stop offset="0" stop-color="${c[2]}"/><stop offset="1" stop-color="${c[3]}"/></radialGradient>`).join('')}
-    <filter id="sh5" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#3b1452" flood-opacity="0.22"/>
-    </filter>
-  </defs>
-  <g filter="url(#sh5)">
-    ${incoming.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${s.ctrl.map(f1)} ${s.bouton.map(f1)}" stroke="${s.col[0]}" stroke-width="16" fill="none" stroke-linecap="round"/>`).join('')}
-    ${incoming.map((s) => `<path d="M${s.axonEnd.map(f1)} Q${s.ctrl.map(f1)} ${s.bouton.map(f1)}" stroke="${s.col[1]}" stroke-width="10" fill="none" stroke-linecap="round"/>`).join('')}
-    ${incoming.map((s, i) => `<circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="25" fill="${s.col[0]}"/><circle cx="${f1(s.bouton[0])}" cy="${f1(s.bouton[1])}" r="22" fill="url(#bt${i % AXON_COLORS.length})"/>`).join('')}
-
-    ${allBranches.map((b) => `<path d="${taperD(b)}" fill="${PURPLE.outline}" stroke="${PURPLE.outline}" stroke-width="6" stroke-linejoin="round"/><circle cx="${f1(b.p1[0])}" cy="${f1(b.p1[1])}" r="${b.w1 / 2 + 3}" fill="${PURPLE.outline}"/>`).join('')}
-    ${spineMarkup(spines.concat(incoming), PURPLE.outline, 6)}
-    <circle cx="1560" cy="520" r="233" fill="${PURPLE.outline}"/>
-    ${sideBranches.map((b) => `<path d="${taperD(b)}" fill="url(#dG)"/><circle cx="${f1(b.p1[0])}" cy="${f1(b.p1[1])}" r="${b.w1 / 2}" fill="${PURPLE.fill}"/>`).join('')}
-    ${spineMarkup(spines.concat(incoming), PURPLE.fill, 0)}
-    <path d="${taperD(trunk)}" fill="url(#dG)"/>
-    <circle cx="1560" cy="520" r="230" fill="url(#cbG)"/>
-  </g>
-  ${incoming.map((s) => { const c = add(s.head, s.n, s.r - 2); const a = add(c, s.perp, 10), b = add(c, s.perp, -10); return `<path d="M${a.map(f1)} L${b.map(f1)}" stroke="#2e9e5b" stroke-width="6" stroke-linecap="round"/>`; }).join('')}
-  ${incoming.map((s) => [[-6, 0], [5, 3], [0, -4]].map(([a, b]) => { const p = add(add(add(s.head, s.n, s.r + 6), s.perp, a), s.n, b); return `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="3" fill="#f08c1a"/>`; }).join('')).join('')}
-  ${[[1450, 420], [1500, 600], [1420, 650], [1530, 380], [1470, 520]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="${PURPLE.gran}" opacity="0.4"/>`).join('')}
-</g>`);
-
 
   // ---------- slide 1: the main neuron as part of a circuit ----------
   // Left: an axon terminal from another (blue) neuron reaches a dendrite tip.
@@ -708,6 +613,96 @@
     { type: 'text', x: 1256, y: 828, text: 'Inhibitory (GABA)', size: 21, font: 'sans', color: 'ink' },
   ];
 
+  // ---------- slide 5: the action potential at the axon hillock ----------
+  // Membrane close-up with voltage-gated Na+ channels (activation gate + an
+  // inactivation ball) and a voltage-gated K+ channel, next to an action
+  // potential graph whose cursor moves in step with the channels.
+  const M5 = { x0: 60, x1: 1000, top: 410, bot: 500, mid: 455 };
+  const NA5 = [190, 400, 610], K5 = 840;
+  const AP_KEYS = [[0, -70], [0.6, -70], [2.0, -55], [3.0, 30], [4.6, -80], [6.0, -76], [7.4, -70], [8.0, -70]];
+  const AP_PHASES = [
+    { from: 0, to: 0.6, title: 'At rest', text: 'Na⁺ and K⁺ channels are closed.\nThe inside sits at −70 mV.', color: '#c3cad6', dot: '#5b6270', mark: [0.3, -70] },
+    { from: 0.6, to: 2.0, title: 'Reaching threshold', text: 'Inputs from the dendrites raise\nthe hillock to −55 mV.', color: '#f5c518', dot: '#a07c00', mark: [1.3, -62] },
+    { from: 2.0, to: 3.0, title: 'Rising phase', text: 'Voltage-gated Na⁺ channels open.\nNa⁺ rushes in: the inside turns positive.', color: '#f0a12e', dot: '#c46f00', mark: [2.5, -12] },
+    { from: 3.0, to: 4.6, title: 'Falling phase', text: 'Na⁺ channels inactivate (plugged).\nK⁺ channels open and K⁺ flows out.', color: '#7b5cd6', dot: '#5a3fb0', mark: [3.8, -25] },
+    { from: 4.6, to: 6.0, title: 'Undershoot', text: 'K⁺ channels are slow to close,\nso it dips below rest.', color: '#2f6fde', dot: '#1d4fb0', mark: [5.3, -78] },
+    { from: 6.0, to: 8.01, title: 'Back to rest', text: 'K⁺ channels close and the Na⁺\nchannels reset, ready to fire again.', color: '#8a8f98', dot: '#5b6270', mark: [7.0, -71] },
+  ];
+  const bilayer5 = (() => {
+    let out = '';
+    for (let x = M5.x0 + 10; x <= M5.x1 - 8; x += 20) {
+      for (const [hy, t0, t1] of [[M5.top + 8, M5.top + 17, M5.mid - 3], [M5.bot - 8, M5.bot - 17, M5.mid + 3]]) {
+        const d = (t1 - t0) / 2;
+        out += `<path d="M${x - 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d} M${x + 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d}" stroke="#c99a62" stroke-width="2" fill="none"/>`;
+        out += `<circle cx="${x}" cy="${hy}" r="9" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/>`;
+      }
+    }
+    return out;
+  })();
+  const apMembraneSvg = svgDoc(`
+  <rect x="${M5.x0}" y="112" width="${M5.x1 - M5.x0}" height="${M5.top - 112}" rx="16" fill="#eef6fd"/>
+  <rect x="${M5.x0}" y="${M5.bot}" width="${M5.x1 - M5.x0}" height="${860 - M5.bot}" rx="16" fill="#f7f0fb"/>
+  <rect x="${M5.x0}" y="${M5.top}" width="${M5.x1 - M5.x0}" height="${M5.bot - M5.top}" fill="#fbecd6"/>
+  ${bilayer5}`);
+  const apStatic = [
+    // outside: Na+ and Cl-
+    ['na', 120, 205], ['na', 300, 180], ['na', 515, 195], ['na', 720, 175], ['na', 905, 200],
+    ['na', 225, 290], ['na', 455, 285], ['na', 690, 290],
+    ['cl', 120, 290], ['cl', 385, 210], ['cl', 610, 215], ['cl', 820, 205], ['cl', 950, 300], ['cl', 570, 270],
+    // inside: K+ and negative proteins, a little Na+ and Cl-
+    ['k', 110, 660], ['k', 250, 720], ['k', 400, 700], ['k', 520, 760], ['k', 680, 680], ['k', 770, 770],
+    ['k', 930, 690], ['k', 150, 800], ['k', 610, 810], ['k', 960, 800],
+    ['a', 330, 800], ['a', 470, 660], ['a', 850, 650],
+    ['na', 700, 830], ['cl', 430, 830],
+  ];
+  // Ions that move: Na+ in through each Na+ channel, K+ out through the K+ channel.
+  const NA_DEST = [[[140, 612], [205, 655]], [[330, 662], [445, 742]], [[560, 690], [640, 615]]];
+  const naFlows = NA5.flatMap((x, i) => [
+    ['na', [x - 58, 352], NA_DEST[i][0]],
+    ['na', [x + 58, 348], NA_DEST[i][1]],
+  ]);
+  const kFlows = [
+    ['k', [790, 650], [785, 330]], ['k', [890, 640], [895, 340]], ['k', [835, 720], [870, 255]], ['k', [905, 760], [790, 250]],
+  ];
+  const pore5 = (x, from, to, inward) => (inward
+    ? [from, [x, M5.top - 40], [x, M5.mid], [x, M5.bot + 46], to]
+    : [from, [x, M5.bot + 46], [x, M5.mid], [x, M5.top - 40], to]);
+  const apTimeline = [
+    { type: 'value', id: 'apt', from: 0, to: 8, at: 0, duration: 8, linear: true },
+    ...AP_KEYS.slice(1).map(([t1, v1], i) => ({ type: 'value', id: 'vm5', from: AP_KEYS[i][1], to: v1, at: AP_KEYS[i][0], duration: t1 - AP_KEYS[i][0] })),
+    // Na+ channels: activation gate opens at threshold, inactivation ball plugs them at the peak,
+    // the activation gate closes while plugged, then the ball leaves (channel reset).
+    { type: 'value', id: 'na5', from: 0, to: 1, at: 2.0, duration: 0.25 },
+    { type: 'value', id: 'na5i', from: 0, to: 1, at: 3.0, duration: 0.35 },
+    { type: 'value', id: 'na5', from: 1, to: 0, at: 4.2, duration: 0.3 },
+    { type: 'value', id: 'na5i', from: 1, to: 0, at: 6.2, duration: 0.6 },
+    // K+ channel: opens slowly near the peak, closes late (undershoot)
+    { type: 'value', id: 'k5', from: 0, to: 1, at: 2.8, duration: 0.5 },
+    { type: 'value', id: 'k5', from: 1, to: 0, at: 5.6, duration: 0.6 },
+    ...naFlows.map(([ion, from, to], i) => ({ type: 'ion', ion, smooth: true, path: pore5(NA5[Math.floor(i / 2)], from, to, true), duration: 0.95, at: 2.05 + (i % 2) * 0.2 + Math.floor(i / 2) * 0.08 })),
+    ...kFlows.map(([ion, from, to], i) => ({ type: 'ion', ion, smooth: true, path: pore5(K5, from, to, false), duration: 1.1, at: 3.1 + i * 0.3 })),
+  ];
+  const apItems = [
+    title('The action potential'),
+    { type: 'svg', svg: apMembraneSvg },
+    { type: 'text', x: 80, y: 140, text: 'Outside the axon hillock', size: 24, font: 'sans', color: '#2c5a92' },
+    { type: 'text', x: 80, y: 840, text: 'Inside the axon hillock', size: 24, font: 'sans', color: '#6b3c87' },
+    { type: 'charges', id: 'vm5', value: REST, x0: M5.x0, x1: M5.x1, top: M5.top, bot: M5.bot, step: 70 },
+    ...apStatic.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
+    ...naFlows.map(([ion, from]) => ({ type: 'ion', ion, x: from[0], y: from[1], hideDuring: 'ap' })),
+    ...kFlows.map(([ion, from]) => ({ type: 'ion', ion, x: from[0], y: from[1], hideDuring: 'ap' })),
+    ...NA5.map((x, i) => ({
+      type: 'channel', id: 'na5', inactId: 'na5i', ligand: false, x, y: M5.mid, h: 130, ...CH_STYLE.na,
+      label: i === 1 ? 'Voltage-gated\nNa⁺ channels' : undefined,
+    })),
+    { type: 'channel', id: 'k5', ligand: false, x: K5, y: M5.mid, h: 130, ...CH_STYLE.k, label: 'Voltage-gated\nK⁺ channel' },
+    {
+      type: 'apgraph', id: 'apt', vmId: 'vm5', x: 1030, y: 112, w: 530, h: 748, graphH: 330,
+      title: 'Axon hillock membrane potential', keys: AP_KEYS, phases: AP_PHASES,
+      idleText: 'Press ▶ Fire an action potential',
+    },
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
@@ -758,27 +753,14 @@
         actions: sumActions,
         items: sumItems,
       },
-      // Slide 5: why their shape matters (many branches, many connections).
+      // Slide 5: the action potential at the axon hillock, graph in step with the channels.
       {
-        say: 'Lots of branches mean lots of connections, so one neuron can listen to many others.',
+        say: 'At threshold, voltage-gated Na⁺ channels open (rise), then inactivate while K⁺ channels open (fall).',
         clear: true,
-        items: [
-          title('Why dendrites’ shape matters'),
-          { type: 'svg', svg: branchesSvg },
-          ...SHAPE_LABELS(),
-        ],
+        actions: [{ id: 'ap', label: 'Fire an action potential', items: apTimeline }],
+        items: apItems,
       },
     ],
   });
 
-  function SHAPE_LABELS() {
-    return [
-      ...label('Branches', 80, 175, [195, 192], [372, 292], 'left', 32),
-      ...label('Cell body', 1470, 285, [1470, 307], [1470, 372], 'center', 32),
-      note('More branches = more connections\n= more signals received', 1290, 160, 'center', 'ink'),
-      note('Each colour is a signal coming\nfrom a different neuron', 1340, 820),
-      { type: 'line', from: [1190, 805], to: [1112, 752], color: DARK, width: 2.5, rough: false },
-      { type: 'circle', x: 1112, y: 752, r: 5, color: DARK, width: 2, fill: DARK, fillOpacity: 1, rough: false },
-    ];
-  }
 })();

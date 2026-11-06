@@ -265,7 +265,8 @@
         const s = t0 + it._start;
         if (t >= s && s >= best) {
           best = s;
-          v = it.from + (it.to - it.from) * easeInOut(clamp((t - s) / it._dur));
+          const k = clamp((t - s) / it._dur);
+          v = it.from + (it.to - it.from) * (it.linear ? k : easeInOut(k));
         }
       }
     }
@@ -520,12 +521,22 @@
           ctx.fill();
           ctx.stroke();
         }
-        // binding site for the neurotransmitter (a notch on the outer side)
+        // binding site for the neurotransmitter (a notch on the outer side);
+        // voltage-gated channels (ligand: false) show a voltage sensor instead
         ctx.strokeStyle = edge;
         ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(cx - gap / 2 - sw / 2, cy - hh - 1, 8, 0, Math.PI);
-        ctx.stroke();
+        if (item.ligand === false) {
+          ctx.fillStyle = edge;
+          ctx.font = `700 20px ${SANS}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('+', cx - gap / 2 - sw / 2, cy);
+          ctx.fillText('+', cx + gap / 2 + sw / 2, cy);
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx - gap / 2 - sw / 2, cy - hh - 1, 8, 0, Math.PI);
+          ctx.stroke();
+        }
         // the gate closing the pore
         if (open < 1) {
           ctx.globalAlpha = base * (1 - open);
@@ -535,13 +546,174 @@
           ctx.fill();
           ctx.globalAlpha = base;
         }
+        // inactivation gate: a ball on a chain that plugs the pore from the inside
+        let inact = 0;
+        if (item.inactId) {
+          inact = clamp(liveValue(item.inactId, 0, t));
+          const anchor = [cx - gap / 2 - sw / 2, cy + hh];
+          const rest = [cx - gap / 2 - sw - 14, cy + hh + 26], plug = [cx, cy + hh - 4];
+          const e2 = easeInOut(inact);
+          const bx = rest[0] + (plug[0] - rest[0]) * e2, by = rest[1] + (plug[1] - rest[1]) * e2;
+          ctx.strokeStyle = edge;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(anchor[0], anchor[1]);
+          ctx.quadraticCurveTo((anchor[0] + bx) / 2 - 6, Math.max(anchor[1], by) + 14, bx, by);
+          ctx.stroke();
+          ctx.fillStyle = edge;
+          ctx.beginPath();
+          ctx.arc(bx, by, 9, 0, Math.PI * 2);
+          ctx.fill();
+        }
         if (item.label) {
+          const state = inact > 0.5 ? ' (inactivated)' : open > 0.5 ? ' (open)' : ' (closed)';
+          const lines = String(item.label).split('\n');
           ctx.fillStyle = '#1f2430';
           ctx.font = `600 22px ${SANS}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.label + (open > 0.5 ? ' (open)' : ' (closed)'), cx, cy + hh + 24);
+          lines.forEach((ln, i) => ctx.fillText(ln + (i === lines.length - 1 ? state : ''), cx, cy + hh + 24 + (item.inactId ? 30 : 0) + i * 26));
         }
+        break;
+      }
+      case 'charges': {
+        // + / - signs along both faces of a membrane. They flip when the inside
+        // becomes positive (live value `id` above 0 mV) and fade near 0 mV.
+        const v = liveValue(item.id, item.value ?? -70, t);
+        const k = clamp(Math.abs(v) / 25);
+        const insidePos = v > 0;
+        ctx.globalAlpha = base * k;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `700 24px ${SANS}`;
+        for (let x = item.x0 + 35; x < item.x1 - 10; x += item.step || 70) {
+          ctx.fillStyle = insidePos ? '#2f6fde' : '#e0453a';
+          ctx.fillText(insidePos ? '−' : '+', x, item.top - 16);
+          ctx.fillStyle = insidePos ? '#e0453a' : '#2f6fde';
+          ctx.fillText(insidePos ? '+' : '−', x, item.bot + 16);
+        }
+        break;
+      }
+      case 'apgraph': {
+        // A full action-potential curve with phases. A cursor traces it at the
+        // time given by live value `id` (seconds into the curve, -1 = idle).
+        const { x, y, w, h } = item;
+        const keys = item.keys, T = keys[keys.length - 1][0];
+        const vAt = (tt) => {
+          for (let i = 1; i < keys.length; i++) {
+            if (tt <= keys[i][0]) {
+              const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
+              return v0 + (v1 - v0) * easeInOut(clamp((tt - t0) / (t1 - t0 || 1)));
+            }
+          }
+          return keys[keys.length - 1][1];
+        };
+        const cur = liveValue(item.id, -1, t);
+        const idle = cur < 0;
+        const v = idle ? keys[0][1] : vAt(cur);
+        const phaseNow = idle ? null : item.phases.find((ph) => cur >= ph.from && cur < ph.to) || item.phases[item.phases.length - 1];
+        // panel
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#d9dce3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 18);
+        ctx.fill();
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#1f2430';
+        ctx.font = `600 26px ${SANS}`;
+        ctx.fillText(item.title || 'Membrane potential', x + w / 2, y + 34);
+        const rv = Math.round(v);
+        ctx.fillStyle = rv >= -55 ? '#e0453a' : rv < -70 ? '#2f6fde' : rv > -70 ? '#e8890c' : '#1f2430';
+        ctx.font = `700 60px ${SANS}`;
+        ctx.fillText(`${rv < 0 ? '−' : rv > 0 ? '+' : ''}${Math.abs(rv)} mV`, x + w / 2, y + 88);
+        // graph area
+        const vmin = -90, vmax = 40;
+        const gx = x + 66, gy = y + 136, gw = w - 90, gh = item.graphH || 300;
+        const X = (tt) => gx + (tt / T) * gw;
+        const Y = (val) => gy + ((vmax - val) / (vmax - vmin)) * gh;
+        for (const ph of item.phases) {
+          ctx.fillStyle = ph.color;
+          ctx.globalAlpha = base * (phaseNow === ph ? 0.32 : 0.1);
+          ctx.fillRect(X(ph.from), gy, X(ph.to) - X(ph.from), gh);
+        }
+        ctx.globalAlpha = base;
+        ctx.strokeStyle = '#c9ced8';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(gx, gy, gw, gh);
+        ctx.font = `600 16px ${SANS}`;
+        ctx.textAlign = 'right';
+        for (const [val, txt, c, dash] of [[30, '+30', '#8a8f98', [2, 5]], [0, '0', '#8a8f98', [8, 6]], [-55, '−55', '#e0453a', [10, 6]], [-70, '−70', '#5b6270', [3, 5]], [-80, '−80', '#8a8f98', [2, 5]]]) {
+          ctx.strokeStyle = c;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(gx, Y(val));
+          ctx.lineTo(gx + gw, Y(val));
+          ctx.stroke();
+          ctx.fillStyle = c;
+          ctx.fillText(txt, gx - 8, Y(val));
+        }
+        ctx.setLineDash([]);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#e0453a';
+        ctx.fillText('threshold', gx + 6, Y(-55) - 11);
+        ctx.fillStyle = '#8a8f98';
+        ctx.fillText('mV', gx - 50, gy + 10);
+        ctx.textAlign = 'right';
+        ctx.fillText('time →', gx + gw - 4, gy + gh + 16);
+        // the whole curve, faint, then the part traced so far, bold
+        const trace = (upTo, colr, width) => {
+          ctx.strokeStyle = colr;
+          ctx.lineWidth = width;
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          const N = 200;
+          for (let i = 0; i <= N; i++) {
+            const tt = (i / N) * upTo;
+            i ? ctx.lineTo(X(tt), Y(vAt(tt))) : ctx.moveTo(X(tt), Y(vAt(tt)));
+          }
+          ctx.stroke();
+        };
+        trace(T, '#c3cad6', 4);
+        if (!idle) trace(Math.min(cur, T), '#2f6fde', 5);
+        // phase numbers on the curve
+        item.phases.forEach((ph, i) => {
+          if (ph.mark === undefined) return;
+          const [mx, my] = [X(ph.mark[0]), Y(ph.mark[1])];
+          ctx.fillStyle = ph.dot || '#3b4252';
+          ctx.beginPath();
+          ctx.arc(mx, my, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `700 15px ${SANS}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(String(i + 1), mx, my + 1);
+        });
+        if (!idle) {
+          ctx.strokeStyle = '#1f2430';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(X(Math.min(cur, T)), gy);
+          ctx.lineTo(X(Math.min(cur, T)), gy + gh);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#1f2430';
+          ctx.beginPath();
+          ctx.arc(X(Math.min(cur, T)), Y(v), 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // caption for the current phase, then the list of phases
+        const cy0 = gy + gh + 44;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = phaseNow ? phaseNow.dot : '#5b6270';
+        ctx.font = `700 24px ${SANS}`;
+        ctx.fillText(phaseNow ? `${item.phases.indexOf(phaseNow) + 1}. ${phaseNow.title}` : item.idleText || 'Press ▶ to fire an action potential', x + 26, cy0);
+        ctx.fillStyle = '#3b4252';
+        ctx.font = `500 20px ${SANS}`;
+        String(phaseNow ? phaseNow.text : '').split('\n').forEach((ln, i) => ctx.fillText(ln, x + 26, cy0 + 34 + i * 26));
         break;
       }
       case 'meter': {
