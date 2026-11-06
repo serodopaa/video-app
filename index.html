@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Explainer Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="toolbar" id="toolbar">
+    <div class="group" role="group" aria-label="Tools">
+      <button class="tool active" data-tool="pen" title="Pen (P)">✏️<span>Pen</span></button>
+      <button class="tool" data-tool="hl" title="Highlighter (H)">🖍️<span>Marker</span></button>
+      <button class="tool" data-tool="line" title="Line (L)">╱<span>Line</span></button>
+      <button class="tool" data-tool="arrow" title="Arrow (A)">➜<span>Arrow</span></button>
+      <button class="tool" data-tool="rect" title="Rectangle (R)">▭<span>Box</span></button>
+      <button class="tool" data-tool="ellipse" title="Circle (O)">◯<span>Circle</span></button>
+      <button class="tool" data-tool="text" title="Text (T)">T<span>Text</span></button>
+      <button class="tool" data-tool="eraser" title="Eraser (E)">🧽<span>Erase</span></button>
+    </div>
+    <div class="group" id="colors" role="group" aria-label="Colors"></div>
+    <div class="group" role="group" aria-label="Size">
+      <button class="size" data-size="3" title="Thin"><i style="width:4px;height:4px"></i></button>
+      <button class="size active" data-size="6" title="Medium"><i style="width:8px;height:8px"></i></button>
+      <button class="size" data-size="12" title="Thick"><i style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="group" role="group" aria-label="Edit">
+      <button id="undo" title="Undo (Ctrl/Cmd+Z)">↶</button>
+      <button id="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↷</button>
+      <button id="clearInk" title="Erase all of my drawing">🗑️</button>
+      <button id="replay" title="Replay my drawing as an animation">🎬<span>Replay ink</span></button>
+      <button id="export" title="Save the board as a PNG image">💾<span>PNG</span></button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="board" aria-label="Whiteboard"></canvas>
+  </main>
+
+  <footer class="player">
+    <select id="sceneSelect" aria-label="Choose an explainer"></select>
+    <div class="controls">
+      <button id="prev" title="Previous step (←)">⏮</button>
+      <button id="play" class="primary" title="Play / pause (Space)">▶ Play</button>
+      <button id="next" title="Next step (→)">⏭</button>
+      <span id="stepLabel" class="step-label"></span>
+      <label class="narrate" title="Read the captions out loud"><input type="checkbox" id="narrate" /> 🔊 Narrate</label>
+    </div>
+    <p id="caption" class="caption"></p>
+  </footer>
+
+  <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
+  <script src="scenes/internet.js"></script>
+  <script src="scenes/photosynthesis.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
