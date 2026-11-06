@@ -12,6 +12,7 @@
   const W = 1600;
   const H = 900;
   const FONT = '"Caveat", "Comic Sans MS", cursive';
+  const SANS = 'Inter, system-ui, -apple-system, sans-serif';
 
   const COLORS = {
     ink: '#1f2430',
@@ -224,11 +225,15 @@
       if (item.type === 'mover') {
         item._pts = resample(pts, 6);
       } else {
-        item._pts = item.rough === false ? resample(pts, 10) : wobble(resample(pts, 12), seed);
+        item._pts = item.rough === false || item._static ? resample(pts, 10) : wobble(resample(pts, 12), seed);
       }
       item._cum = measure(item._pts);
     }
     if (item.type === 'text') item._lines = String(item.text).split('\n');
+    if (item.type === 'svg' && !item._img) {
+      item._img = new Image();
+      item._img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.svg);
+    }
   }
 
   function pointAt(pts, cum, f) {
@@ -248,9 +253,13 @@
   // mid-stroke, so the player can draw a marker following the line.
   function renderItem(item, p, t) {
     if (p <= 0) return null;
-    const e = easeInOut(p);
+    // Static items (scene option drawn: false) fade in fully formed instead of
+    // being drawn stroke by stroke.
+    const base = item._static ? easeInOut(p) : 1;
+    const e = item._static ? 1 : easeInOut(p);
     const width = item.width || 5;
     ctx.save();
+    ctx.globalAlpha = base;
     let tip = null;
     switch (item.type) {
       case 'line':
@@ -271,13 +280,13 @@
       case 'circle':
       case 'path': {
         if (item.fill) {
-          ctx.globalAlpha = clamp((p - 0.6) / 0.4) * (item.fillOpacity ?? 0.25);
+          ctx.globalAlpha = base * (item._static ? 1 : clamp((p - 0.6) / 0.4)) * (item.fillOpacity ?? 0.25);
           ctx.fillStyle = col(item.fill);
           ctx.beginPath();
           item._pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
           ctx.closePath();
           ctx.fill();
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = base;
         }
         setStroke(item.color, width);
         if (item.dashed) ctx.setLineDash([width * 3, width * 3]);
@@ -286,11 +295,11 @@
       }
       case 'text': {
         const size = item.size || 48;
-        ctx.font = `${item.bold ? 700 : 500} ${size}px ${FONT}`;
+        ctx.font = `${item.bold ? 700 : item.font === 'sans' ? 600 : 500} ${size}px ${item.font === 'sans' ? SANS : FONT}`;
         ctx.fillStyle = col(item.color);
         ctx.textAlign = item.align || 'left';
         ctx.textBaseline = 'middle';
-        const anim = item.anim || 'type';
+        const anim = item._static ? 'none' : item.anim || 'type';
         const lines = item._lines;
         let chars = Infinity;
         if (anim === 'type') chars = Math.floor(p * lines.join('').length + 0.0001);
@@ -310,7 +319,7 @@
         break;
       }
       case 'icon': {
-        const s = easeOutBack(p);
+        const s = item._static ? 1 : easeOutBack(p);
         ctx.translate(item.x, item.y);
         ctx.scale(s, s);
         ctx.font = `${item.size || 80}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
@@ -319,24 +328,29 @@
         ctx.fillText(item.char, 0, 0);
         break;
       }
+      case 'svg': {
+        const img = item._img;
+        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, item.x || 0, item.y || 0, item.w || W, item.h || H);
+        break;
+      }
       case 'highlight': {
         ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = item.opacity ?? 0.45;
+        ctx.globalAlpha = base * (item.opacity ?? 0.45);
         ctx.fillStyle = col(item.color || 'yellow');
         ctx.fillRect(item.x, item.y, item.w * e, item.h);
         break;
       }
       case 'mover': {
-        ctx.globalAlpha = e;
+        ctx.globalAlpha = base * e;
         const count = item.count || 1;
         const period = item.speed || 2.5;
         if (item.showPath) {
           setStroke(item.pathColor || 'gray', 2);
-          ctx.globalAlpha = e * 0.5;
+          ctx.globalAlpha = base * e * 0.5;
           ctx.setLineDash([6, 8]);
           strokePartial(item._pts, item._cum, 1);
           ctx.setLineDash([]);
-          ctx.globalAlpha = e;
+          ctx.globalAlpha = base * e;
         }
         for (let k = 0; k < count; k++) {
           let f = (t / period + k / count) % 1;
@@ -366,7 +380,7 @@
         setStroke(item.color || 'red', item.width || 4);
         for (let k = 0; k < 3; k++) {
           const ph = (t / period + k / 3) % 1;
-          ctx.globalAlpha = (1 - ph) * 0.7 * e;
+          ctx.globalAlpha = base * (1 - ph) * 0.7 * e;
           ctx.beginPath();
           ctx.arc(item.x, item.y, r * (0.5 + ph), 0, Math.PI * 2);
           ctx.stroke();
@@ -375,7 +389,7 @@
       }
     }
     ctx.restore();
-    return tip && p < 1 && STROKE_TYPES.has(item.type) ? { ...tip, color: item.color } : null;
+    return tip && !item._static && p < 1 && STROKE_TYPES.has(item.type) ? { ...tip, color: item.color } : null;
   }
 
   function textDuration(item) {
@@ -385,12 +399,16 @@
 
   // Works out when each item in a step starts. Items play one after another
   // unless an item has `with: true` (then it starts with the previous one).
-  function layoutStep(step, stepIndex) {
+  function layoutStep(step, stepIndex, scene) {
+    // drawn: false (on the scene or the step) = everything in the step fades
+    // in together, fully formed. Items can still use `wait` to come in later.
+    const isStatic = (step.drawn ?? scene.drawn) === false;
     let end = 0, prevStart = 0;
     (step.items || []).forEach((item, i) => {
+      item._static = isStatic;
       prepare(item, stepIndex * 31 + i * 7 + 1);
-      const dur = item.duration ?? (item.type === 'text' ? textDuration(item) : DEFAULT_DUR[item.type] ?? 0.6);
-      const start = (item.with ? prevStart : end) + (item.wait || 0);
+      const dur = isStatic ? item.duration ?? 0.5 : item.duration ?? (item.type === 'text' ? textDuration(item) : DEFAULT_DUR[item.type] ?? 0.6);
+      const start = isStatic ? item.wait || 0 : (item.with ? prevStart : end) + (item.wait || 0);
       item._start = start;
       item._dur = Math.max(0.01, dur);
       prevStart = start;
@@ -401,7 +419,7 @@
 
   // ---------- scenes ----------
   const scenes = [{ id: 'blank', title: '✏️ Blank board', steps: [] }, ...(window.WB_SCENES || [])];
-  scenes.forEach((s) => s.steps.forEach(layoutStep));
+  scenes.forEach((s) => s.steps.forEach((step, i) => layoutStep(step, i, s)));
 
   const player = { scene: scenes[0], step: -1, t0: 0, playing: false, waitingForVoice: false };
 

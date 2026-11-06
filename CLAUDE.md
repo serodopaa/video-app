@@ -21,11 +21,13 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
   title: '🧪 Title in the menu',
   intro: 'Optional caption before step 1',
   audio: false,               // optional: never read captions aloud, hide Narrate
+  drawn: false,               // optional: visuals fade in fully formed (no pen drawing them)
   steps: [
     {
       say: 'Caption shown (and read aloud if Narrate is on).',
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
       clear: false,           // true = hide everything from earlier steps
+      drawn: false,           // optional per-step override of the scene setting
       items: [ /* items below */ ],
     },
   ],
@@ -40,7 +42,7 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 
 | type | props |
 |---|---|
-| `text` | `x, y` (y = middle of first line), `text` (`\n` for new lines), `size`=48, `color`, `align` left/center/right, `bold`, `anim` type/fade/pop |
+| `text` | `x, y` (y = middle of first line), `text` (`\n` for new lines), `size`=48, `color`, `align` left/center/right, `bold`, `font: 'sans'` (clean font instead of handwriting), `anim` type/fade/pop |
 | `line` / `arrow` | `from:[x,y]`, `to:[x,y]`, `bend` (curve, px, ±), `color`, `width`=5, `dashed` |
 | `rect` | `x, y, w, h`, `color`, `width`, `fill`, `fillOpacity`=0.25, `dashed` |
 | `circle` | `x, y, r` (or `rx, ry`), same style props as rect |
@@ -48,12 +50,19 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `icon` | `x, y, char` (emoji), `size`=80. Pops in |
 | `highlight` | `x, y, w, h`, `color`=yellow, `opacity`. Marker sweep behind text |
 | `mover` | `path:[[x,y],...]`, `char` (emoji) or dot (`r`, `color`), `count`, `speed` (s per trip), `smooth`, `showPath`, `once`. Loops forever |
+| `svg` | `svg` (full SVG markup string), `x, y, w, h` (default: whole board 0,0,1600,900). For detailed, realistic illustrations; use a `viewBox="0 0 1600 900"` so its coordinates match the board |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.
 Stroke items show a marker pen following the line while drawing.
 
 ## Conventions
+- **The user does the drawing.** In explainers built for them (e.g. `neuron`),
+  Claude's visuals must not be drawn on: use `drawn: false` so they simply
+  appear. Make them realistic (textbook-style SVG illustrations, clean `sans`
+  labels with leader lines), not hand-sketched.
+- The user builds explainers slide by slide: add one step per request and
+  don't add slides they didn't ask for.
 - Keep text and icons inside roughly x 60–1540, y 50–860.
 - Keep each step short (2–6 items) with a one-sentence `say`.
 - Check new scenes in a headless browser (Playwright) and look at screenshots
