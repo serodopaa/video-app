@@ -40,6 +40,8 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
       // Animation buttons for this slide: shown in the toolbar (never recorded) only
       // while the slide is on screen; keys 1-9 press them, Shift+R / ↺ resets.
       // Pressing plays `items` (normal animated timing); pressing again replays.
+      // When done it holds 1s (HOLD_AT_END), then resets. All animation runs on a
+      // pausable clock (animNow): ⏸ / Space / K freezes everything.
       // A slide item with `hideDuring: '<id>'` is hidden once that action runs.
       actions: [{ id: 'release', label: 'Release neurotransmitters', items: [ /* items */ ] }],
       items: [ /* items below */ ],

@@ -129,7 +129,7 @@
   };
 
   function makeThumb() {
-    renderRecFrame(WB.now());
+    renderRecFrame(WB.animNow());
     const c = document.createElement('canvas');
     c.width = 320;
     c.height = 180;

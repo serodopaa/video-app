@@ -557,6 +557,25 @@
     return player.scene.steps.length ? slideOf(player.scene.steps.length - 1) + 1 : 0;
   }
 
+  // ---------- animation clock (can be paused) ----------
+  // Everything that moves on the board runs on this clock, so pausing freezes
+  // all animations mid-way while you keep drawing, zooming and recording.
+  const clock = { paused: false, offset: 0, pausedAt: 0 };
+  const animNow = () => (clock.paused ? clock.pausedAt : now() - clock.offset);
+  const pausedBadge = document.getElementById('pausedBadge');
+  function setAnimPaused(on) {
+    if (on === clock.paused) return;
+    if (on) {
+      clock.pausedAt = animNow();
+      clock.paused = true;
+    } else {
+      clock.offset = now() - clock.pausedAt;
+      clock.paused = false;
+    }
+    if (pausedBadge) pausedBadge.hidden = !clock.paused;
+    renderActionButtons();
+  }
+
   // ---------- slide action buttons ----------
   // A step can have `actions: [{ label, items }]`. Each becomes a button in the
   // toolbar (never in the recording) while its slide is shown. Pressing it plays
@@ -573,14 +592,22 @@
     for (let i = first; i <= player.step; i++) list.push(...(steps[i].actions || []));
     return list;
   }
+  const HOLD_AT_END = 1; // seconds an action's last frame stays before the slide resets
   function runAction(a) {
-    actionRuns.set(a.id, now());
+    setAnimPaused(false);
+    actionRuns.set(a.id, animNow());
   }
   function renderActionButtons() {
     if (!actionsBox) return;
     const list = slideActions();
     actionsBox.innerHTML = '';
-    actionsBox.hidden = !list.length;
+    actionsBox.hidden = !player.scene.steps.length;
+    const pause = document.createElement('button');
+    pause.className = 'pause-btn' + (clock.paused ? ' active' : '');
+    pause.textContent = clock.paused ? '⏵ Resume' : '⏸ Pause';
+    pause.title = 'Pause / resume all animations on the board (K). Not shown in recordings.';
+    pause.addEventListener('click', () => setAnimPaused(!clock.paused));
+    actionsBox.appendChild(pause);
     list.forEach((a, k) => {
       const b = document.createElement('button');
       b.className = 'action-btn';
@@ -593,7 +620,7 @@
       const reset = document.createElement('button');
       reset.textContent = '↺';
       reset.title = 'Reset this slide’s animations (R)';
-      reset.addEventListener('click', () => actionRuns.clear());
+      reset.addEventListener('click', () => { actionRuns.clear(); setAnimPaused(false); });
       actionsBox.appendChild(reset);
     }
   }
@@ -605,6 +632,7 @@
     if (slide !== player.slide) {
       zoomFit();
       actionRuns.clear();
+      setAnimPaused(false);
       stashHistory();
       saveInk();
       player.slide = slide;
@@ -612,7 +640,7 @@
       current = null;
       loadInk();
     }
-    player.t0 = animate ? now() : -Infinity;
+    player.t0 = animate ? animNow() : -Infinity;
     const step = steps[player.step];
     els.caption.textContent = step ? step.say || '' : player.scene.intro || (steps.length ? 'Press ▶ Play or ⏭ to start the explainer. You can draw on the board at any time.' : 'Draw anything. Pick an explainer from the menu to watch an animation.');
     if (step && animate) speak(step.say);
@@ -1000,7 +1028,7 @@
       t += d + 0.12;
       return item;
     });
-    replay.t0 = now();
+    replay.t0 = animNow();
     replay.active = true;
   }
 
@@ -1013,9 +1041,9 @@
   }
 
   function frame() {
-    const t = now();
+    const t = animNow();
     tickPlayer(t);
-    stepView(t);
+    stepView(now());
     ctx.setTransform(...viewMatrix(scale));
     drawBoard(t);
     if (window.WB.onFrame) window.WB.onFrame(t);
@@ -1023,7 +1051,7 @@
   }
 
   // Draw the whole board (background, scene, your ink) into a canvas context.
-  function renderTo(targetCtx, s, t = now()) {
+  function renderTo(targetCtx, s, t = animNow()) {
     const prev = ctx;
     ctx = targetCtx;
     ctx.setTransform(...viewMatrix(s));
@@ -1052,6 +1080,7 @@
     for (const a of slideActions()) {
       if (!actionRuns.has(a.id)) continue;
       const elapsed = t - actionRuns.get(a.id);
+      if (elapsed > a._len + HOLD_AT_END) { actionRuns.delete(a.id); continue; } // finished: back to the start state
       for (const item of a.items) renderItem(item, clamp((elapsed - item._start) / item._dur), t);
     }
 
@@ -1140,12 +1169,14 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'ArrowRight') { player.playing = false; goTo(player.step + 1); }
     else if (e.key === 'ArrowLeft') { player.playing = false; goTo(player.step - 1, false); }
+    else if (e.key === ' ' && player.scene.drawn === false) { e.preventDefault(); setAnimPaused(!clock.paused); }
     else if (e.key === ' ') { e.preventDefault(); if (player.scene.steps.length) setPlaying(!player.playing); }
+    else if (k === 'k') setAnimPaused(!clock.paused);
     else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());
     else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.5, ...viewCenter());
     else if (e.key === '0') zoomFit();
     else if (/^[1-9]$/.test(e.key) && slideActions()[+e.key - 1]) runAction(slideActions()[+e.key - 1]);
-    else if (e.key === 'R' && e.shiftKey) actionRuns.clear();
+    else if (e.key === 'R' && e.shiftKey) { actionRuns.clear(); setAnimPaused(false); }
     else if (KEYS[k]) setTool(KEYS[k]);
   });
   document.getElementById('zoomIn').addEventListener('click', () => zoomAt(1.5, ...viewCenter()));
@@ -1158,7 +1189,7 @@
   const startIndex = fromHash >= 0 ? fromHash : scenes.length > 1 ? 1 : 0;
   els.select.value = startIndex;
   // Hooks used by recorder.js.
-  window.WB = { W, H, renderTo, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
+  window.WB = { W, H, renderTo, animNow, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
 
   resize();
   loadScene(startIndex);

@@ -23,7 +23,10 @@ Open `index.html` in any browser. No install needed.
   empty space to look around when zoomed in.
 - **Slide animation buttons:** some slides have orange **▶ buttons** at the right of the toolbar
   (e.g. slide 1: *Release neurotransmitters*). They only appear on their own slide and are not in
-  recordings. Press one (or keys **1–9**) to play it; **↺** (or **Shift + R**) resets the slide.
+  recordings. Press one (or keys **1–9**) to play it. When it finishes it holds the last frame for
+  a second, then the slide resets by itself; **↺** (or **Shift + R**) resets it early.
+- **⏸ Pause** (or **Space** / **K**) freezes every animation mid-way so you can point things out or
+  draw on it; press again to carry on.
 Keyboard: P pen · H marker · L line · A arrow · R box · O circle · T text · E eraser · M move · + / − / 0 zoom · Space play/pause.
 
 ## Recording videos (for YouTube)
