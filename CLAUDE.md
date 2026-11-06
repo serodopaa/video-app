@@ -77,6 +77,7 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `meter` | `id`, `value` (resting), `x, y, w, h`, `graphH`, `min`/`max`. Membrane-potential panel: live number, state text and a graph of the last 8 s with 0 / threshold / resting lines |
 | `charges` | `id` (live mV value), `value`, `x0, x1, top, bot`, `step`. +/− signs on both membrane faces that flip when the inside goes above 0 mV |
 | `apgraph` | `id` (live value = seconds along the curve, −1 idle), `keys` [[t, mV]…], `phases` [{from, to, title, text, color, dot, mark}], `x, y, w, h`, `graphH`, `title`, `idleText`. Action-potential panel: full curve, cursor tracing it, phase bands, numbered markers and a caption for the current phase |
+| `apwave` | `id` (live value = seconds, −1 idle), `sites` [{x, t, node}], `wave` [[τ, mV]…], `gx0, gx1, gy, gh` (graph strip, x lined up with the axon), `axonY, axonR`, `naStyle`/`kStyle` {fill, edge, dot}. Action potential travelling along a straight axon: voltage-vs-position graph plus Na⁺/K⁺ channels opening, ions crossing and a glow at each site |
 | `value` | (in actions) `id`, `from`, `to`, `at`, `duration`, `linear`: animates live value `id` (used by `meter`, `channel`, `charges`, `apgraph`). Eased unless `linear: true`. Latest started segment wins |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 

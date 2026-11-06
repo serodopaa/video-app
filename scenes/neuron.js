@@ -703,6 +703,103 @@
     },
   ];
 
+  // ---------- slide 6: the action potential travels down the axon ----------
+  // A straightened axon: cell body + hillock, an unmyelinated stretch, four
+  // myelin segments with nodes of Ranvier, a bare stretch, then the terminal
+  // and a dendrite of the next neuron. A voltage-vs-position graph sits right
+  // above it, lined up in x.
+  const AY = 585, AR = 13;                    // axon centre line and half-thickness
+  const SHEATHS6 = [[318, 482], [518, 682], [718, 882], [918, 1082]];
+  const NODES6 = [500, 700, 900];
+  // Where the action potential is regenerated, and when (seconds). Bare membrane:
+  // 30 px every 0.2 s. Through the myelin: 200 px node to node in 0.35 s (~4x faster).
+  const STEP6 = 0.2, JUMP6 = 0.35;
+  const SITES6 = [];
+  [180, 210, 240, 270, 300].forEach((x, i) => SITES6.push({ x, t: 0.4 + i * STEP6 }));
+  NODES6.forEach((x) => SITES6.push({ x, t: SITES6[SITES6.length - 1].t + JUMP6, node: true }));
+  [1100, 1130, 1160, 1190, 1220].forEach((x, i) => SITES6.push({ x, t: SITES6[SITES6.length - 1].t + (i ? STEP6 : JUMP6) }));
+  // The action potential at one spot: brief, so it shows as a bump that travels.
+  const WAVE6 = [[-0.15, -70], [0, -55], [0.15, 30], [0.4, -80], [0.95, -70]];
+  const TERM6 = { x: 1288, y: AY, r: 52 };
+  const DEND6 = { p0: [1640, AY], c: [1500, AY], p1: [1372, AY], w0: 48, w1: 36 };
+  const RECEPT6 = [AY - 12, AY, AY + 12];
+  const VES6 = [[1262, AY - 26], [1290, AY - 32], [1270, AY + 2], [1300, AY + 24], [1258, AY + 28], [1316, AY - 8]];
+  const FUSE6 = [[5, [1326, AY - 10]], [3, [1325, AY + 18]], [1, [1322, AY - 32]]];
+  const propSvg = svgDoc(`<defs>
+    <radialGradient id="soma6" cx="70%" cy="40%" r="80%"><stop offset="0" stop-color="${PURPLE.s0}"/><stop offset="0.6" stop-color="${PURPLE.s1}"/><stop offset="1" stop-color="${PURPLE.s2}"/></radialGradient>
+    <linearGradient id="axon6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${PURPLE.a0}"/><stop offset="1" stop-color="${PURPLE.a1}"/></linearGradient>
+    <radialGradient id="term6" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="${PURPLE.b0}"/><stop offset="1" stop-color="${PURPLE.b1}"/></radialGradient>
+    <linearGradient id="dend6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${GREEN.light}"/><stop offset="0.5" stop-color="${GREEN.fill}"/><stop offset="1" stop-color="${GREEN.dark}"/></linearGradient>
+    <filter id="sh6" x="-10%" y="-30%" width="120%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#3b1452" flood-opacity="0.2"/></filter>
+  </defs>
+  <g filter="url(#sh6)">
+    <!-- cell body and axon hillock -->
+    <circle cx="-20" cy="${AY}" r="150" fill="${PURPLE.outline}"/>
+    <path d="M100 ${AY - 60} Q140 ${AY - 18} 182 ${AY - AR - 3} L182 ${AY + AR + 3} Q140 ${AY + 18} 100 ${AY + 60} Z" fill="${PURPLE.outline}"/>
+    <rect x="150" y="${AY - AR - 3}" width="${TERM6.x - 150}" height="${2 * AR + 6}" fill="${PURPLE.outline}"/>
+    <circle cx="${TERM6.x}" cy="${TERM6.y}" r="${TERM6.r + 3}" fill="${PURPLE.outline}"/>
+    <circle cx="-20" cy="${AY}" r="146" fill="url(#soma6)"/>
+    <path d="M96 ${AY - 56} Q140 ${AY - 16} 182 ${AY - AR} L182 ${AY + AR} Q140 ${AY + 16} 96 ${AY + 56} Z" fill="${PURPLE.fill}"/>
+    <rect x="150" y="${AY - AR}" width="${TERM6.x - 150}" height="${2 * AR}" fill="url(#axon6)"/>
+    <circle cx="${TERM6.x}" cy="${TERM6.y}" r="${TERM6.r}" fill="url(#term6)"/>
+    <!-- myelin sheath -->
+    ${SHEATHS6.map(([a, b]) => `<rect x="${a}" y="${AY - 38}" width="${b - a}" height="76" rx="34" fill="#f5e4b8" stroke="#a9802f" stroke-width="4"/>
+      <path d="M${a + 26} ${AY - 26} H${b - 26} M${a + 26} ${AY + 26} H${b - 26}" stroke="#e2c98a" stroke-width="3" opacity="0.8"/>
+      <path d="M${a + 26} ${AY - 31} H${b - 26}" stroke="#fffaf0" stroke-width="4" opacity="0.8"/>`).join('')}
+    <!-- dendrite of the next neuron -->
+    <path d="${taperD(DEND6)}" fill="${GREEN.outline}" stroke="${GREEN.outline}" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="${DEND6.p1[0]}" cy="${DEND6.p1[1]}" r="${DEND6.w1 / 2 + 3}" fill="${GREEN.outline}"/>
+    <path d="${taperD(DEND6)}" fill="url(#dend6)"/>
+    <circle cx="${DEND6.p1[0]}" cy="${DEND6.p1[1]}" r="${DEND6.w1 / 2}" fill="${GREEN.fill}"/>
+  </g>
+  ${RECEPT6.map((y) => `<rect x="${DEND6.p1[0] - DEND6.w1 / 2 - 4}" y="${y - 3}" width="7" height="6" rx="2" fill="#1d5a2e"/>`).join('')}
+`);
+  const NODE_T = (x) => SITES6.find((s) => s.x === x).t;
+  const T_TERM = SITES6[SITES6.length - 1].t + 0.3;
+  const propItems6 = [
+    { type: 'value', id: 'ap6t', from: 0, to: 9.5, at: 0, duration: 9.5, linear: true },
+    // the fast jump inside the myelinated stretch, node to node
+    ...[[300, 500], [500, 700], [700, 900], [900, 1100]].map(([a, b]) => ({
+      type: 'mover', once: true, vanish: true, r: 7, color: '#ffb21e', path: [[a, AY], [b, AY]],
+      duration: NODE_T(b) - NODE_T(a), at: NODE_T(a),
+    })),
+    { type: 'flash', x: TERM6.x, y: TERM6.y, r: 70, color: AP, duration: 0.7, at: T_TERM },
+    // vesicles fuse and release neurotransmitters, which bind the next dendrite
+    ...FUSE6.map(([vi, to], k) => ({ type: 'vesicle', fuse: true, path: [VES6[vi], to], r: 10, duration: 1.2, at: T_TERM + 0.2 + k * 0.15 })),
+    ...FUSE6.flatMap(([, [fx, fy]], k) => [0, 1].map((n) => {
+      const ry = RECEPT6[(k + n) % RECEPT6.length];
+      return {
+        type: 'mover', once: true, r: 3.5, color: '#f08c1a', smooth: true,
+        path: [[fx + 8, fy], [fx + 22, (fy + ry) / 2 + (n ? 5 : -5)], [DEND6.p1[0] - DEND6.w1 / 2 - 8, ry]],
+        duration: 0.9, at: T_TERM + 0.95 + k * 0.15 + n * 0.1,
+      };
+    })),
+    { type: 'flash', x: DEND6.p1[0] + 10, y: AY, r: 40, color: '#2e9e5b', duration: 0.7, at: T_TERM + 2.0 },
+    { type: 'pulse', x: DEND6.p1[0] + 10, y: AY, r: 30, color: '#2e9e5b', speed: 1.4, at: T_TERM + 2.0 },
+    { type: 'mover', once: true, vanish: true, r: 8, color: '#2e9e5b', path: [[DEND6.p1[0] + 10, AY], [1640, AY]], duration: 1.6, at: T_TERM + 2.1 },
+  ];
+  const propItems = [
+    title('The action potential travels'),
+    { type: 'svg', svg: propSvg },
+    {
+      type: 'apwave', id: 'ap6t', gx0: 150, gx1: 1340, gy: 170, gh: 250, axonY: AY, axonR: AR,
+      sites: SITES6, wave: WAVE6,
+      naStyle: { fill: '#f8cf8f', edge: '#a8640a', dot: '#f0a12e' },
+      kStyle: { fill: '#c3b3f2', edge: '#47309a', dot: '#7b5cd6' },
+    },
+    ...VES6.map(([x, y], vi) => ({ type: 'vesicle', x, y, r: 10, hideDuring: FUSE6.some(([fi]) => fi === vi) ? 'prop' : undefined })),
+    ...label('Axon hillock', 195, 700, [160, 678], [150, AY + 22], 'center', 26),
+    ...label('Unmyelinated: regenerates\nstep by step (slow)', 330, 790, [322, 790], [240, AY + 30], 'left', 22),
+    ...label('Myelin sheath', 600, 690, [600, 668], [600, AY + 38], 'center', 26),
+    ...label('Node of Ranvier: the signal\njumps node to node (fast)', 760, 790, [752, 790], [700, AY + 30], 'left', 22),
+    ...label('Axon terminal', 1290, 690, [1290, 668], [1290, AY + 52], 'center', 26),
+    ...label('Dendrite of the\nnext neuron', 1500, 690, [1500, 664], [1500, AY + 22], 'center', 24),
+    { type: 'circle', x: 1180, y: 810, r: 9, color: '#a8640a', fill: '#f8cf8f', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1198, y: 810, text: 'Na⁺ channel (top)', size: 20, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1180, y: 844, r: 9, color: '#47309a', fill: '#c3b3f2', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1198, y: 844, text: 'K⁺ channel (bottom)', size: 20, font: 'sans', color: 'ink' },
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
@@ -759,6 +856,13 @@
         clear: true,
         actions: [{ id: 'ap', label: 'Fire an action potential', items: apTimeline }],
         items: apItems,
+      },
+      // Slide 6: the action potential travels down the axon (saltatory conduction) and is passed on.
+      {
+        say: 'The action potential regenerates along the axon, jumping node to node through the myelin, then triggers release at the terminal.',
+        clear: true,
+        actions: [{ id: 'prop', label: 'Send the action potential', items: propItems6 }],
+        items: propItems,
       },
     ],
   });

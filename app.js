@@ -333,7 +333,8 @@
   // Draws one scene item at progress p (0..1). Returns a pen tip if it is
   // mid-stroke, so the player can draw a marker following the line.
   function renderItem(item, p, t) {
-    if (p <= 0) return null;
+    // Moving ions/vesicles wait, visible, at their start until their trip begins.
+    if (p <= 0 && !((item.type === 'ion' || item.type === 'vesicle') && item._pts)) return null;
     // Static items (scene option drawn: false) fade in fully formed instead of
     // being drawn stroke by stroke.
     const base = item._static ? easeInOut(p) : 1;
@@ -574,6 +575,156 @@
           ctx.textBaseline = 'middle';
           lines.forEach((ln, i) => ctx.fillText(ln + (i === lines.length - 1 ? state : ''), cx, cy + hh + 24 + (item.inactId ? 30 : 0) + i * 26));
         }
+        break;
+      }
+      case 'apwave': {
+        // An action potential travelling along a (straight, horizontal) axon.
+        // Each site (unmyelinated patch or node of Ranvier) fires the waveform
+        // `wave` at its own time; between sites the voltage is interpolated.
+        // Draws: a graph of voltage vs position above the axon (aligned in x),
+        // and at every site Na+ (top) / K+ (bottom) channels opening, ions
+        // crossing and a glow. Time = live value `id` (-1 = idle).
+        const cur = liveValue(item.id, -1, t);
+        const idle = cur < 0;
+        const wk = item.wave;
+        const wave = (tau) => {
+          if (tau <= wk[0][0]) return wk[0][1];
+          for (let i = 1; i < wk.length; i++) {
+            if (tau <= wk[i][0]) {
+              const [t0, v0] = wk[i - 1], [t1, v1] = wk[i];
+              return v0 + (v1 - v0) * easeInOut(clamp((tau - t0) / (t1 - t0)));
+            }
+          }
+          return wk[wk.length - 1][1];
+        };
+        const sites = item.sites;
+        const vSite = (i) => (idle ? wk[0][1] : wave(cur - sites[i].t));
+        const vAtX = (x) => {
+          if (x <= sites[0].x) return vSite(0);
+          for (let i = 1; i < sites.length; i++) {
+            if (x <= sites[i].x) {
+              const f = (x - sites[i - 1].x) / (sites[i].x - sites[i - 1].x);
+              return vSite(i - 1) + (vSite(i) - vSite(i - 1)) * f;
+            }
+          }
+          return vSite(sites.length - 1);
+        };
+        // --- graph strip ---
+        const { gx0, gx1, gy, gh } = item;
+        const vmin = -90, vmax = 40;
+        const Y = (v) => gy + ((vmax - v) / (vmax - vmin)) * gh;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#d9dce3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(gx0 - 70, gy - 44, gx1 - gx0 + 90, gh + 64, 16);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#1f2430';
+        ctx.font = `600 22px ${SANS}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.title || 'Membrane potential along the axon (right now)', gx0 - 50, gy - 22);
+        ctx.font = `600 15px ${SANS}`;
+        ctx.textAlign = 'right';
+        for (const [val, txt, c, dash] of [[30, '+30', '#8a8f98', [2, 5]], [0, '0', '#8a8f98', [8, 6]], [-55, '−55', '#e0453a', [10, 6]], [-70, '−70', '#5b6270', [3, 5]]]) {
+          ctx.strokeStyle = c;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(gx0, Y(val));
+          ctx.lineTo(gx1, Y(val));
+          ctx.stroke();
+          ctx.fillStyle = c;
+          ctx.fillText(txt, gx0 - 8, Y(val));
+        }
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#8a8f98';
+        ctx.fillText('mV', gx0 - 38, gy + 4);
+        // dotted guides from each node down to the axon
+        ctx.strokeStyle = '#d4d8e0';
+        ctx.setLineDash([3, 6]);
+        ctx.lineWidth = 1.5;
+        for (const s of sites) {
+          if (!s.node) continue;
+          ctx.beginPath();
+          ctx.moveTo(s.x, gy + gh + 2);
+          ctx.lineTo(s.x, item.axonY - item.axonR - 26);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        // the voltage profile, with the part above rest shaded
+        const pts = [];
+        for (let x = gx0; x <= gx1; x += 3) pts.push([x, Y(vAtX(x))]);
+        ctx.fillStyle = 'rgba(224,69,58,0.14)';
+        ctx.beginPath();
+        ctx.moveTo(gx0, Y(-70));
+        pts.forEach(([x, y]) => ctx.lineTo(x, Math.min(y, Y(-70))));
+        ctx.lineTo(gx1, Y(-70));
+        ctx.fill();
+        ctx.strokeStyle = '#2f6fde';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.stroke();
+        // --- channels and ions at each site ---
+        const ay = item.axonY, ar = item.axonR;
+        sites.forEach((s, i) => {
+          const tau = idle ? -99 : cur - s.t;
+          const v = vSite(i);
+          // phases come from the waveform: rising (Na+ open) until the peak, falling (K+ open) until the low point
+          const tPeak = wk.reduce((m, k) => (k[1] > m[1] ? k : m))[0];
+          const tLow = wk.reduce((m, k) => (k[1] < m[1] ? k : m))[0];
+          const naOpen = tau > -0.05 && tau < tPeak + 0.05 ? 1 : 0;
+          const kOpen = tau > tPeak - 0.02 && tau < tLow + 0.25 ? 1 : 0;
+          // glow where the membrane is depolarized
+          const heat = clamp((v + 60) / 80);
+          if (heat > 0) {
+            ctx.globalAlpha = base * heat * 0.75;
+            ctx.fillStyle = '#ff5a36';
+            ctx.shadowColor = '#ff5a36';
+            ctx.shadowBlur = 24;
+            ctx.beginPath();
+            ctx.arc(s.x, ay, ar + 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = base;
+          }
+          const chan = (cy, open, st) => {
+            const g = 4 + 6 * open, sw = 7, hh = 11;
+            ctx.fillStyle = st.fill;
+            ctx.strokeStyle = st.edge;
+            ctx.lineWidth = 2;
+            for (const sx of [s.x - g / 2 - sw, s.x + g / 2]) {
+              ctx.beginPath();
+              ctx.roundRect(sx, cy - hh, sw, hh * 2, 3);
+              ctx.fill();
+              ctx.stroke();
+            }
+          };
+          chan(ay - ar, naOpen, item.naStyle);
+          chan(ay + ar, kOpen, item.kStyle);
+          // Na+ in through the top, K+ out through the bottom
+          const dot = (x, y, c) => {
+            ctx.fillStyle = c;
+            ctx.beginPath();
+            ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          };
+          const tPk = wk.reduce((m, k) => (k[1] > m[1] ? k : m))[0];
+          const tLo = wk.reduce((m, k) => (k[1] < m[1] ? k : m))[0];
+          if (tau > 0 && tau < tPk + 0.25) {
+            const f = tau / (tPk + 0.25);
+            dot(s.x - 2, ay - ar - 26 + f * (ar + 18), item.naStyle.dot);
+            if (f > 0.3) dot(s.x + 2, ay - ar - 26 + (f - 0.3) * (ar + 18), item.naStyle.dot);
+          }
+          if (tau > tPk && tau < tLo + 0.3) {
+            const f = (tau - tPk) / (tLo + 0.3 - tPk);
+            dot(s.x + 2, ay + ar - 8 + f * 34, item.kStyle.dot);
+            if (f > 0.3) dot(s.x - 2, ay + ar - 8 + (f - 0.3) * 34, item.kStyle.dot);
+          }
+        });
         break;
       }
       case 'charges': {
