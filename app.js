@@ -390,6 +390,7 @@
         break;
       }
       case 'mover': {
+        if (item.once && item.vanish && p >= 1) break; // arrived: gone
         ctx.globalAlpha = base * e;
         const count = item.count || 1;
         const period = item.speed || 2.5;
@@ -450,6 +451,23 @@
         }
         break;
       }
+      case 'flash': {
+        if (p <= 0 || p >= 1) break;
+        const fr = (item.r || 40) * (0.4 + 0.8 * p);
+        const c = col(item.color || 'orange');
+        ctx.globalAlpha = base * (1 - p);
+        ctx.fillStyle = c;
+        ctx.shadowColor = c;
+        ctx.shadowBlur = 30;
+        ctx.globalAlpha = base * (1 - p) * 0.35;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, fr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = base * (1 - p);
+        setStroke(c, item.width || 5);
+        ctx.stroke();
+        break;
+      }
       case 'pulse': {
         const r = item.r || 40;
         const period = item.speed || 1.6;
@@ -484,7 +502,7 @@
       item._static = isStatic;
       prepare(item, stepIndex * 31 + i * 7 + 1);
       const dur = isStatic ? item.duration ?? 0.5 : item.duration ?? (item.type === 'text' ? textDuration(item) : DEFAULT_DUR[item.type] ?? 0.6);
-      const start = isStatic ? item.wait || 0 : (item.with ? prevStart : end) + (item.wait || 0);
+      const start = item.at ?? (isStatic ? item.wait || 0 : (item.with ? prevStart : end) + (item.wait || 0));
       item._start = start;
       item._dur = Math.max(0.01, dur);
       prevStart = start;
@@ -1024,7 +1042,7 @@
     for (let i = first; i <= player.step; i++) {
       const elapsed = i < player.step ? Infinity : t - player.t0;
       for (const item of steps[i].items || []) {
-        if (item.hideDuring && actionRuns.has(item.hideDuring)) continue; // an action is animating it
+        if (item.hideDuring && [].concat(item.hideDuring).some((id) => actionRuns.has(id))) continue; // an action is animating it
         const p = clamp((elapsed - item._start) / item._dur);
         const tip = renderItem(item, p, t);
         if (tip) tips.push(tip);

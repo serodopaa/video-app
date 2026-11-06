@@ -50,7 +50,8 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
 
 Within a step, items animate **one after another**. Each item can have:
 `duration` (seconds), `wait` (extra delay before it starts), `with: true`
-(start at the same time as the previous item).
+(start at the same time as the previous item), or `at` (exact start time in
+seconds; handy for long chained action animations).
 
 Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS color.
 
@@ -63,9 +64,10 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `path` | `points:[[x,y],...]`, `closed`, `smooth` (default true), `fill`, style props |
 | `icon` | `x, y, char` (emoji), `size`=80. Pops in |
 | `highlight` | `x, y, w, h`, `color`=yellow, `opacity`. Marker sweep behind text |
-| `mover` | `path:[[x,y],...]`, `char` (emoji) or dot (`r`, `color`), `count`, `speed` (s per trip), `smooth`, `showPath`, `once`. Loops forever |
+| `mover` | `path:[[x,y],...]`, `char` (emoji) or dot (`r`, `color`), `count`, `speed` (s per trip), `smooth`, `showPath`, `once` (travel once and stop), `vanish` (with `once`: disappear on arrival). Loops forever otherwise |
 | `svg` | `svg` (full SVG markup string), `x, y, w, h` (default: whole board 0,0,1600,900). For detailed, realistic illustrations; use a `viewBox="0 0 1600 900"` so its coordinates match the board |
 | `vesicle` | `x, y`, `r`=11 (a bubble of neurotransmitters). With `path` it moves along it; with `fuse: true` it moves in the first 60% of its time, then merges into the membrane and disappears |
+| `flash` | `x, y, r`, `color`. One-off glow that grows and fades within its `duration` (e.g. a node firing) |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.
