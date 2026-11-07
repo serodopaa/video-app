@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611070207" />
+  <link rel="stylesheet" href="style.css?v=202611070317" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -99,6 +99,21 @@
       </div>
       <p class="hint">Play or click on the bar to find a spot, then press "Start here" or "End here". The cut-off parts are left out of the final video.</p>
     </div>
+    <div id="previewUI" class="pv" hidden>
+      <div class="pv-bar" id="pvBar" title="Click or drag to jump anywhere in the video">
+        <div class="pv-segs" id="pvSegs"></div>
+        <div class="pv-fill" id="pvFill"></div>
+        <div class="pv-head" id="pvHead"></div>
+      </div>
+      <div class="trim-row">
+        <button id="pvRestart" title="Back to the start">⏮</button>
+        <button id="pvBack" title="Back 5 seconds (←)">−5s</button>
+        <button id="pvPlay" class="primary" title="Play / pause (Space)">⏸ Pause</button>
+        <button id="pvFwd" title="Forward 5 seconds (→)">+5s</button>
+        <span id="pvTime">0:00 / 0:00</span>
+      </div>
+      <p class="hint">Click or drag on the bar to jump around. Each block is one clip, with your trims applied. Space plays/pauses, ← / → jump 5 seconds.</p>
+    </div>
     <div class="dlg-actions">
       <button id="dlgCancel">Close</button>
       <button id="dlgSave" class="primary">Save trim</button>
@@ -106,9 +121,9 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611070207"></script>
-  <script src="app.js?v=202611070207"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611070207"></script>
-  <script src="recorder.js?v=202611070207"></script>
+  <script src="scenes/neuron.js?v=202611070317"></script>
+  <script src="app.js?v=202611070317"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611070317"></script>
+  <script src="recorder.js?v=202611070317"></script>
 </body>
 </html>

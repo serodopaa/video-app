@@ -386,6 +386,7 @@
     $('dlgTitle').textContent = `Clip ${clips.indexOf(c) + 1}: watch and trim`;
     $('trimUI').hidden = false;
     $('dlgSave').hidden = false;
+    $('previewUI').hidden = true;
     vid.controls = false;
     vid.src = urlOf(c);
     vid.currentTime = c.in;
@@ -444,6 +445,10 @@
     vid.pause();
     if (previewAbort) previewAbort.abort();
     trim.clip = null;
+    pv.active = false;
+    pv.playing = false;
+    pv.token++;
+    $('previewUI').hidden = true;
   });
 
   // ---------- play clips in order (used by preview and export) ----------
@@ -478,21 +483,134 @@
     return !(signal && signal.aborted);
   }
 
+  // ---------- preview all: one seekable timeline over every clip ----------
+  const pv = { active: false, list: [], starts: [], total: 0, idx: -1, playing: false, token: 0, dragging: false };
+  const pvLen = (i) => clipLen(pv.list[i]);
+  function pvGlobal() {
+    if (pv.idx < 0) return 0;
+    const c = pv.list[pv.idx];
+    return pv.starts[pv.idx] + clamp01(vid.currentTime - c.in, pvLen(pv.idx));
+  }
+  const clamp01 = (v, max) => Math.max(0, Math.min(max, v));
+  function pvDraw() {
+    const g = pvGlobal();
+    const pct = pv.total ? (g / pv.total) * 100 : 0;
+    $('pvHead').style.left = pct + '%';
+    $('pvFill').style.width = pct + '%';
+    $('pvTime').textContent = `${fmt(g)} / ${fmt(pv.total)}${pv.idx >= 0 ? `  ·  Clip ${pv.idx + 1} of ${pv.list.length}` : ''}`;
+    $('pvPlay').textContent = pv.playing ? '⏸ Pause' : '▶ Play';
+  }
+  // Show clip i at `local` seconds into its trimmed part.
+  async function pvLoad(i, local) {
+    const token = ++pv.token;
+    const c = pv.list[i];
+    if (pv.idx !== i) {
+      pv.idx = i;
+      vid.src = urlOf(c);
+      await once(vid, 'loadeddata');
+      if (token !== pv.token) return false;
+    }
+    const target = c.in + clamp01(local, Math.max(0, pvLen(i) - 0.05));
+    if (Math.abs(vid.currentTime - target) > 0.04) {
+      vid.currentTime = target;
+      await once(vid, 'seeked');
+      if (token !== pv.token) return false;
+    }
+    return true;
+  }
+  async function pvSeek(g) {
+    g = clamp01(g, pv.total);
+    let i = pv.starts.findIndex((s, k) => g < s + pvLen(k));
+    if (i < 0) i = pv.list.length - 1;
+    const wasPlaying = pv.playing;
+    vid.pause();
+    const ok = await pvLoad(i, g - pv.starts[i]);
+    pvDraw();
+    if (ok && wasPlaying && !pv.dragging) vid.play().catch(() => {});
+  }
+  function pvSetPlaying(on) {
+    pv.playing = on;
+    if (on) {
+      if (pvGlobal() >= pv.total - 0.1) { pvSeek(0).then(() => vid.play().catch(() => {})); }
+      else vid.play().catch(() => {});
+    } else vid.pause();
+    pvDraw();
+  }
+  // Move on to the next clip when the current one reaches its trimmed end.
+  function pvTick() {
+    if (!pv.active) return;
+    const c = pv.list[pv.idx];
+    if (c && pv.playing && !pv.dragging && (vid.ended || vid.currentTime >= c.out - 0.03)) {
+      if (pv.idx < pv.list.length - 1) {
+        vid.pause();
+        pvLoad(pv.idx + 1, 0).then((ok) => { if (ok && pv.playing) vid.play().catch(() => {}); });
+      } else {
+        vid.pause();
+        pv.playing = false;
+      }
+    }
+    pvDraw();
+    requestAnimationFrame(pvTick);
+  }
+  const barToGlobal = (e) => {
+    const r = $('pvBar').getBoundingClientRect();
+    return clamp01((e.clientX - r.left) / r.width, 1) * pv.total;
+  };
+  $('pvBar').addEventListener('pointerdown', (e) => {
+    pv.dragging = true;
+    $('pvBar').setPointerCapture(e.pointerId);
+    vid.pause();
+    pvSeek(barToGlobal(e));
+  });
+  $('pvBar').addEventListener('pointermove', (e) => { if (pv.dragging) pvSeek(barToGlobal(e)); });
+  const endDrag = () => {
+    if (!pv.dragging) return;
+    pv.dragging = false;
+    if (pv.playing) vid.play().catch(() => {});
+  };
+  $('pvBar').addEventListener('pointerup', endDrag);
+  $('pvBar').addEventListener('pointercancel', endDrag);
+  $('pvPlay').addEventListener('click', () => pvSetPlaying(!pv.playing));
+  $('pvRestart').addEventListener('click', () => pvSeek(0));
+  $('pvBack').addEventListener('click', () => pvSeek(pvGlobal() - 5));
+  $('pvFwd').addEventListener('click', () => pvSeek(pvGlobal() + 5));
+  dlg.addEventListener('keydown', (e) => {
+    if (!pv.active) return;
+    if (e.key === ' ') { e.preventDefault(); pvSetPlaying(!pv.playing); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); pvSeek(pvGlobal() - 5); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); pvSeek(pvGlobal() + 5); }
+    else return;
+    e.stopPropagation();
+  });
+
   $('previewAll').addEventListener('click', async () => {
     if (!clips.length) return;
     trim.clip = null;
     $('dlgTitle').textContent = 'Preview: all clips in order';
     $('trimUI').hidden = true;
     $('dlgSave').hidden = true;
+    $('previewUI').hidden = false;
     vid.controls = false;
-    dlg.showModal();
-    previewAbort = new AbortController();
-    const total = clips.reduce((s, c) => s + clipLen(c), 0);
-    await playSequence(vid, clips.slice(), {
-      signal: previewAbort.signal,
-      onProgress: (s) => { $('dlgTitle').textContent = `Preview: ${fmt(s)} / ${fmt(total)}`; },
+    pv.list = clips.slice();
+    pv.starts = [];
+    let acc = 0;
+    for (const c of pv.list) { pv.starts.push(acc); acc += clipLen(c); }
+    pv.total = acc;
+    pv.idx = -1;
+    pv.active = true;
+    pv.playing = true;
+    const segs = $('pvSegs');
+    segs.innerHTML = '';
+    pv.list.forEach((c, i) => {
+      const d = document.createElement('div');
+      d.style.width = (pv.total ? (clipLen(c) / pv.total) * 100 : 0) + '%';
+      d.textContent = `Clip ${i + 1}`;
+      segs.appendChild(d);
     });
-    previewAbort = null;
+    dlg.showModal();
+    await pvLoad(0, 0);
+    if (pv.playing) vid.play().catch(() => {});
+    requestAnimationFrame(pvTick);
   });
 
   // ---------- export ----------

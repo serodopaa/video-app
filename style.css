@@ -351,3 +351,32 @@ button, select {
 .trim-row span { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
 .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* preview-all seek bar */
+.pv { margin-top: 10px; }
+.pv[hidden] { display: none; }
+.pv-bar {
+  position: relative;
+  height: 34px;
+  border-radius: 6px;
+  background: #e3e6ec;
+  cursor: pointer;
+  touch-action: none;
+  overflow: hidden;
+}
+.pv-segs { position: absolute; inset: 0; display: flex; }
+.pv-segs div {
+  height: 100%;
+  border-right: 2px solid #fff;
+  font-size: 12px;
+  color: #5b6270;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pv-segs div:nth-child(odd) { background: #dfe6f3; }
+.pv-segs div:nth-child(even) { background: #eceff5; }
+.pv-fill { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(47, 111, 222, 0.25); pointer-events: none; }
+.pv-head { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #d12f25; pointer-events: none; }
