@@ -397,7 +397,25 @@
         lines.forEach((line, i) => {
           const show = line.slice(0, Math.max(0, chars - used));
           used += line.length;
-          if (show) ctx.fillText(show, item.x, item.y + i * size * 1.15);
+          if (!show) return;
+          const ly = item.y + i * size * 1.15;
+          if (item.stroke) {
+            // outline (drawn first, so the fill sits on top)
+            ctx.save();
+            ctx.strokeStyle = col(item.stroke);
+            ctx.lineWidth = item.strokeWidth || size * 0.12;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(show, item.x, ly);
+            ctx.restore();
+          }
+          if (item.glow) {
+            ctx.save();
+            ctx.shadowColor = col(item.glow);
+            ctx.shadowBlur = item.glowSize || size * 0.35;
+            ctx.fillText(show, item.x, ly);
+            ctx.restore();
+          }
+          ctx.fillText(show, item.x, ly);
         });
         break;
       }
@@ -1763,8 +1781,21 @@
   document.getElementById('replay').addEventListener('click', startReplay);
   document.getElementById('export').addEventListener('click', () => {
     const a = document.createElement('a');
-    a.download = (player.scene.id || 'board') + '.png';
-    a.href = canvas.toDataURL('image/png');
+    // Always full HD (1920x1080), whatever the window size, e.g. for a YouTube thumbnail.
+    const c = document.createElement('canvas');
+    c.width = 1920;
+    c.height = 1080;
+    renderTo(c.getContext('2d'), 1920 / W);
+    const step = player.scene.steps[player.step];
+    const name = (player.scene.id || 'board') + (player.step >= 0 ? '-slide' + (player.slide + 1) : '');
+    if (step && step.thumbnail) {
+      // YouTube thumbnails must be under 2 MB: a high-quality JPEG fits easily.
+      a.download = name + '-thumbnail.jpg';
+      a.href = c.toDataURL('image/jpeg', 0.92);
+    } else {
+      a.download = name + '.png';
+      a.href = c.toDataURL('image/png');
+    }
     a.click();
   });
 

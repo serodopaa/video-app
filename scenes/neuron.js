@@ -1060,6 +1060,66 @@
     ]),
   ];
 
+  // ---------- slide 9: thumbnail ----------
+  // Dark, high-contrast cover: big title on the left, a glowing neuron firing
+  // an action potential on the right, and the receive -> combine -> send strip.
+  const TK = 0.6, TTX = 690, TTY = 212;            // neuron placement
+  const tp = ([x, y]) => [x * TK + TTX, y * TK + TTY];
+  const apGlowPts = axonSamples.filter((_, i) => i % 3 === 0).map(tp);
+  const thumbSvg = svgDoc(`<defs>
+    <radialGradient id="thBg" cx="68%" cy="45%" r="85%">
+      <stop offset="0" stop-color="#3a1d6e"/><stop offset="0.55" stop-color="#1c1240"/><stop offset="1" stop-color="#0b0820"/>
+    </radialGradient>
+    <radialGradient id="thHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#c38cff" stop-opacity="0.55"/><stop offset="1" stop-color="#c38cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="thAp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffb21e" stop-opacity="0"/><stop offset="0.55" stop-color="#ffb21e" stop-opacity="0.9"/><stop offset="1" stop-color="#fff3b0"/>
+    </linearGradient>
+    <filter id="thBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="thBlurS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect x="0" y="0" width="1600" height="900" fill="url(#thBg)"/>
+  ${Array.from({ length: 60 }, (_, i) => {
+    const x = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 * 1600, y = (Math.sin(i * 78.233) * 43758.5453 % 1 + 1) % 1 * 900;
+    return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${1 + (i % 3)}" fill="#ffffff" opacity="${0.08 + (i % 4) * 0.05}"/>`;
+  }).join('')}
+  <!-- halo behind the neuron -->
+  <ellipse cx="${tp([soma.x, soma.y])[0]}" cy="${tp([soma.x, soma.y])[1]}" rx="330" ry="300" fill="url(#thHalo)"/>
+  <g transform="translate(${TTX} ${TTY}) scale(${TK})">
+    <g filter="url(#thBlur)" opacity="0.7">${strokes(dendrites, '#b87cff', 10)}<path d="${axonPath}" stroke="#b87cff" stroke-width="30" fill="none"/><circle cx="${soma.x}" cy="${soma.y}" r="100" fill="#b87cff"/></g>
+    ${neuronMarkup(PURPLE, 'thumb', { releasing: false })}
+  </g>
+  <!-- action potential racing down the axon -->
+  <polyline points="${apGlowPts.slice(40, 200).map((p) => p.map(f1).join(',')).join(' ')}" stroke="url(#thAp)" stroke-width="26" fill="none" stroke-linecap="round" filter="url(#thBlurS)"/>
+  <polyline points="${apGlowPts.slice(80, 200).map((p) => p.map(f1).join(',')).join(' ')}" stroke="url(#thAp)" stroke-width="9" fill="none" stroke-linecap="round"/>
+  ${(() => { const [x, y] = tp(axonAt(560)); return `<circle cx="${f1(x)}" cy="${f1(y)}" r="34" fill="#ffd34d" filter="url(#thBlur)"/><circle cx="${f1(x)}" cy="${f1(y)}" r="12" fill="#fff6c8"/>`; })()}
+  <!-- hillock glowing -->
+  ${(() => { const [x, y] = tp([495, 470]); return `<circle cx="${f1(x)}" cy="${f1(y)}" r="30" fill="#ff5a36" opacity="0.65" filter="url(#thBlur)"/>`; })()}
+  <!-- neurotransmitters bursting out of the terminal -->
+  ${[[1385, 430], [1400, 470], [1390, 512], [1430, 448], [1445, 495], [1470, 470], [1420, 540], [1460, 410]].map(([x, y], i) => {
+    const [px, py] = tp([x + 10, y]);
+    return `<circle cx="${f1(px)}" cy="${f1(py)}" r="${5 + (i % 3)}" fill="#ffb21e"/><circle cx="${f1(px)}" cy="${f1(py)}" r="${12 + (i % 3) * 2}" fill="#ffb21e" opacity="0.35" filter="url(#thBlurS)"/>`;
+  }).join('')}
+`);
+  const PILL = [
+    { text: 'RECEIVE', col: '#2f6fde' },
+    { text: 'COMBINE', col: '#e8890c' },
+    { text: 'SEND', col: '#e0453a' },
+  ];
+  const pillX = [70, 300, 530], pillW = [196, 196, 146], PILL_Y = 735;
+  const thumbItems = [
+    { type: 'svg', svg: thumbSvg },
+    { type: 'text', x: 70, y: 205, text: 'HOW YOUR', size: 84, font: 'sans', bold: true, color: '#ffffff', glow: '#7a3cff', glowSize: 24 },
+    { type: 'text', x: 64, y: 330, text: 'NEURONS', size: 132, font: 'sans', bold: true, color: '#ffffff', glow: '#7a3cff', glowSize: 30 },
+    { type: 'text', x: 60, y: 520, text: 'TALK', size: 230, font: 'sans', bold: true, color: '#ffd34d', stroke: '#2a1450', strokeWidth: 10, glow: '#ff9d00', glowSize: 46 },
+    ...PILL.flatMap((p, i) => [
+      { type: 'rect', x: pillX[i], y: PILL_Y - 34, w: pillW[i], h: 68, color: p.col, width: 3, fill: p.col, fillOpacity: 1, rough: false },
+      { type: 'text', x: pillX[i] + pillW[i] / 2, y: PILL_Y + 1, text: p.text, size: 34, font: 'sans', bold: true, color: '#ffffff', align: 'center' },
+      ...(i < 2 ? [{ type: 'text', x: pillX[i] + pillW[i] + 17, y: PILL_Y, text: '→', size: 40, font: 'sans', bold: true, color: '#c9c3e6', align: 'center' }] : []),
+    ]),
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
@@ -1140,6 +1200,13 @@
         clear: true,
         actions: [{ id: 'final', label: 'Play the whole process', items: finalItems }],
         items: finalSlide,
+      },
+      // Slide 9: thumbnail for the video (save it with the PNG button).
+      {
+        say: 'Thumbnail: press 💾 to save it (1920×1080 JPEG, under YouTube’s 2 MB limit).',
+        clear: true,
+        thumbnail: true,
+        items: thumbItems,
       },
     ],
   });

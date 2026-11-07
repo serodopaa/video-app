@@ -37,6 +37,7 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
       clear: false,           // true = start a new slide (hides earlier steps)
       drawn: false,           // optional per-step override of the scene setting
+      thumbnail: true,        // optional: the 💾 button saves this slide as a 1920×1080 JPEG (YouTube < 2 MB)
       // Animation buttons for this slide: shown in the toolbar (never recorded) only
       // while the slide is on screen; keys 1-9 press them, Shift+R / ↺ resets.
       // Pressing plays `items` (normal animated timing); pressing again replays.
