@@ -380,3 +380,6 @@ button, select {
 .pv-segs div:nth-child(even) { background: #eceff5; }
 .pv-fill { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(47, 111, 222, 0.25); pointer-events: none; }
 .pv-head { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #d12f25; pointer-events: none; }
+
+.pv-canvas { width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 8px; background: #fdfdfb; }
+.pv-canvas[hidden], .clip-dialog video[hidden] { display: none; }

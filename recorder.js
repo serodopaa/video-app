@@ -367,7 +367,6 @@
   const vid = $('dlgVideo');
   const trim = { clip: null, in: 0, out: 0 };
   let stopAt = null;
-  let previewAbort = null;
 
   function drawTrim() {
     const c = trim.clip;
@@ -443,55 +442,51 @@
   $('dlgCancel').addEventListener('click', () => dlg.close());
   dlg.addEventListener('close', () => {
     vid.pause();
-    if (previewAbort) previewAbort.abort();
     trim.clip = null;
-    pv.active = false;
-    pv.playing = false;
-    pv.token++;
+    pvStop();
     $('previewUI').hidden = true;
+    pvCanvas.hidden = true;
+    vid.hidden = false;
   });
 
-  // ---------- play clips in order (used by preview and export) ----------
-  async function playSequence(video, list, { signal, beforeClip, afterClip, onProgress } = {}) {
-    let done = 0;
-    for (const c of list) {
-      if (signal && signal.aborted) return false;
-      video.src = urlOf(c);
-      await once(video, 'loadeddata');
-      if (c.in > 0.01) {
-        video.currentTime = c.in;
-        await once(video, 'seeked');
-      }
-      if (beforeClip) await beforeClip(c);
-      await video.play();
-      await new Promise((resolve) => {
-        const check = () => {
-          const aborted = signal && signal.aborted;
-          if (aborted || video.ended || video.currentTime >= c.out - 0.02) {
-            video.pause();
-            resolve();
-          } else {
-            if (onProgress) onProgress(done + Math.max(0, video.currentTime - c.in));
-            requestAnimationFrame(check);
-          }
-        };
-        check();
-      });
-      if (afterClip) afterClip(c);
-      done += clipLen(c);
+  // ---------- gapless playback helpers ----------
+  // Two video elements take turns: while one plays, the next clip is loaded and
+  // parked on its first frame in the other, so a cut never shows a black frame.
+  function makeVideo() {
+    const v = document.createElement('video');
+    v.playsInline = true;
+    v.preload = 'auto';
+    return v;
+  }
+  // Load clip c into video v and park it `local` seconds into its trimmed part.
+  async function parkAt(v, c, local = 0) {
+    if (v._clip !== c) {
+      v._clip = c;
+      v.src = urlOf(c);
+      await once(v, 'loadeddata');
     }
-    return !(signal && signal.aborted);
+    const target = c.in + Math.max(0, Math.min(clipLen(c) - 0.05, local));
+    if (Math.abs(v.currentTime - target) > 0.02) {
+      v.currentTime = target;
+      await once(v, 'seeked');
+    }
   }
 
   // ---------- preview all: one seekable timeline over every clip ----------
-  const pv = { active: false, list: [], starts: [], total: 0, idx: -1, playing: false, token: 0, dragging: false };
+  const pvCanvas = $('pvCanvas');
+  const pvCtx = pvCanvas.getContext('2d');
+  const pv = {
+    active: false, list: [], starts: [], total: 0, idx: -1, playing: false, dragging: false,
+    vids: [makeVideo(), makeVideo()], cur: 0, nextReady: -1, token: 0,
+  };
   const pvLen = (i) => clipLen(pv.list[i]);
+  const clamp01 = (v, max) => Math.max(0, Math.min(max, v));
+  const pvVid = () => pv.vids[pv.cur];
+  const pvOther = () => pv.vids[1 - pv.cur];
   function pvGlobal() {
     if (pv.idx < 0) return 0;
-    const c = pv.list[pv.idx];
-    return pv.starts[pv.idx] + clamp01(vid.currentTime - c.in, pvLen(pv.idx));
+    return pv.starts[pv.idx] + clamp01(pvVid().currentTime - pv.list[pv.idx].in, pvLen(pv.idx));
   }
-  const clamp01 = (v, max) => Math.max(0, Math.min(max, v));
   function pvDraw() {
     const g = pvGlobal();
     const pct = pv.total ? (g / pv.total) * 100 : 0;
@@ -500,52 +495,57 @@
     $('pvTime').textContent = `${fmt(g)} / ${fmt(pv.total)}${pv.idx >= 0 ? `  ·  Clip ${pv.idx + 1} of ${pv.list.length}` : ''}`;
     $('pvPlay').textContent = pv.playing ? '⏸ Pause' : '▶ Play';
   }
-  // Show clip i at `local` seconds into its trimmed part.
-  async function pvLoad(i, local) {
-    const token = ++pv.token;
-    const c = pv.list[i];
-    if (pv.idx !== i) {
-      pv.idx = i;
-      vid.src = urlOf(c);
-      await once(vid, 'loadeddata');
-      if (token !== pv.token) return false;
-    }
-    const target = c.in + clamp01(local, Math.max(0, pvLen(i) - 0.05));
-    if (Math.abs(vid.currentTime - target) > 0.04) {
-      vid.currentTime = target;
-      await once(vid, 'seeked');
-      if (token !== pv.token) return false;
-    }
-    return true;
+  // Get the clip after the current one ready in the spare video element.
+  function pvPreloadNext() {
+    const i = pv.idx + 1;
+    pv.nextReady = -1;
+    if (i >= pv.list.length) return;
+    const token = pv.token;
+    const v = pvOther();
+    v.pause();
+    parkAt(v, pv.list[i], 0).then(() => { if (token === pv.token && pv.idx + 1 === i) pv.nextReady = i; }).catch(() => {});
   }
   async function pvSeek(g) {
     g = clamp01(g, pv.total);
     let i = pv.starts.findIndex((s, k) => g < s + pvLen(k));
     if (i < 0) i = pv.list.length - 1;
-    const wasPlaying = pv.playing;
-    vid.pause();
-    const ok = await pvLoad(i, g - pv.starts[i]);
-    pvDraw();
-    if (ok && wasPlaying && !pv.dragging) vid.play().catch(() => {});
+    const token = ++pv.token;
+    const v = pvVid();
+    v.pause();
+    if (v._clip !== pv.list[i] && pvOther()._clip === pv.list[i]) pv.cur = 1 - pv.cur; // already loaded there
+    await parkAt(pvVid(), pv.list[i], g - pv.starts[i]);
+    if (token !== pv.token) return;
+    pv.idx = i;
+    pvPreloadNext();
+    if (pv.playing && !pv.dragging) pvVid().play().catch(() => {});
   }
   function pvSetPlaying(on) {
     pv.playing = on;
     if (on) {
-      if (pvGlobal() >= pv.total - 0.1) { pvSeek(0).then(() => vid.play().catch(() => {})); }
-      else vid.play().catch(() => {});
-    } else vid.pause();
+      if (pvGlobal() >= pv.total - 0.1) pvSeek(0);
+      else pvVid().play().catch(() => {});
+    } else pvVid().pause();
     pvDraw();
   }
-  // Move on to the next clip when the current one reaches its trimmed end.
   function pvTick() {
     if (!pv.active) return;
-    const c = pv.list[pv.idx];
-    if (c && pv.playing && !pv.dragging && (vid.ended || vid.currentTime >= c.out - 0.03)) {
+    const v = pvVid(), c = pv.list[pv.idx];
+    if (c && v._clip === c && v.readyState >= 2) pvCtx.drawImage(v, 0, 0, pvCanvas.width, pvCanvas.height);
+    if (c && pv.playing && !pv.dragging && (v.ended || v.currentTime >= c.out - 0.03)) {
       if (pv.idx < pv.list.length - 1) {
-        vid.pause();
-        pvLoad(pv.idx + 1, 0).then((ok) => { if (ok && pv.playing) vid.play().catch(() => {}); });
+        if (pv.nextReady === pv.idx + 1) {
+          // instant cut to the parked next clip
+          v.pause();
+          pv.cur = 1 - pv.cur;
+          pv.idx++;
+          pvVid().play().catch(() => {});
+          pvCtx.drawImage(pvVid(), 0, 0, pvCanvas.width, pvCanvas.height);
+          pvPreloadNext();
+        } else {
+          v.pause(); // next one is still loading: hold the last frame
+        }
       } else {
-        vid.pause();
+        v.pause();
         pv.playing = false;
       }
     }
@@ -553,20 +553,20 @@
     requestAnimationFrame(pvTick);
   }
   const barToGlobal = (e) => {
-    const r = $('pvBar').getBoundingClientRect();
-    return clamp01((e.clientX - r.left) / r.width, 1) * pv.total;
+    const rr = $('pvBar').getBoundingClientRect();
+    return clamp01((e.clientX - rr.left) / rr.width, 1) * pv.total;
   };
   $('pvBar').addEventListener('pointerdown', (e) => {
     pv.dragging = true;
     $('pvBar').setPointerCapture(e.pointerId);
-    vid.pause();
+    pvVid().pause();
     pvSeek(barToGlobal(e));
   });
   $('pvBar').addEventListener('pointermove', (e) => { if (pv.dragging) pvSeek(barToGlobal(e)); });
   const endDrag = () => {
     if (!pv.dragging) return;
     pv.dragging = false;
-    if (pv.playing) vid.play().catch(() => {});
+    if (pv.playing) pvVid().play().catch(() => {});
   };
   $('pvBar').addEventListener('pointerup', endDrag);
   $('pvBar').addEventListener('pointercancel', endDrag);
@@ -582,6 +582,12 @@
     else return;
     e.stopPropagation();
   });
+  function pvStop() {
+    pv.active = false;
+    pv.playing = false;
+    pv.token++;
+    pv.vids.forEach((v) => v.pause());
+  }
 
   $('previewAll').addEventListener('click', async () => {
     if (!clips.length) return;
@@ -590,13 +596,16 @@
     $('trimUI').hidden = true;
     $('dlgSave').hidden = true;
     $('previewUI').hidden = false;
-    vid.controls = false;
+    vid.hidden = true;
+    pvCanvas.hidden = false;
     pv.list = clips.slice();
     pv.starts = [];
     let acc = 0;
     for (const c of pv.list) { pv.starts.push(acc); acc += clipLen(c); }
     pv.total = acc;
     pv.idx = -1;
+    pv.cur = 0;
+    pv.vids.forEach((v) => { v._clip = null; });
     pv.active = true;
     pv.playing = true;
     const segs = $('pvSegs');
@@ -607,10 +616,11 @@
       d.textContent = `Clip ${i + 1}`;
       segs.appendChild(d);
     });
+    pvCtx.fillStyle = '#fdfdfb';
+    pvCtx.fillRect(0, 0, pvCanvas.width, pvCanvas.height);
     dlg.showModal();
-    await pvLoad(0, 0);
-    if (pv.playing) vid.play().catch(() => {});
     requestAnimationFrame(pvTick);
+    await pvSeek(0);
   });
 
   // ---------- export ----------
@@ -637,55 +647,82 @@
     octx.fillStyle = '#000';
     octx.fillRect(0, 0, RW, RH);
 
-    const video = document.createElement('video');
-    video.playsInline = true;
+    // Two videos take turns (the next clip is parked while the current one plays),
+    // and the recorder runs continuously, so cuts are seamless.
+    const vids = [makeVideo(), makeVideo()];
     const ac = new AudioContext();
     await ac.resume();
     const dest = ac.createMediaStreamDestination();
-    ac.createMediaElementSource(video).connect(dest); // to the file only, not the speakers
+    vids.forEach((v) => ac.createMediaElementSource(v).connect(dest)); // to the file only, not the speakers
 
-    const vTrack = out.captureStream(FPS).getVideoTracks()[0];
-    const stream = new MediaStream([vTrack, ...dest.stream.getAudioTracks()]);
-    const mr = new MediaRecorder(stream, REC_OPTS);
+    // The recorder is created once the first clip's first frame is on the canvas,
+    // so the file doesn't start with a black frame.
+    let vTrack = null, mr = null;
     const chunks = [];
-    mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const startRecorder = () => {
+      vTrack = out.captureStream(FPS).getVideoTracks()[0];
+      mr = new MediaRecorder(new MediaStream([vTrack, ...dest.stream.getAudioTracks()]), REC_OPTS);
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.start(1000);
+    };
 
+    let active = null;
     let drawing = true;
     const draw = () => {
       if (!drawing) return;
-      if (video.readyState >= 2) octx.drawImage(video, 0, 0, RW, RH);
+      if (active && active.readyState >= 2) octx.drawImage(active, 0, 0, RW, RH);
       requestAnimationFrame(draw);
     };
     draw();
 
-    const total = clips.reduce((s, c) => s + clipLen(c), 0);
+    const list = clips.slice();
+    const total = list.reduce((s, c) => s + clipLen(c), 0);
+    const signal = exportAbort.signal;
     let ok = false;
     try {
-      ok = await playSequence(video, clips.slice(), {
-        signal: exportAbort.signal,
-        beforeClip: async () => {
-          octx.drawImage(video, 0, 0, RW, RH); // first frame of this clip, no flash of the last one
-          if (mr.state === 'inactive') mr.start(1000);
-          else mr.resume();
-        },
-        afterClip: () => { if (mr.state === 'recording') mr.pause(); },
-        onProgress: (s) => { btn.textContent = `Exporting… ${Math.floor((s / total) * 100)}% (click to cancel)`; },
-      });
+      await parkAt(vids[0], list[0]);
+      let nextPrep = list.length > 1 ? parkAt(vids[1], list[1]) : null;
+      let done = 0;
+      for (let i = 0; i < list.length && !signal.aborted; i++) {
+        const v = vids[i % 2], c = list[i];
+        if (i > 0) await nextPrep;
+        active = v;
+        octx.drawImage(v, 0, 0, RW, RH);
+        if (i === 0) startRecorder();
+        await v.play();
+        if (i > 0) {
+          const spare = vids[(i + 1) % 2];
+          spare.pause();
+          nextPrep = i + 1 < list.length ? parkAt(spare, list[i + 1]) : null;
+        }
+        await new Promise((resolve) => {
+          const check = () => {
+            if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02) return resolve();
+            btn.textContent = `Exporting… ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% (click to cancel)`;
+            requestAnimationFrame(check);
+          };
+          check();
+        });
+        if (i + 1 < list.length && nextPrep) await nextPrep; // hold this frame until the next is parked
+        v.pause();
+        done += clipLen(c);
+      }
+      ok = !signal.aborted;
     } catch (err) {
       alert('Export failed: ' + (err.message || err));
     }
 
-    if (mr.state !== 'inactive') {
+    if (mr && mr.state !== 'inactive') {
       const stopped = once(mr, 'stop');
       mr.stop();
       await stopped;
     }
     drawing = false;
-    vTrack.stop();
+    if (vTrack) vTrack.stop();
     ac.close();
 
     if (ok && chunks.length) {
-      const blob = await withDuration(new Blob(chunks, { type: (mr.mimeType || MIME || 'video/webm').split(';')[0] }), total);
+      const blob = await withDuration(new Blob(chunks, { type: ((mr && mr.mimeType) || MIME || 'video/webm').split(';')[0] }), total);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       const stamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-');
