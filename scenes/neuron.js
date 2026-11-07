@@ -250,6 +250,11 @@
   // ---------- slide 2: why the resting potential is -70 mV ----------
   const E_ION = { na: 60, k: -90, cl: -75 };
   const ION_TEXT = { na: '#c46f00', k: '#47309a', cl: '#1d6a3c' };
+  const EMARKS = [
+    { v: E_ION.na, label: 'E(Na⁺) +60', color: '#c46f00', dy: 14 },
+    { v: E_ION.cl, label: 'E(Cl⁻) −75', color: '#1d6a3c', dy: 12 },
+    { v: E_ION.k, label: 'E(K⁺) −90', color: '#47309a', dy: 12 },
+  ];
   const leakPath = (x, inward, from, to) => (inward
     ? [from, [x, MEM.top - 40], [x, MEM.mid], [x, MEM.bot + 40], to]
     : [from, [x, MEM.bot + 40], [x, MEM.mid], [x, MEM.top - 40], to]);
@@ -302,11 +307,7 @@
     { type: 'text', x: PUMP_X, y: 580, text: 'Na⁺/K⁺ pump', size: 19, font: 'sans', color: '#7a5b00', align: 'center' },
     {
       type: 'meter', id: 'vm', value: REST, x: 1150, y: 112, w: 410, h: 748, graphH: 330, min: -100, max: 65,
-      marks: [
-        { v: E_ION.na, label: 'E(Na⁺) +60', color: '#c46f00', dy: 14 },
-        { v: E_ION.cl, label: 'E(Cl⁻) −75', color: '#1d6a3c', dy: 12 },
-        { v: E_ION.k, label: 'E(K⁺) −90', color: '#47309a', dy: 12 },
-      ],
+      marks: EMARKS,
     },
     { type: 'text', x: 1180, y: 668, text: 'Equilibrium potential', size: 19, font: 'sans', color: '#5b6270' },
     ...[['na', 'Sodium', '+60 mV'], ['k', 'Potassium', '−90 mV'], ['cl', 'Chloride', '−75 mV'], ['a', 'Proteins', 'can’t cross']].flatMap(([ion, name, e], i) => [
@@ -400,7 +401,7 @@
   ];
   const synActions = [
     { id: 'glu', label: 'Release glutamate', items: [...synapseFires('glu', 0), ...pspValue(-60, 0)] },
-    { id: 'gaba', label: 'Release GABA', items: [...synapseFires('gaba', 0), ...pspValue(-75, 0)] },
+    { id: 'gaba', label: 'Release GABA', items: [...synapseFires('gaba', 0), ...pspValue(-74, 0)] },
     { id: 'both', label: 'Both at once', items: [...synapseFires('glu', 0), ...synapseFires('gaba', 0), ...pspValue(-66, 0)] },
   ];
   const synItems = [
@@ -422,15 +423,21 @@
     ]),
     { type: 'text', x: 80, y: 838, text: 'Inside the receiving neuron (dendrite)', size: 24, font: 'sans', color: '#6b3c87' },
     {
-      type: 'meter', id: 'psp', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 230,
+      type: 'meter', id: 'psp', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 65, marks: EMARKS,
       title: 'Postsynaptic potential', upText: 'EPSP: depolarized (excitatory)', downText: 'IPSP: hyperpolarized (inhibitory)',
     },
-    ...[['ion', 'na', 'Sodium (Na⁺)'], ['ion', 'cl', 'Chloride (Cl⁻)'], ['ion', 'k', 'Potassium (K⁺)'], ['ion', 'a', 'Negative proteins'],
+    { type: 'text', x: 1540, y: 586, text: 'Equilibrium', size: 17, font: 'sans', color: '#5b6270', align: 'right' },
+    ...[['ion', 'na', 'Sodium (Na⁺)'], ['ion', 'cl', 'Chloride (Cl⁻)'], ['ion', 'k', 'Potassium (K⁺)'], ['ion', 'a', 'Proteins'],
       ['nt', SYN.glu.nt, 'Glutamate'], ['nt', SYN.gaba.nt, 'GABA']].flatMap(([kind, v, name], i) => [
       kind === 'ion'
-        ? { type: 'ion', ion: v, x: 1228, y: 592 + i * 42, r: 15 }
-        : { type: 'circle', x: 1228, y: 592 + i * 42, r: 8, color: v, fill: v, fillOpacity: 1, width: 2, rough: false },
-      { type: 'text', x: 1258, y: 592 + i * 42, text: name, size: 22, font: 'sans', color: 'ink' },
+        ? { type: 'ion', ion: v, x: 1222, y: 618 + i * 40, r: 15 }
+        : { type: 'circle', x: 1222, y: 618 + i * 40, r: 8, color: v, fill: v, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: 1248, y: 618 + i * 40, text: name, size: 21, font: 'sans', color: 'ink' },
+      ...(kind === 'ion' ? [{
+        type: 'text', x: 1540, y: 618 + i * 40, size: 21, font: 'sans', bold: true, align: 'right',
+        text: v === 'a' ? 'can’t cross' : `${E_ION[v] > 0 ? '+' : '−'}${Math.abs(E_ION[v])} mV`,
+        color: v === 'a' ? '#8a8f98' : ION_TEXT[v],
+      }] : []),
     ]),
   ];
 
