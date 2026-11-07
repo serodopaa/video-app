@@ -188,11 +188,14 @@
     }
     return out;
   })();
+  const PUMP_X = 470, K_LEAK = [160, 1040], NA_LEAK = 765;
   const membraneSvg = svgDoc(`
   <rect x="${MEM.x0}" y="112" width="${MEM.x1 - MEM.x0}" height="${MEM.top - 112}" rx="16" fill="#eef6fd"/>
   <rect x="${MEM.x0}" y="${MEM.bot}" width="${MEM.x1 - MEM.x0}" height="${860 - MEM.bot}" rx="16" fill="#f7f0fb"/>
   <rect x="${MEM.x0}" y="${MEM.top}" width="${MEM.x1 - MEM.x0}" height="${MEM.bot - MEM.top}" fill="#fbecd6"/>
   ${bilayer}
+  <rect x="${PUMP_X - 34}" y="${MEM.top - 22}" width="68" height="${MEM.bot - MEM.top + 44}" rx="22" fill="#f6d77d" stroke="#a07c00" stroke-width="3"/>
+  <text x="${PUMP_X}" y="${MEM.mid + 6}" font-family="Arial, sans-serif" font-weight="700" font-size="15" fill="#7a5b00" text-anchor="middle">ATP</text>
   ${Array.from({ length: 15 }, (_, i) => MEM.x0 + 40 + i * 70).map((x) =>
     `<text x="${x}" y="${MEM.top - 7}" font-family="Arial, sans-serif" font-weight="700" font-size="22" fill="#e0453a" text-anchor="middle">+</text>` +
     `<text x="${x}" y="${MEM.bot + 25}" font-family="Arial, sans-serif" font-weight="700" font-size="26" fill="#2f6fde" text-anchor="middle">−</text>`).join('')}
@@ -201,10 +204,10 @@
   // Ions that stay put. [type, x, y]
   const staticIons = [
     // outside: lots of Na+ and Cl-, a little K+
-    ['na', 140, 230], ['na', 240, 320], ['na', 445, 205], ['na', 525, 300], ['na', 700, 225], ['na', 790, 325],
-    ['na', 1000, 215], ['na', 1070, 320], ['na', 610, 175],
-    ['cl', 190, 180], ['cl', 120, 320], ['cl', 360, 175], ['cl', 700, 320], ['cl', 820, 195], ['cl', 1075, 185], ['cl', 1010, 330],
-    ['k', 455, 365], ['k', 765, 380],
+    ['na', 140, 240], ['na', 240, 320], ['na', 445, 215], ['na', 525, 300], ['na', 700, 235], ['na', 820, 325],
+    ['na', 1000, 225], ['na', 1080, 320], ['na', 610, 200],
+    ['cl', 230, 205], ['cl', 120, 320], ['cl', 360, 210], ['cl', 700, 320], ['cl', 830, 215], ['cl', 1075, 205], ['cl', 1010, 335],
+    ['k', 545, 372], ['k', 720, 378],
     // inside: lots of K+ and negative proteins (A-), a little Na+ and Cl-
     ['k', 140, 625], ['k', 230, 705], ['k', 445, 635], ['k', 520, 760], ['k', 760, 625], ['k', 840, 725],
     ['k', 1000, 630], ['k', 1060, 740], ['k', 330, 800], ['k', 680, 805],
@@ -243,10 +246,44 @@
       ],
     };
   };
+
+  // ---------- slide 2: why the resting potential is -70 mV ----------
+  const E_ION = { na: 60, k: -90, cl: -75 };
+  const ION_TEXT = { na: '#c46f00', k: '#47309a', cl: '#1d6a3c' };
+  const leakPath = (x, inward, from, to) => (inward
+    ? [from, [x, MEM.top - 40], [x, MEM.mid], [x, MEM.bot + 40], to]
+    : [from, [x, MEM.bot + 40], [x, MEM.mid], [x, MEM.top - 40], to]);
+  const restingFlow = [
+    // K+ leaks out all the time, through the always-open leak channels
+    ...K_LEAK.flatMap((x) => [0, 1].map((k) => ({
+      type: 'ion', ion: 'k', r: 15, smooth: true, loop: 3.2, phase: k * 1.6 + x / 400,
+      path: leakPath(x, false, [x - 20, 640], [x + 30, 330]),
+    }))),
+    // a little Na+ leaks in
+    { type: 'ion', ion: 'na', r: 15, smooth: true, loop: 6, phase: 1, path: leakPath(NA_LEAK, true, [NA_LEAK + 30, 300], [NA_LEAK - 20, 640]) },
+    // the pump: Na+ out, K+ in
+    ...[0, 1, 2].map((k) => ({ type: 'ion', ion: 'na', r: 13, smooth: true, loop: 4.5, phase: k * 0.5, path: leakPath(PUMP_X - 12, false, [PUMP_X - 40, 610], [PUMP_X - 50, 340]) })),
+    ...[0, 1].map((k) => ({ type: 'ion', ion: 'k', r: 13, smooth: true, loop: 4.5, phase: 2.25 + k * 0.6, path: leakPath(PUMP_X + 12, true, [PUMP_X + 50, 340], [PUMP_X + 40, 610]) })),
+  ];
+  const caption = (text, at, until) => [
+    { type: 'rect', x: 330, y: 120, w: 770, h: 66, color: '#3b4252', width: 2, fill: '#ffffff', fillOpacity: 0.95, rough: false, duration: 0.2, at, until },
+    { type: 'text', x: 345, y: 140, text, size: 21, font: 'sans', color: 'ink', anim: 'fade', duration: 0.3, at: at + 0.1, until: until - 0.1 },
+  ];
+  const whyItems = [
+    ...caption('Inside: lots of K⁺. Outside: lots of Na⁺ and Cl⁻.\nThe Na⁺/K⁺ pump keeps it that way (3 Na⁺ out, 2 K⁺ in).', 0, 2.8),
+    { type: 'flash', x: PUMP_X, y: MEM.mid, r: 70, color: '#f5c518', duration: 0.9, at: 0.4 },
+    ...caption('At rest, mostly K⁺ leak channels are open. K⁺ leaks out,\nleaving the inside negative: it heads for E(K⁺) = −90 mV.', 2.8, 5.6),
+    ...K_LEAK.map((x) => ({ type: 'flash', x, y: MEM.mid, r: 60, color: '#7b5cd6', duration: 0.9, at: 3.0 })),
+    { type: 'value', id: 'vm', from: REST, to: -90, at: 3.0, duration: 2.2 },
+    ...caption('A little Na⁺ also leaks in, pulling it back up.\nThe balance point is the resting potential: −70 mV.', 5.6, 9.0),
+    { type: 'flash', x: NA_LEAK, y: MEM.mid, r: 60, color: '#f0a12e', duration: 0.9, at: 5.8 },
+    { type: 'value', id: 'vm', from: -90, to: REST, at: 5.8, duration: 2.2 },
+  ];
   const membraneActions = [
+    { id: 'why', label: 'Why −70 mV?', items: whyItems },
     channelAction('na', 'Open Na⁺ channel', -58, true),
     channelAction('k', 'Open K⁺ channel', -80, false),
-    channelAction('cl', 'Open Cl⁻ channel', -76, true),
+    channelAction('cl', 'Open Cl⁻ channel', -74, true),
   ];
   const membraneItems = [
     title('Membrane potential'),
@@ -256,10 +293,26 @@
     ...staticIons.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
     ...Object.entries(flows).flatMap(([kind, list]) => list.map(([ion, from]) => ({ type: 'ion', ion, x: from[0], y: from[1], hideDuring: `open-${kind}` }))),
     ...['na', 'k', 'cl'].map((kind) => ({ type: 'channel', id: `ch-${kind}`, x: CH[kind], y: MEM.mid, h: 130, ...CH_STYLE[kind] })),
-    { type: 'meter', id: 'vm', value: REST, x: 1150, y: 112, w: 410, h: 748, graphH: 250 },
-    ...[['na', 'Sodium'], ['k', 'Potassium'], ['cl', 'Chloride'], ['a', 'Negative proteins']].flatMap(([ion, name], i) => [
-      { type: 'ion', ion, x: 1200, y: 615 + i * 58 },
-      { type: 'text', x: 1236, y: 615 + i * 58, text: name, size: 24, font: 'sans', color: 'ink' },
+    // always-open leak channels (mostly K+, a little Na+)
+    ...K_LEAK.map((x) => ({ type: 'channel', plain: true, open: 1, x, y: MEM.mid, h: 110, ...CH_STYLE.k, label: undefined })),
+    { type: 'channel', plain: true, open: 1, x: NA_LEAK, y: MEM.mid, h: 110, ...CH_STYLE.na, label: undefined },
+    ...restingFlow,
+    ...K_LEAK.map((x) => ({ type: 'text', x, y: 580, text: 'K⁺ leak', size: 19, font: 'sans', color: '#47309a', align: 'center' })),
+    { type: 'text', x: NA_LEAK, y: 580, text: 'Na⁺ leak', size: 19, font: 'sans', color: '#a8640a', align: 'center' },
+    { type: 'text', x: PUMP_X, y: 580, text: 'Na⁺/K⁺ pump', size: 19, font: 'sans', color: '#7a5b00', align: 'center' },
+    {
+      type: 'meter', id: 'vm', value: REST, x: 1150, y: 112, w: 410, h: 748, graphH: 330, min: -100, max: 65,
+      marks: [
+        { v: E_ION.na, label: 'E(Na⁺) +60', color: '#c46f00', dy: 14 },
+        { v: E_ION.cl, label: 'E(Cl⁻) −75', color: '#1d6a3c', dy: 12 },
+        { v: E_ION.k, label: 'E(K⁺) −90', color: '#47309a', dy: 12 },
+      ],
+    },
+    { type: 'text', x: 1180, y: 668, text: 'Equilibrium potential', size: 19, font: 'sans', color: '#5b6270' },
+    ...[['na', 'Sodium', '+60 mV'], ['k', 'Potassium', '−90 mV'], ['cl', 'Chloride', '−75 mV'], ['a', 'Proteins', 'can’t cross']].flatMap(([ion, name, e], i) => [
+      { type: 'ion', ion, x: 1196, y: 702 + i * 42, r: ion === 'a' ? 18 : 16 },
+      { type: 'text', x: 1226, y: 702 + i * 42, text: name, size: 23, font: 'sans', color: 'ink' },
+      { type: 'text', x: 1540, y: 702 + i * 42, text: e, size: 23, font: 'sans', bold: true, color: ion === 'a' ? '#8a8f98' : ION_TEXT[ion], align: 'right' },
     ]),
   ];
 
@@ -1031,7 +1084,7 @@
       },
       // Slide 2: membrane potential and how ion channels change it.
       {
-        say: 'Membrane potential is the voltage across the membrane. Opening ion channels changes it.',
+        say: 'At rest, K⁺ leaking out makes the inside negative (−70 mV); opening a channel pulls the potential toward that ion’s equilibrium potential.',
         clear: true,
         actions: membraneActions,
         items: membraneItems,

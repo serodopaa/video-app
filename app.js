@@ -490,7 +490,12 @@
         // it (eased) and stays at the end; before it starts it waits at the start.
         const st = ION_STYLES[item.ion] || ION_STYLES.na;
         let x = item.x, y = item.y;
-        if (item._pts) [x, y] = pointAt(item._pts, item._cum, easeInOut(clamp(p)));
+        if (item._pts && item.loop) {
+          // travel the path over and over (every `loop` seconds), fading at both ends
+          const f = ((((t - (item.phase || 0)) / item.loop) % 1) + 1) % 1;
+          [x, y] = pointAt(item._pts, item._cum, f);
+          ctx.globalAlpha = base * Math.min(1, Math.sin(Math.PI * f) * 3);
+        } else if (item._pts) [x, y] = pointAt(item._pts, item._cum, easeInOut(clamp(p)));
         else if (p <= 0) break;
         const rr = item.r || st.r;
         ctx.fillStyle = st.fill;
@@ -510,7 +515,7 @@
       case 'channel': {
         // A ligand-gated ion channel spanning the membrane. Its opening (0-1)
         // comes from live value `id`, which slide actions can animate.
-        const open = clamp(liveValue(item.id, 0, t));
+        const open = clamp(item.id ? liveValue(item.id, item.open ?? 0, t) : item.open ?? 0);
         const cx = item.x, cy = item.y, hh = (item.h || 130) / 2;
         const gap = 22 + 16 * open, sw = 34;
         const fill = item.fill || '#7fb7e8', edge = item.edge || '#2c5a92';
@@ -527,7 +532,9 @@
         // voltage-gated channels (ligand: false) show a voltage sensor instead
         ctx.strokeStyle = edge;
         ctx.lineWidth = 3;
-        if (item.ligand === false) {
+        if (item.plain) {
+          // leak channel: no gate sensor, no binding site
+        } else if (item.ligand === false) {
           ctx.fillStyle = edge;
           ctx.font = `700 20px ${SANS}`;
           ctx.textAlign = 'center';
@@ -972,9 +979,24 @@
         ctx.fillStyle = '#e0453a';
         ctx.fillText('threshold', gx + 6, Y(-55) - 12);
         ctx.fillStyle = '#5b6270';
-        ctx.fillText('resting', gx + 6, Y(-70) + 14);
+        ctx.fillText('resting', gx + 6, Y(-70) + (item.marks ? -11 : 14));
         ctx.fillStyle = '#8a8f98';
         ctx.fillText('mV', gx - 52, gy + 10);
+        // equilibrium potentials (or any other reference values), labelled on the right
+        ctx.textAlign = 'right';
+        for (const m of item.marks || []) {
+          ctx.strokeStyle = m.color;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath();
+          ctx.moveTo(gx, Y(m.v));
+          ctx.lineTo(gx + gw, Y(m.v));
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = m.color;
+          ctx.font = `700 16px ${SANS}`;
+          ctx.fillText(m.label, gx + gw - 6, Y(m.v) + (m.dy ?? -10));
+        }
         // trace over the last `window` seconds (animation time)
         const win = item.window || 8, N = 160;
         ctx.strokeStyle = '#2f6fde';
