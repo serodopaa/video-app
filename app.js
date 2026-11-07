@@ -748,7 +748,7 @@
         ctx.font = `600 26px ${SANS}`;
         ctx.fillText(item.title || 'What happens', x + w / 2, y + 38);
         item.steps.forEach((s, i) => {
-          const ry = y + 92 + i * 52;
+          const ry = y + 92 + i * (item.rowH || 52);
           const on = i === now, done = cur >= 0 && i < now;
           if (on) {
             ctx.fillStyle = '#fff1e0';
@@ -769,7 +769,7 @@
           ctx.textAlign = 'left';
           ctx.fillText(s.title, x + 66, ry);
         });
-        const dy = y + 92 + item.steps.length * 52 + 18;
+        const dy = y + 92 + item.steps.length * (item.rowH || 52) + 18;
         ctx.strokeStyle = '#e3e6ec';
         ctx.lineWidth = 2;
         ctx.beginPath();

@@ -586,6 +586,26 @@
         { type: 'text', x: inputs.I.p[0] + 64, y: inputs.I.p[1] - 46, text: 'blocked!', size: 26, font: 'sans', bold: true, color: INH.edge, anim: 'pop', duration: 0.4, at: 1.35, until: 2.6 },
         ...bump(-72, 1.2, 2.0)],
     },
+    // Temporal summation: the same synapse firing repeatedly.
+    {
+      id: 'e1slow', label: 'E1 ×3, slow',
+      items: [0, 3, 6].flatMap((t0) => [
+        ...fire('E1', t0), ...bump(-62, t0 + 1.6),
+        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 34, color: SPARK, duration: 0.6, at: t0 + 1.75 },
+      ]),
+    },
+    {
+      id: 'e1fast', label: 'E1 ×3, fast',
+      items: [
+        ...[0, 0.5, 1.0].flatMap((t0) => [...fire('E1', t0), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 36, color: SPARK, duration: 0.5, at: t0 + 1.75 }]),
+        { type: 'value', id: 'axh', from: REST, to: -62, at: 1.6, duration: 0.3 },
+        { type: 'value', id: 'axh', from: -62, to: -64, at: 1.9, duration: 0.2 },
+        { type: 'value', id: 'axh', from: -64, to: -57, at: 2.1, duration: 0.3 },
+        { type: 'value', id: 'axh', from: -57, to: -59, at: 2.4, duration: 0.2 },
+        { type: 'value', id: 'axh', from: -59, to: -50, at: 2.6, duration: 0.3 },
+        ...actionPotential(2.9),
+      ],
+    },
   ];
   const sumItems = [
     title('Adding up signals'),
@@ -811,6 +831,8 @@
   const DOCK7 = [[520, PRE_Y - 28], [660, PRE_Y - 28], [800, PRE_Y - 28]];
   const EXC7 = [500, 780], INH7 = [640, 920];   // receptors on the dendrite
   const CA_STYLE = { fill: '#f5bcd6', edge: '#9c1f5c' };
+  const TRANS7 = [455, 865];                    // reuptake transporters
+  const ENZ7 = [[625, 535], [770, 520]];        // enzymes in the cleft
   const rnd = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
   const synapse7Svg = svgDoc(`<defs>
     <linearGradient id="pre7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${PURPLE.s0}"/><stop offset="1" stop-color="${PURPLE.s2}"/></linearGradient>
@@ -825,11 +847,16 @@
     <path d="M200 900 L200 ${POST_Y + 40} Q200 ${POST_Y} 240 ${POST_Y} L1080 ${POST_Y} Q1120 ${POST_Y} 1120 ${POST_Y + 40} L1120 900 Z" fill="url(#post7)" stroke="${GREEN.outline}" stroke-width="6"/>
   </g>
   <ellipse cx="370" cy="290" rx="64" ry="28" fill="#f6c99a" stroke="#b9650b" stroke-width="3"/>
+  <!-- reuptake transporters in the terminal membrane -->
+  ${TRANS7.map((x) => `<rect x="${x - 15}" y="${PRE_Y - 34}" width="30" height="68" rx="12" fill="#9ad7e0" stroke="#0b6f7e" stroke-width="3"/>
+    <path d="M${x} ${PRE_Y + 22} L${x} ${PRE_Y - 22} M${x - 6} ${PRE_Y - 14} L${x} ${PRE_Y - 22} L${x + 6} ${PRE_Y - 14}" stroke="#0b6f7e" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join('')}
+  <!-- enzymes in the cleft -->
+  ${ENZ7.map(([x, y]) => `<path d="M${x} ${y} L${f1(x + 20 * Math.cos(0.55))} ${f1(y - 20 * Math.sin(0.55))} A20 20 0 1 0 ${f1(x + 20 * Math.cos(0.55))} ${f1(y + 20 * Math.sin(0.55))} Z" fill="#c9b8ea" stroke="#5a3fb0" stroke-width="3" stroke-linejoin="round"/>`).join('')}
   <path d="M326 290 q10 -18 20 0 t20 0 t20 0 t20 0" stroke="#b9650b" stroke-width="2.5" fill="none"/>
 `);
   const FREE7 = [[545, 225], [685, 205], [825, 235], [935, 310], [600, 325], [760, 330]];
   // Ca2+ waiting outside, and the ones that go in through each side channel and drift to the docked vesicles.
-  const CA_OUT = [[290, 585], [420, 560], [1050, 585], [900, 565], [110, 470], [1110, 480], [1110, 570], [660, 545]];
+  const CA_OUT = [[290, 585], [420, 560], [1050, 585], [900, 565], [110, 470], [1110, 480], [1110, 570], [1110, 400]];
   const CA_IN = [
     [CA7[0], [320, 500], [470, 380]], [CA7[0], [410, 505], [590, 395]],
     [CA7[1], [1000, 500], [850, 380]], [CA7[1], [905, 505], [730, 395]],
@@ -846,6 +873,36 @@
     { from: 2.7, to: 3.6, title: 'Vesicles fuse', text: 'Ca²⁺ triggers docked vesicles to\nfuse with the membrane (exocytosis).', color: '#5e2f78' },
     { from: 3.6, to: 5.0, title: 'Neurotransmitters diffuse', text: 'Glutamate spills into the synaptic\ncleft and drifts across it.', color: '#c46f00' },
     { from: 5.0, to: 7.6, title: 'They bind the receptors', text: 'Excitatory receptors open and Na⁺\nflows in. The inhibitory (Cl⁻) ones\ndon’t respond to glutamate.', color: '#2e7d32' },
+    { from: 7.6, to: 9.4, title: 'Reuptake', text: 'Transporters pump glutamate back\ninto the terminal to be reused.', color: '#0b6f7e' },
+    { from: 9.4, to: 11.2, title: 'Enzymes break them down', text: 'At some synapses, enzymes in\nthe cleft break the transmitter\napart (e.g. acetylcholine).', color: '#5a3fb0' },
+  ];
+  // Clearing the cleft afterwards: unbinding, reuptake, enzyme breakdown.
+  const BOUND7 = EXC7.flatMap((x) => [[x - 36, POST_Y - 36], [x - 20, POST_Y - 36]]);
+  const FLOAT7 = [[560, 480], [700, 460], [690, 580], [850, 575], [420, 520], [540, 585], [900, 490], [610, 455]];
+  const sit = (pos, until) => ({ type: 'mover', once: true, r: 5.5, color: '#f08c1a', path: [pos, [pos[0] + 0.1, pos[1]]], duration: 0.05, at: 0, until });
+  const toTransporter = (pos, t0) => {
+    const x = pos[0] < 660 ? TRANS7[0] : TRANS7[1];
+    const end = [x + (x < 660 ? 50 : -50), PRE_Y - 95];
+    return { type: 'mover', once: true, vanish: true, r: 5.5, color: '#f08c1a', smooth: true, path: [pos, [x, PRE_Y + 45], [x, PRE_Y], [x, PRE_Y - 45], end], duration: 1.3, at: t0 };
+  };
+  const ENZ_FROM = [[560, 480], [690, 580], [540, 585], [850, 575]];
+  const cleanItems = [
+    { type: 'value', id: 'syn7t', from: 7.6, to: 11.2, at: 0, duration: 3.6, linear: true },
+    { type: 'value', id: 'r7', from: 1, to: 1, at: 0, duration: 0.05 },
+    { type: 'value', id: 'r7', from: 1, to: 0, at: 0.45, duration: 0.35 },
+    ...BOUND7.map((p) => sit(p, 0.35)),
+    ...BOUND7.map((p, i) => toTransporter(p, 0.35 + i * 0.1)),
+    ...FLOAT7.filter((p) => !ENZ_FROM.some((q) => q[0] === p[0] && q[1] === p[1])).flatMap((p, i) => [sit(p, 0.3 + i * 0.15), toTransporter(p, 0.3 + i * 0.15)]),
+    ...TRANS7.map((x) => ({ type: 'flash', x, y: PRE_Y, r: 34, color: '#16a3b8', duration: 0.6, at: 1.1 })),
+    ...ENZ_FROM.flatMap((p, i) => {
+      const [ex, ey] = ENZ7[i % 2], tArrive = 1.8 + 0.25 * i + 0.7;
+      return [
+        sit(p, 1.8 + 0.25 * i),
+        { type: 'mover', once: true, vanish: true, r: 5.5, color: '#f08c1a', smooth: true, path: [p, [(p[0] + ex) / 2, (p[1] + ey) / 2 + 10], [ex + 6, ey]], duration: 0.7, at: 1.8 + 0.25 * i },
+        { type: 'flash', x: ex, y: ey, r: 30, color: '#8a4fd8', duration: 0.5, at: tArrive },
+        ...[[-55, -30], [50, 35]].map(([dx, dy]) => ({ type: 'mover', once: true, vanish: true, r: 3.5, color: '#9aa1ad', path: [[ex, ey], [ex + dx, ey + dy]], duration: 0.8, at: tArrive + 0.05 })),
+      ];
+    }),
   ];
   const syn7Items = [
     { type: 'value', id: 'syn7t', from: 0, to: 7.5, at: 0, duration: 7.5, linear: true },
@@ -891,17 +948,56 @@
     ...label('Inhibitory\nreceptor (Cl⁻)', 70, 790, [274, 812], [INH7[0] - 22, POST_Y + 50], 'left', 22),
     { type: 'text', x: 660, y: 845, text: 'Dendrite of the next neuron', size: 26, font: 'sans', color: '#1d5a2e', align: 'center' },
     {
-      type: 'stepper', id: 'syn7t', x: 1190, y: 112, w: 370, h: 748, title: 'When the signal arrives',
-      steps: STEPS7, idleText: 'Press ▶ Action potential arrives\nto see each step.',
+      type: 'stepper', id: 'syn7t', x: 1190, y: 112, w: 370, h: 748, title: 'When the signal arrives', rowH: 46,
+      steps: STEPS7, idleText: 'Press ▶ Action potential arrives,\nthen ▶ Clear the synapse.',
     },
-    { type: 'ion', ion: 'ca', x: 1222, y: 700, r: 17 },
-    { type: 'text', x: 1250, y: 700, text: 'Calcium (Ca²⁺)', size: 21, font: 'sans', color: 'ink' },
-    { type: 'circle', x: 1222, y: 742, r: 7, color: '#f08c1a', fill: '#f08c1a', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1250, y: 742, text: 'Glutamate', size: 21, font: 'sans', color: 'ink' },
-    { type: 'rect', x: 1212, y: 770, w: 20, h: 26, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1250, y: 783, text: 'Excitatory receptor', size: 21, font: 'sans', color: 'ink' },
-    { type: 'rect', x: 1212, y: 810, w: 20, h: 26, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1250, y: 823, text: 'Inhibitory receptor', size: 21, font: 'sans', color: 'ink' },
+    { type: 'text', x: 440, y: 362, text: 'Transporter', size: 18, font: 'sans', color: '#0b6f7e', align: 'center' },
+    { type: 'text', x: 625, y: 568, text: 'Enzyme', size: 18, font: 'sans', color: '#5a3fb0', align: 'center' },
+    { type: 'ion', ion: 'ca', x: 1218, y: 744, r: 15 },
+    { type: 'text', x: 1240, y: 744, text: 'Ca²⁺', size: 19, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1388, y: 744, r: 7, color: '#f08c1a', fill: '#f08c1a', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1406, y: 744, text: 'Glutamate', size: 19, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1209, y: 772, w: 18, h: 24, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1240, y: 784, text: 'Excitatory', size: 19, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1379, y: 772, w: 18, h: 24, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1406, y: 784, text: 'Inhibitory', size: 19, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1209, y: 812, w: 18, h: 24, color: '#0b6f7e', fill: '#9ad7e0', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1240, y: 824, text: 'Transporter', size: 19, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1388, y: 824, r: 11, color: '#5a3fb0', fill: '#c9b8ea', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1406, y: 824, text: 'Enzyme', size: 19, font: 'sans', color: 'ink' },
+  ];
+
+  // ---------- slide 8: putting it all together ----------
+  // The slide-1 circuit with Receive -> Combine -> Send boxes. One button plays
+  // the whole chain and highlights each stage as it happens.
+  const STAGES8 = [
+    { name: 'Receive', from: 0, to: 2.4, x: 560, col: '#2f6fde', text: 'Neurotransmitters bind\nreceptors on the dendrites' },
+    { name: 'Combine', from: 2.4, to: 4.4, x: 900, col: '#e8890c', text: 'Signals add up at the\naxon hillock: threshold?' },
+    { name: 'Send', from: 4.4, to: 11, x: 1240, col: '#e0453a', text: 'Action potential travels;\ntransmitters are released' },
+  ];
+  const BOX8 = { y: 705, w: 300, h: 150 };
+  const finalItems = [
+    ...fullItems.map((it) => ({ ...it })),
+    ...STAGES8.map((st) => ({
+      type: 'rect', x: st.x, y: BOX8.y, w: BOX8.w, h: BOX8.h, color: st.col, width: 5, fill: st.col, fillOpacity: 0.14,
+      rough: false, duration: 0.25, at: st.from, until: st.to - st.from,
+    })),
+  ];
+  const finalSlide = [
+    title('Putting it all together'),
+    { type: 'svg', svg: circuitSvg },
+    { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'final', { skip: FUSING, releasing: false })) },
+    ...FUSING.map((vi) => ({ type: 'vesicle', x: vesiclePts[vi][0], y: vesiclePts[vi][1], r: 11, hideDuring: 'final' })),
+    { type: 'text', x: 448, y: 878, text: 'From another neuron', size: 22, font: 'sans', color: '#2c5a92', align: 'right' },
+    { type: 'text', x: 1475, y: 600, text: 'To the next\nneuron', size: 22, font: 'sans', color: '#2f6b2a', align: 'center' },
+    ...STAGES8.flatMap((st, i) => [
+      { type: 'rect', x: st.x, y: BOX8.y, w: BOX8.w, h: BOX8.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
+      { type: 'circle', x: st.x + 34, y: BOX8.y + 36, r: 17, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: st.x + 34, y: BOX8.y + 37, text: String(i + 1), size: 20, font: 'sans', bold: true, color: 'white', align: 'center' },
+      { type: 'text', x: st.x + 62, y: BOX8.y + 37, text: st.name, size: 30, font: 'sans', bold: true, color: st.col },
+      { type: 'text', x: st.x + 22, y: BOX8.y + 86, text: st.text, size: 20, font: 'sans', color: '#3b4252' },
+      ...(i < 2 ? [{ type: 'arrow', from: [st.x + BOX8.w + 6, BOX8.y + BOX8.h / 2], to: [st.x + BOX8.w + 34, BOX8.y + BOX8.h / 2], color: '#8a8f98', width: 4, rough: false }] : []),
+    ]),
   ];
 
   (window.WB_SCENES = window.WB_SCENES || []).push({
@@ -972,8 +1068,18 @@
       {
         say: 'The action potential opens Ca²⁺ channels; Ca²⁺ makes vesicles release neurotransmitters, which cross the cleft.',
         clear: true,
-        actions: [{ id: 'syn7', label: 'Action potential arrives', items: syn7Items }],
+        actions: [
+          { id: 'syn7', label: 'Action potential arrives', items: syn7Items },
+          { id: 'clean', label: 'Clear the synapse', items: cleanItems },
+        ],
         items: syn7,
+      },
+      // Slide 8: putting it all together - receive, combine, send.
+      {
+        say: 'Receive, combine, send: the neuron listens to many inputs, decides at the axon hillock, and passes the message on.',
+        clear: true,
+        actions: [{ id: 'final', label: 'Play the whole process', items: finalItems }],
+        items: finalSlide,
       },
     ],
   });
