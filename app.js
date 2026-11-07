@@ -480,7 +480,7 @@
         ctx.fillStyle = col(item.dot || '#f08c1a');
         for (const [a, b] of [[-4, -3], [4, -2], [0, 4]]) {
           ctx.beginPath();
-          ctx.arc(x + a * (rr / 11), y + b * (rr / 11), 2.6, 0, Math.PI * 2);
+          ctx.arc(x + a * (rr / 11), y + b * (rr / 11), 2.6 * Math.max(1, rr / 15), 0, Math.PI * 2);
           ctx.fill();
         }
         break;
