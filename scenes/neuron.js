@@ -800,6 +800,105 @@
     { type: 'text', x: 1198, y: 844, text: 'K⁺ channel (bottom)', size: 20, font: 'sans', color: 'ink' },
   ];
 
+  // ---------- slide 7: what happens at the synapse when the action potential arrives ----------
+  // Close-up: the main neuron's axon terminal (top), the synaptic cleft, and the
+  // next neuron's dendrite (bottom, green). Voltage-gated Ca2+ channels sit in the
+  // terminal membrane next to docked vesicles; receptors sit on the dendrite.
+  const PRE_Y = 430, POST_Y = 625;          // presynaptic membrane (bottom of terminal), postsynaptic membrane (top of dendrite)
+  const CA7 = [420, 660, 900];              // Ca2+ channels (active zones)
+  const REC7 = [480, 660, 840];             // receptors on the dendrite
+  const CA_STYLE = { fill: '#f5bcd6', edge: '#9c1f5c' };
+  const rnd = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+  const synapse7Svg = svgDoc(`<defs>
+    <linearGradient id="pre7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${PURPLE.s0}"/><stop offset="1" stop-color="${PURPLE.s2}"/></linearGradient>
+    <linearGradient id="post7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${GREEN.light}"/><stop offset="1" stop-color="${GREEN.dark}"/></linearGradient>
+    <filter id="sh7" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#3b1452" flood-opacity="0.2"/></filter>
+  </defs>
+  <rect x="60" y="112" width="1100" height="748" rx="16" fill="#eef6fd"/>
+  <g filter="url(#sh7)">
+    <path d="M-40 250 Q130 242 300 268" stroke="${PURPLE.outline}" stroke-width="96" fill="none" stroke-linecap="round"/>
+    <path d="M-40 250 Q130 242 300 268" stroke="${PURPLE.a0}" stroke-width="88" fill="none" stroke-linecap="round"/>
+    <path d="M260 360 C260 200 450 150 660 150 C870 150 1060 200 1060 360 Q1060 428 1000 ${PRE_Y} L320 ${PRE_Y} Q260 428 260 360 Z" fill="url(#pre7)" stroke="${PURPLE.outline}" stroke-width="6"/>
+    <path d="M200 900 L200 ${POST_Y + 40} Q200 ${POST_Y} 240 ${POST_Y} L1080 ${POST_Y} Q1120 ${POST_Y} 1120 ${POST_Y + 40} L1120 900 Z" fill="url(#post7)" stroke="${GREEN.outline}" stroke-width="6"/>
+  </g>
+  <!-- mitochondrion -->
+  <ellipse cx="370" cy="290" rx="64" ry="28" fill="#f6c99a" stroke="#b9650b" stroke-width="3"/>
+  <path d="M326 290 q10 -18 20 0 t20 0 t20 0 t20 0" stroke="#b9650b" stroke-width="2.5" fill="none"/>
+`);
+  // Vesicles: free ones further up, docked ones at the membrane by the Ca2+ channels.
+  const FREE7 = [[520, 210], [610, 190], [700, 205], [800, 220], [900, 260], [980, 320], [560, 290], [760, 300], [460, 350], [860, 340], [650, 260]];
+  const DOCK7 = CA7.flatMap((x) => [[x - 62, PRE_Y - 28], [x + 62, PRE_Y - 28]]);
+  // Ca2+ waiting outside, and the ones that go in through each channel.
+  const CA_OUT = [[300, 505], [545, 545], [775, 500], [1010, 540], [110, 470], [1110, 480], [1110, 560], [880, 548]];
+  const CA_IN = CA7.flatMap((x, i) => [[[x - 46, 500], [x - 30, 365 - (i % 2) * 20]], [[x + 48, 505], [x + 32, 380 + (i % 2) * 18]]]);
+  const caPore = (x, from, to) => [from, [x, PRE_Y + 52], [x, PRE_Y], [x, PRE_Y - 50], to];
+  // Na+ near the receptors that goes into the next neuron once they open.
+  const NA_IN7 = REC7.map((x, i) => [[x + 78, POST_Y - 30], [x + 10 - i * 8, POST_Y + 105 + (i % 2) * 34]]);
+  const naPore7 = (x, from, to) => [from, [x, POST_Y - 48], [x, POST_Y + 10], [x, POST_Y + 70], to];
+
+  const STEPS7 = [
+    { from: 0, to: 1.2, title: 'Action potential arrives', text: 'The electrical signal reaches the\naxon terminal and depolarizes it.', color: '#e0453a' },
+    { from: 1.2, to: 1.6, title: 'Ca²⁺ channels open', text: 'Voltage-gated Ca²⁺ channels in the\nterminal membrane sense it and open.', color: '#9c1f5c' },
+    { from: 1.6, to: 2.6, title: 'Ca²⁺ rushes in', text: 'There is far more Ca²⁺ outside,\nso it floods into the terminal.', color: '#9c1f5c' },
+    { from: 2.6, to: 3.6, title: 'Vesicles fuse', text: 'Ca²⁺ triggers docked vesicles to\nfuse with the membrane (exocytosis).', color: '#5e2f78' },
+    { from: 3.6, to: 5.0, title: 'Neurotransmitters diffuse', text: 'They spill into the synaptic cleft\nand drift across it.', color: '#c46f00' },
+    { from: 5.0, to: 7.6, title: 'They bind the receptors', text: 'Receptors on the next neuron open\nand Na⁺ flows in: the message\nis passed on.', color: '#2e7d32' },
+  ];
+  const syn7Items = [
+    { type: 'value', id: 'syn7t', from: 0, to: 7.5, at: 0, duration: 7.5, linear: true },
+    // 1. the action potential arrives
+    { type: 'mover', once: true, vanish: true, r: 11, color: '#ff5a36', smooth: true, path: [[-30, 250], [150, 246], [300, 272], [470, 340]], duration: 0.9, at: 0.1 },
+    { type: 'flash', x: 660, y: 330, r: 200, color: '#ff5a36', duration: 0.8, at: 0.9 },
+    // 2. Ca2+ channels open, 3. Ca2+ rushes in
+    { type: 'value', id: 'ca7', from: 0, to: 1, at: 1.2, duration: 0.3 },
+    ...CA_IN.map(([from, to], i) => ({ type: 'ion', ion: 'ca', smooth: true, path: caPore(CA7[Math.floor(i / 2)], from, to), duration: 0.95, at: 1.5 + (i % 2) * 0.25 + Math.floor(i / 2) * 0.08 })),
+    ...CA7.map((x) => ({ type: 'flash', x, y: PRE_Y - 40, r: 70, color: '#e0559a', duration: 0.9, at: 2.3 })),
+    { type: 'value', id: 'ca7', from: 1, to: 0, at: 3.5, duration: 0.4 },
+    // 4. docked vesicles fuse
+    ...DOCK7.map(([x, y], k) => ({ type: 'vesicle', fuse: true, path: [[x, y], [x + (x < CA7[Math.floor(k / 2)] ? 24 : -24), PRE_Y - 12]], r: 16, color: PURPLE.outline, duration: 1.1, at: 2.6 + (k % 2) * 0.12 + Math.floor(k / 2) * 0.1 })),
+    // 5. neurotransmitters spill out and drift across the cleft; some bind the receptors
+    ...DOCK7.flatMap(([x], k) => [0, 1, 2, 3].map((n) => {
+      const sx = x + (x < CA7[Math.floor(k / 2)] ? 24 : -24) + (n - 1.5) * 6;
+      const id = k * 4 + n;
+      const bind = n < 2 && k % 2 === n % 2;               // two per receptor end up bound
+      const r = REC7[Math.floor(k / 2)];
+      const to = bind ? [r - 28 + (n ? 8 : -8), POST_Y - 36] : [220 + rnd(id, 1) * 860, PRE_Y + 40 + rnd(id, 2) * 70];
+      const w1 = [sx + (rnd(id, 3) - 0.5) * 120, PRE_Y + 28 + rnd(id, 4) * 30];
+      const w2 = [(w1[0] + to[0]) / 2 + (rnd(id, 5) - 0.5) * 140, PRE_Y + 60 + rnd(id, 6) * 40];
+      return { type: 'mover', once: true, r: 5.5, color: '#f08c1a', smooth: true, path: [[sx, PRE_Y + 4], w1, w2, to], duration: 1.4 + rnd(id, 7) * 0.8, at: 3.4 + rnd(id, 8) * 0.5 };
+    })),
+    // 6. receptors open and Na+ flows into the next neuron
+    { type: 'value', id: 'r7', from: 0, to: 1, at: 5.2, duration: 0.35 },
+    ...NA_IN7.map(([from, to], i) => ({ type: 'ion', ion: 'na', smooth: true, path: naPore7(REC7[i], from, to), duration: 1.1, at: 5.5 + i * 0.15 })),
+    ...REC7.map((x) => ({ type: 'flash', x, y: POST_Y + 70, r: 46, color: '#2e9e5b', duration: 0.7, at: 6.4 })),
+  ];
+  const syn7 = [
+    title('At the synapse'),
+    { type: 'svg', svg: synapse7Svg },
+    ...FREE7.map(([x, y]) => ({ type: 'vesicle', x, y, r: 16, color: PURPLE.outline })),
+    ...DOCK7.map(([x, y]) => ({ type: 'vesicle', x, y, r: 16, color: PURPLE.outline, hideDuring: 'syn7' })),
+    ...CA7.map((x) => ({ type: 'channel', id: 'ca7', ligand: false, x, y: PRE_Y, h: 84, ...CA_STYLE })),
+    ...REC7.map((x) => ({ type: 'channel', id: 'r7', x, y: POST_Y + 10, h: 96, ...CH_STYLE.na, label: undefined })),
+    ...CA_OUT.map(([x, y]) => ({ type: 'ion', ion: 'ca', x, y })),
+    ...CA_IN.map(([from]) => ({ type: 'ion', ion: 'ca', x: from[0], y: from[1], hideDuring: 'syn7' })),
+    ...NA_IN7.map(([from]) => ({ type: 'ion', ion: 'na', x: from[0], y: from[1], hideDuring: 'syn7' })),
+    ...[[250, 720], [380, 790], [1010, 720], [930, 790], [700, 790]].map(([x, y], i) => ({ type: 'ion', ion: i % 2 ? 'a' : 'k', x, y })),
+    ...label('Axon terminal\n(sending neuron)', 70, 150, [282, 178], [330, 205], 'left', 24),
+    ...label('Vesicles', 70, 345, [170, 345], [444, 350], 'left', 24),
+    ...label('Ca²⁺ channel', 70, 410, [228, 410], [CA7[0] - 22, PRE_Y - 10], 'left', 24),
+    ...label('Synaptic cleft', 70, 540, [238, 540], [262, 540], 'left', 24),
+    ...label('Receptors', 70, 690, [184, 690], [REC7[0] - 22, POST_Y + 30], 'left', 24),
+    { type: 'text', x: 660, y: 845, text: 'Dendrite of the next neuron', size: 26, font: 'sans', color: '#1d5a2e', align: 'center' },
+    {
+      type: 'stepper', id: 'syn7t', x: 1190, y: 112, w: 370, h: 748, title: 'When the signal arrives',
+      steps: STEPS7, idleText: 'Press ▶ Action potential arrives\nto see each step.',
+    },
+    { type: 'ion', ion: 'ca', x: 1222, y: 770, r: 17 },
+    { type: 'text', x: 1250, y: 770, text: 'Calcium (Ca²⁺)', size: 21, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1222, y: 818, r: 7, color: '#f08c1a', fill: '#f08c1a', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1250, y: 818, text: 'Neurotransmitter', size: 21, font: 'sans', color: 'ink' },
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
@@ -863,6 +962,13 @@
         clear: true,
         actions: [{ id: 'prop', label: 'Send the action potential', items: propItems6 }],
         items: propItems,
+      },
+      // Slide 7: at the synapse - Ca2+ entry, vesicle fusion, neurotransmitters crossing the cleft.
+      {
+        say: 'The action potential opens Ca²⁺ channels; Ca²⁺ makes vesicles release neurotransmitters, which cross the cleft.',
+        clear: true,
+        actions: [{ id: 'syn7', label: 'Action potential arrives', items: syn7Items }],
+        items: syn7,
       },
     ],
   });

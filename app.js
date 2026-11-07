@@ -250,6 +250,7 @@
     k: { fill: '#7b5cd6', stroke: '#47309a', text: 'K⁺', r: 18 },
     cl: { fill: '#39a866', stroke: '#1d6a3c', text: 'Cl⁻', r: 18 },
     a: { fill: '#8f96a3', stroke: '#545b68', text: 'A⁻', r: 24 },
+    ca: { fill: '#e0559a', stroke: '#9c1f5c', text: 'Ca²⁺', r: 20 },
   };
 
   // Live values (e.g. a membrane potential or how open a channel is). Slide
@@ -500,7 +501,7 @@
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#ffffff';
-        ctx.font = `700 ${Math.round(rr * 0.82)}px ${SANS}`;
+        ctx.font = `700 ${Math.round(rr * (st.text.length > 3 ? 0.68 : 0.82))}px ${SANS}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(st.text, x, y + 1);
@@ -725,6 +726,60 @@
             if (f > 0.3) dot(s.x - 2, ay + ar - 8 + (f - 0.3) * 34, item.kStyle.dot);
           }
         });
+        break;
+      }
+      case 'stepper': {
+        // A numbered list of steps; the one matching live value `id` (seconds,
+        // -1 = idle) is highlighted and explained underneath.
+        const { x, y, w, h } = item;
+        const cur = liveValue(item.id, -1, t);
+        const idx = cur < 0 ? -1 : item.steps.findIndex((s) => cur >= s.from && cur < s.to);
+        const now = idx < 0 && cur >= 0 ? item.steps.length - 1 : idx;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#d9dce3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 18);
+        ctx.fill();
+        ctx.stroke();
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#1f2430';
+        ctx.font = `600 26px ${SANS}`;
+        ctx.fillText(item.title || 'What happens', x + w / 2, y + 38);
+        item.steps.forEach((s, i) => {
+          const ry = y + 92 + i * 52;
+          const on = i === now, done = cur >= 0 && i < now;
+          if (on) {
+            ctx.fillStyle = '#fff1e0';
+            ctx.beginPath();
+            ctx.roundRect(x + 14, ry - 22, w - 28, 44, 10);
+            ctx.fill();
+          }
+          ctx.fillStyle = on ? (s.color || '#e0453a') : done ? '#8a8f98' : '#c3cad6';
+          ctx.beginPath();
+          ctx.arc(x + 40, ry, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `700 16px ${SANS}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(String(i + 1), x + 40, ry + 1);
+          ctx.fillStyle = on ? '#1f2430' : done ? '#5b6270' : '#8a8f98';
+          ctx.font = `${on ? 700 : 600} 21px ${SANS}`;
+          ctx.textAlign = 'left';
+          ctx.fillText(s.title, x + 66, ry);
+        });
+        const dy = y + 92 + item.steps.length * 52 + 18;
+        ctx.strokeStyle = '#e3e6ec';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 20, dy);
+        ctx.lineTo(x + w - 20, dy);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#3b4252';
+        ctx.font = `500 20px ${SANS}`;
+        String(now >= 0 ? item.steps[now].text : item.idleText || '').split('\n').forEach((ln, i) => ctx.fillText(ln, x + 24, dy + 34 + i * 27));
         break;
       }
       case 'charges': {
