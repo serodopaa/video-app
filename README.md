@@ -46,7 +46,8 @@ often block the microphone on files opened straight from your computer.
    it (your next recording replaces it), **🗑️** delete it.
 5. **▶ Preview all** plays everything in order. **⬇ Export video** joins all clips
    into one file in your Downloads. Export runs in real time (a 10-minute video
-   takes about 10 minutes), so keep the tab open and visible while it runs.
+   takes about 10 minutes). If you switch to another tab or app, export pauses itself
+   and carries on when you come back. Recording also pauses itself if the tab is hidden.
 
 Clips are saved in this browser, so they're still there after a refresh. They are
 not uploaded anywhere. Untick **Pointer in video** to hide the red pointer dot.

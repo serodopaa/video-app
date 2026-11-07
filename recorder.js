@@ -294,6 +294,16 @@
   ui.pause.addEventListener('click', togglePause);
   ui.stop.addEventListener('click', stopRecording);
 
+  // Chrome stops redrawing a page you're not looking at (another tab or app in
+  // front, minimized or fully covered window), so a recording would freeze.
+  // Pause it instead; you resume when you're back.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && rec.state === 'recording') {
+      togglePause();
+      ui.badge.lastChild.textContent = ' PAUSED (tab was hidden)';
+    }
+  });
+
   // ---------- timeline ----------
   const tl = $('timeline');
   const urlOf = (c) => c._url || (c._url = URL.createObjectURL(c.blob));
@@ -667,6 +677,26 @@
     };
 
     let active = null;
+    // Chrome stops redrawing hidden pages, which would freeze the picture while
+    // the sound carries on. So while this tab is hidden, export holds still.
+    let held = false, playingNow = false;
+    const whenVisible = () => (document.hidden ? new Promise((res) => {
+      const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); res(); } };
+      document.addEventListener('visibilitychange', f);
+    }) : Promise.resolve());
+    const onVisibility = () => {
+      if (document.hidden) {
+        held = true;
+        if (active) active.pause();
+        if (mr && mr.state === 'recording') mr.pause();
+        btn.textContent = 'Export paused: come back to this tab to continue';
+      } else if (held) {
+        held = false;
+        if (mr && mr.state === 'paused') mr.resume();
+        if (active && playingNow) active.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     let drawing = true;
     const draw = () => {
       if (!drawing) return;
@@ -686,10 +716,12 @@
       for (let i = 0; i < list.length && !signal.aborted; i++) {
         const v = vids[i % 2], c = list[i];
         if (i > 0) await nextPrep;
+        await whenVisible();
         active = v;
         octx.drawImage(v, 0, 0, RW, RH);
         if (i === 0) startRecorder();
         await v.play();
+        playingNow = true;
         if (i > 0) {
           const spare = vids[(i + 1) % 2];
           spare.pause();
@@ -697,12 +729,14 @@
         }
         await new Promise((resolve) => {
           const check = () => {
+            if (held) { requestAnimationFrame(check); return; }
             if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02) return resolve();
             btn.textContent = `Exporting… ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% (click to cancel)`;
             requestAnimationFrame(check);
           };
           check();
         });
+        playingNow = false;
         if (i + 1 < list.length && nextPrep) await nextPrep; // hold this frame until the next is parked
         v.pause();
         done += clipLen(c);
@@ -718,6 +752,7 @@
       await stopped;
     }
     drawing = false;
+    document.removeEventListener('visibilitychange', onVisibility);
     if (vTrack) vTrack.stop();
     ac.close();
 
