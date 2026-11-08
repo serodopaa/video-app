@@ -1288,6 +1288,15 @@
     updateLabels();
     renderActionButtons();
     loadNotes();
+    rememberPlace();
+  }
+
+  // Remember the topic and slide so a refresh comes back to the same place.
+  function rememberPlace() {
+    try {
+      localStorage.setItem('wb-last', JSON.stringify({ id: player.scene.id, step: player.step }));
+      if (location.hash !== '#' + player.scene.id) history.replaceState(null, '', '#' + player.scene.id);
+    } catch (_) { /* storage unavailable */ }
   }
 
   // ---------- speaker notes (side panel, never on the board or in recordings) ----------
@@ -2016,13 +2025,18 @@
 
   // Start on the first explainer if there is one, otherwise the blank board.
   // A link like index.html#photosynthesis opens that scene directly.
+  // Otherwise it reopens the last topic and slide you were on (see rememberPlace).
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem('wb-last')); } catch (_) { /* none saved */ }
   const fromHash = scenes.findIndex((s) => '#' + s.id === location.hash);
-  const startIndex = fromHash >= 0 ? fromHash : scenes.length > 1 ? 1 : 0;
+  const fromLast = last ? scenes.findIndex((s) => s.id === last.id) : -1;
+  const startIndex = fromHash >= 0 ? fromHash : fromLast >= 0 ? fromLast : scenes.length > 1 ? 1 : 0;
   els.select.value = startIndex;
   // Hooks used by recorder.js.
   window.WB = { W, H, renderTo, animNow, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
 
   resize();
   loadScene(startIndex);
+  if (last && last.id === scenes[startIndex].id && last.step > 0 && last.step < scenes[startIndex].steps.length) goTo(last.step, false);
   requestAnimationFrame(frame);
 })();
