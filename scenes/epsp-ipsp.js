@@ -136,88 +136,6 @@
     ...(window.WB_LOCATOR ? window.WB_LOCATOR({ x: 1212, y: 728, w: 330, h: 120, spot: [66, 442], terminal: true }) : []),
   ];
 
-  // ---------- slide 2: spatial summation ----------
-  // A zoomed-out neuron with three input neurons: two excitatory ones far out on the
-  // dendrites and an inhibitory one at the base, right next to the axon hillock.
-  // The neuron drawing and signal animations come from neuron.js (window.WB_SUMMATION).
-  const slide2 = (() => {
-    const W = window.WB_SUMMATION;
-    if (!W) return null;
-    const { fire, actionPotential, hillockPt, inputs, INH, EXC, SPARK, label } = W;
-    const AXH = 'axh'; // live value actionPotential() drives
-    const spark = (t, r = 40) => ({ type: 'flash', x: hillockPt[0], y: hillockPt[1], r, color: SPARK, duration: 0.5, at: t });
-    const verdict = (text, color, t) => ({ type: 'text', x: 600, y: 400, text, size: 26, font: 'sans', bold: true, color, anim: 'pop', duration: 0.4, at: t, until: t + 1.6 });
-    const v = (from, to, at, duration) => ({ type: 'value', id: AXH, from, to, at, duration });
-    const actions = [
-      { // one excitatory input: a small bump, nowhere near threshold
-        id: 'one', label: 'Fire one excitatory (E1)',
-        items: [...fire('E1', 0), spark(1.75, 26), v(REST, -62, 1.6, 0.5), v(-62, REST, 2.5, 1.8),
-          verdict('Not enough: stays below threshold', '#5b6270', 2.0)],
-      },
-      { // both excitatory inputs add up and reach threshold
-        id: 'two', label: 'Fire both excitatory (E1 + E2)',
-        items: [...fire('E1', 0), ...fire('E2', 0), spark(1.75), v(REST, -50, 1.6, 0.45), ...actionPotential(2.05)],
-      },
-      { // the inhibitory input pulls the sum back below threshold
-        id: 'all', label: 'Fire all three (E1 + E2 + I)',
-        items: [...fire('E1', 0), ...fire('E2', 0), ...fire('I', 0.75, { travel: 0.6 }),
-          { type: 'pulse', x: inputs.I.p[0], y: inputs.I.p[1], r: 26, color: INH.nt, speed: 1.2, at: 1.0, until: 2.4 },
-          spark(1.75), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 52, color: INH.nt, duration: 0.8, at: 1.9 },
-          v(REST, -58, 1.6, 0.35), v(-58, -66, 1.95, 0.5), v(-66, REST, 2.45, 1.8),
-          verdict('Blocked: no action potential', INH.edge, 2.0)],
-      },
-    ];
-    // Extra button: an inhibitory input far out on a dendrite. By the time its IPSP reaches the
-    // hillock it has faded, so the two excitatory inputs still win. The terminal only appears
-    // while this button plays (it is part of the action).
-    const S4 = ([x, y]) => [x * W.K4 + W.TX4, y * W.K4 + W.TY4];
-    const farTip = S4([172, 790]);
-    const farDir = (() => { const l = Math.hypot(-0.2, 1); return [-0.2 / l, 1 / l]; })();
-    const farC = [farTip[0] + farDir[0] * 30, farTip[1] + farDir[1] * 30];
-    const farEnd = [farTip[0] + farDir[0] * 300, farTip[1] + farDir[1] * 300];
-    const farRoute = [[172, 790], [190, 735], [220, 650], [270, 600], [320, 535], [380, 470], [478, 470]].map(S4);
-    const farSvg = W.svgDoc(`<path d="M${farC.map(f1)} L${farEnd.map(f1)}" stroke="${INH.edge}" stroke-width="16" stroke-linecap="round"/>
-      <path d="M${farC.map(f1)} L${farEnd.map(f1)}" stroke="${INH.fill}" stroke-width="10" stroke-linecap="round"/>
-      <circle cx="${f1(farC[0])}" cy="${f1(farC[1])}" r="21" fill="${INH.edge}"/><circle cx="${f1(farC[0])}" cy="${f1(farC[1])}" r="18" fill="${INH.fill}"/>
-      ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${f1(farC[0] + a)}" cy="${f1(farC[1] + b)}" r="3.2" fill="${INH.nt}"/>`).join('')}`);
-    actions.push({
-      id: 'farI', label: 'E1 + E2 + inhibition far away',
-      items: [
-        { type: 'svg', svg: farSvg },
-        { type: 'text', x: farC[0] + 30, y: farC[1] + 52, text: 'I (far away)', size: 24, font: 'sans', bold: true, color: INH.edge },
-        ...fire('E1', 0), ...fire('E2', 0),
-        { type: 'flash', x: farC[0], y: farC[1], r: 30, color: INH.nt, duration: 0.5, at: 0 },
-        { type: 'flash', x: farTip[0], y: farTip[1], r: 22, color: INH.nt, duration: 0.6, at: 0.3 },
-        { type: 'mover', once: true, vanish: true, r: 5, color: INH.nt, smooth: true, path: farRoute, duration: 1.4, at: 0.4 },
-        spark(1.75), v(REST, -52, 1.6, 0.45), ...actionPotential(2.05),
-        { type: 'text', x: 900, y: 560, text: 'Far-away inhibition fades before\nit arrives: it still fires!', size: 24, font: 'sans', bold: true, color: INH.edge, align: 'center', anim: 'pop', duration: 0.4, at: 2.2, until: 4.5 },
-      ],
-    });
-    const items = [
-      title('Spatial summation'),
-      { type: 'svg', svg: W.svgDoc(`<g transform="translate(${W.TX4} ${W.TY4}) scale(${W.K4})">${W.neuronMarkup(W.PURPLE, 'sum2', { releasing: false })}</g>`) },
-      { type: 'svg', svg: W.terminalsSvg },
-      { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: W.AP, width: 3, dashed: true, rough: false },
-      ...label('Axon hillock\n(adds up all the inputs)', 640, 290, [600, 340], [hillockPt[0] + 12, hillockPt[1] - 30], 'center', 28),
-      ...Object.entries(inputs).map(([name, s]) => ({
-        type: 'text', x: s.c[0] + (s.dir[0] < 0 ? -36 : 36), y: s.c[1], text: name,
-        size: 26, font: 'sans', bold: true, color: s.st.edge, align: s.dir[0] < 0 ? 'right' : 'left',
-      })),
-      { type: 'text', x: 520, y: 640, text: 'Inhibitory synapse,\nright next to the\naxon hillock', size: 24, font: 'sans', color: INH.edge },
-      {
-        type: 'meter', id: AXH, value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
-        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
-        fireText: 'Action potential fired!',
-      },
-      { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 24, font: 'sans', color: '#3b4252', align: 'center' },
-      { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
-      { type: 'text', x: 1256, y: 790, text: 'E1, E2: excitatory', size: 21, font: 'sans', color: 'ink' },
-      { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
-      { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
-    ];
-    return { actions, items };
-  })();
-
   // ---------- slide 3: temporal summation ----------
   // The same neuron, but only E1 is active: it fires 1, 2 or 3 times in quick succession.
   // Each EPSP fades on its own, so only when they pile up does the hillock reach -55 mV.
@@ -349,16 +267,21 @@
     return { actions, items };
   })();
 
-  // ---------- why they add up: graded potentials shrink with distance ----------
+  // ---------- spatial summation ----------
+  // One dendrite with two excitatory inputs (A far from the axon hillock, B nearer) and an
+  // inhibitory input (I) right next to the hillock. An EPSP/IPSP is a graded potential: it shrinks
+  // as it travels, so what matters is where each input lands. Numbers (mV above/below rest):
+  //   A reaches the hillock as +6, B as +10, I as -5. A + B = +16 (to -54 mV: fires); A + B + I = +11 (-59: blocked).
   const slideWhy = (() => {
     const W = window.WB_SUMMATION;
     if (!W) return null;
-    const { EXC, label, SPARK } = W;
+    const { EXC, INH, label, SPARK } = W;
     const Y = 450, XA = 250, XB = 720, XH = 1070;      // dendrite height; far input, near input, axon hillock
-    const bulb = (x) => `<path d="M${x} 390 L${x} 110" stroke="${EXC.edge}" stroke-width="16" stroke-linecap="round"/>
-      <path d="M${x} 390 L${x} 110" stroke="${EXC.fill}" stroke-width="10" stroke-linecap="round"/>
-      <circle cx="${x}" cy="390" r="21" fill="${EXC.edge}"/><circle cx="${x}" cy="390" r="18" fill="${EXC.fill}"/>
-      ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${x + a}" cy="${390 + b}" r="3.2" fill="${EXC.nt}"/>`).join('')}`;
+    const IX = 985, IY = 318;                          // inhibitory terminal, on the cell body next to the hillock
+    const bulb = (x, y, st) => `<path d="M${x} ${y} L${x} 110" stroke="${st.edge}" stroke-width="16" stroke-linecap="round"/>
+      <path d="M${x} ${y} L${x} 110" stroke="${st.fill}" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="${x}" cy="${y}" r="21" fill="${st.edge}"/><circle cx="${x}" cy="${y}" r="18" fill="${st.fill}"/>
+      ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${x + a}" cy="${y + b}" r="3.2" fill="${st.nt}"/>`).join('')}`;
     const svg = W.svgDoc(`<defs>
       <radialGradient id="somaW" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#f3e6f8"/><stop offset="0.55" stop-color="#d4afe2"/><stop offset="1" stop-color="#ad78c6"/></radialGradient>
       <filter id="shW" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#13294a" flood-opacity="0.25"/></filter></defs>
@@ -370,8 +293,9 @@
         <path d="M1085 ${Y} L1172 ${Y}" stroke="#d4afe2" stroke-width="7" stroke-linecap="round"/>
         <circle cx="950" cy="${Y}" r="105" fill="url(#somaW)" stroke="#5e2f78" stroke-width="5"/>
         <circle cx="940" cy="${Y - 10}" r="30" fill="#5a2b75"/><circle cx="950" cy="${Y - 16}" r="9" fill="#3a1650"/>
-        ${bulb(XA)}${bulb(XB)}
+        ${bulb(XA, 390, EXC)}${bulb(XB, 390, EXC)}${bulb(IX, IY, INH)}
       </g>`);
+    // one excitatory input alone: shows how much of its EPSP is left at each point along the way
     const run = ({ xs, dur, vals, peak, verdict }) => {
       const xm = (xs + XH) / 2, xsList = [xs, xm, XH];
       const total = 92 + (XH - xs);
@@ -382,7 +306,7 @@
         { type: 'flash', x: xs, y: 390, r: 30, color: EXC.nt, duration: 0.5, at: 0 },
         { type: 'mover', once: true, vanish: true, r: 9, color: SPARK, path: [[xs, 400], [xs, Y], [XH, Y]], duration: dur, at: 0.4 },
         ...xsList.flatMap((x, i) => [
-          { type: 'flash', x, y: Y, r: 10 + vals[i] * 3.2, color: SPARK, duration: 0.7, at: times[i] },
+          { type: 'flash', x, y: Y, r: 10 + vals[i] * 2.8, color: SPARK, duration: 0.7, at: times[i] },
           { type: 'line', from: [x, 478], to: [x, 568], color: '#8a8f98', width: 2, dashed: true, rough: false, at: times[i] },
           { type: 'text', x, y: 590, text: caps[i], size: 20, font: 'sans', color: '#5b6270', align: 'center', anim: 'pop', duration: 0.3, at: times[i] },
           { type: 'text', x, y: 630, text: `+${vals[i]} mV`, size: 36, font: 'sans', bold: true, color: '#e8890c', align: 'center', anim: 'pop', duration: 0.3, at: times[i] },
@@ -392,26 +316,66 @@
         { type: 'text', x: 600, y: 720, text: verdict, size: 26, font: 'sans', bold: true, color: EXC.edge, align: 'center', anim: 'pop', duration: 0.4, at: times[2] + 0.3, until: times[2] + 4 },
       ];
     };
+    // several inputs at once: their potentials arrive together and add up at the hillock
+    const together = ({ withI }) => {
+      const T = 2.6;                                  // when everything reaches the hillock
+      const sum = withI ? '+6  +10  −5  =  +11 mV' : '+6  +10  =  +16 mV';
+      const out = [
+        { type: 'flash', x: XA, y: 390, r: 30, color: EXC.nt, duration: 0.5, at: 0 },
+        { type: 'flash', x: XB, y: 390, r: 30, color: EXC.nt, duration: 0.5, at: 0 },
+        { type: 'mover', once: true, vanish: true, r: 9, color: SPARK, path: [[XA, 400], [XA, Y], [XH, Y]], duration: T - 0.4, at: 0.4 },
+        { type: 'mover', once: true, vanish: true, r: 9, color: SPARK, path: [[XB, 400], [XB, Y], [XH, Y]], duration: T - 0.4, at: 0.4 },
+        { type: 'flash', x: XH, y: Y, r: 34, color: SPARK, duration: 0.6, at: T },
+        { type: 'line', from: [XH, 478], to: [XH, 568], color: '#8a8f98', width: 2, dashed: true, rough: false, at: T },
+        { type: 'text', x: XH, y: 590, text: 'at the hillock', size: 20, font: 'sans', color: '#5b6270', align: 'center', anim: 'pop', duration: 0.3, at: T },
+        { type: 'text', x: XH - 40, y: 630, text: sum, size: 30, font: 'sans', bold: true, color: '#e8890c', align: 'center', anim: 'pop', duration: 0.3, at: T },
+      ];
+      if (!withI) {
+        out.push({ type: 'value', id: 'axh', from: REST, to: -54, at: T - 0.2, duration: 0.5 },
+          { type: 'flash', x: XH, y: Y, r: 44, color: W.AP, duration: 0.8, at: T + 0.5 },
+          { type: 'value', id: 'axh', from: -54, to: 30, at: T + 0.5, duration: 0.25 },
+          { type: 'value', id: 'axh', from: 30, to: -80, at: T + 0.75, duration: 0.55 },
+          { type: 'value', id: 'axh', from: -80, to: REST, at: T + 1.3, duration: 1.8 },
+          { type: 'mover', once: true, vanish: true, r: 8, color: W.AP, path: [[1085, Y], [1172, Y]], duration: 0.6, at: T + 0.6 },
+          { type: 'text', x: 600, y: 720, text: 'Added together they reach −55 mV:\nthe neuron fires!', size: 26, font: 'sans', bold: true, color: '#e0453a', align: 'center', anim: 'pop', duration: 0.4, at: T + 0.4, until: 4.5 });
+      } else {
+        out.push({ type: 'flash', x: IX, y: IY, r: 30, color: INH.nt, duration: 0.5, at: 1.5 },
+          { type: 'mover', once: true, vanish: true, r: 7, color: INH.nt, smooth: true, path: [[IX, IY + 22], [1012, 400], [1060, Y - 12]], duration: 0.9, at: T - 0.9 },
+          { type: 'pulse', x: 1030, y: 405, r: 26, color: INH.nt, speed: 1.2, at: T - 0.9, until: 2.4 },
+          { type: 'flash', x: XH, y: Y, r: 46, color: INH.nt, duration: 0.8, at: T + 0.1 },
+          { type: 'value', id: 'axh', from: REST, to: -54, at: T - 0.45, duration: 0.4 },
+          { type: 'value', id: 'axh', from: -54, to: -59, at: T - 0.05, duration: 0.5 },
+          { type: 'value', id: 'axh', from: -59, to: REST, at: T + 0.9, duration: 1.8 },
+          { type: 'text', x: 600, y: 720, text: 'The inhibitory input right next to the hillock\ncancels them: no action potential.', size: 26, font: 'sans', bold: true, color: INH.edge, align: 'center', anim: 'pop', duration: 0.4, at: T + 0.4, until: 4.5 });
+      }
+      return out;
+    };
     const actions = [
-      { id: 'far', label: 'Fire the far input (A)', items: run({ xs: XA, dur: 2.4, vals: [10, 5, 2], peak: -68, verdict: 'Far away: most of it fades on the way.' }) },
-      { id: 'near', label: 'Fire the near input (B)', items: run({ xs: XB, dur: 1.6, vals: [10, 9, 8], peak: -62, verdict: 'Close by: much more of it arrives.' }) },
+      { id: 'far', label: 'Fire the far input (A)', items: run({ xs: XA, dur: 2.4, vals: [12, 8, 6], peak: -64, verdict: 'Far away: much of it fades on the way.' }) },
+      { id: 'near', label: 'Fire the near input (B)', items: run({ xs: XB, dur: 1.6, vals: [12, 11, 10], peak: -60, verdict: 'Closer: more of it arrives.' }) },
+      { id: 'ab', label: 'Fire A + B together', items: together({ withI: false }) },
+      { id: 'abi', label: 'Fire A + B + I', items: together({ withI: true }) },
     ];
     const items = [
-      title('Why do inputs add up?'),
+      title('Spatial summation'),
       { type: 'svg', svg },
       { type: 'text', x: XA - 36, y: 390, text: 'A', size: 30, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
       { type: 'text', x: XB - 36, y: 390, text: 'B', size: 30, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
+      { type: 'text', x: IX - 36, y: IY, text: 'I', size: 30, font: 'sans', bold: true, color: INH.edge, align: 'right' },
       ...label('Dendrite', 140, 340, [150, 362], [160, Y - 14], 'center', 26),
-      ...label('Cell body', 950, 290, [950, 312], [950, 358], 'center', 26),
       { type: 'circle', x: XH, y: Y, r: 34, color: W.AP, width: 3, dashed: true, rough: false },
-      ...label('Axon hillock', 1090, 330, [1080, 352], [XH + 6, Y - 32], 'center', 26),
-      { type: 'text', x: 600, y: 800, text: 'An EPSP or IPSP is a graded potential: it gets smaller the farther it travels\nand fades away over time. That is why the location and timing of inputs matter.', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
+      ...label('Axon hillock', 1100, 335, [1086, 357], [XH + 6, Y - 32], 'center', 26),
+      { type: 'text', x: 600, y: 800, text: 'An EPSP or IPSP gets smaller the farther it travels, so inputs close to the hillock count for more.\nInputs from different places add up at the hillock: this is spatial summation.', size: 21, font: 'sans', color: '#3b4252', align: 'center' },
       {
         type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
         title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
         fireText: 'Action potential fired!',
       },
-      { type: 'text', x: 1375, y: 650, text: 'Both inputs start with\nthe same size EPSP.\nOnly part of it reaches\nthe hillock.', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
+      { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
+      { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 790, text: 'A, B: excitatory', size: 21, font: 'sans', color: 'ink' },
+      { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
     ];
     return { actions, items };
   })();
@@ -627,28 +591,21 @@ So how does a neuron add up all those signals? That's what we're going to figure
         ],
         items: slide1,
       },
-      // Slide 3: why inputs add up - an EPSP shrinks with distance and fades with time.
+      // Slide 3: spatial summation - A + B add up and fire; the inhibitory input next to the hillock cancels them.
       ...(slideWhy ? [{
-        say: 'An EPSP is a graded potential: it shrinks as it travels along the dendrite, so inputs closer to the hillock count for more.',
+        say: 'Inputs from different places add up at the axon hillock: two excitatory inputs reach threshold together, and the nearby inhibitory input cancels them.',
         clear: true,
         actions: slideWhy.actions,
         items: slideWhy.items,
       }] : []),
-      // Slide 4: spatial summation - three inputs add up (or cancel) at the axon hillock.
-      ...(slide2 ? [{
-        say: 'Inputs add up at the axon hillock: one excitatory input is not enough, two reach threshold, and the nearby inhibitory input blocks it.',
-        clear: true,
-        actions: slide2.actions,
-        items: slide2.items,
-      }] : []),
-      // Slide 5: temporal summation - the same excitatory neuron firing 1, 2, then 3 times in a row.
+      // Slide 4: temporal summation - the same excitatory neuron firing 1, 2, then 3 times in a row.
       ...(slide3 ? [{
         say: 'Each EPSP fades quickly, but if the same neuron fires again before it has faded, the EPSPs add up: three in a row reach threshold.',
         clear: true,
         actions: slide3.actions,
         items: slide3.items,
       }] : []),
-      // Slide 6: recap.
+      // Slide 5: recap.
       ...(slideRecap ? [{
         script: `So let's put it all together.
 
@@ -668,7 +625,7 @@ That's how one neuron turns thousands of signals into a single decision. Thanks 
         actions: slideRecap.actions,
         items: slideRecap.items,
       }] : []),
-      // Slide 7: thumbnail for the video (save it with the PNG button).
+      // Slide 6: thumbnail for the video (save it with the PNG button).
       {
         say: 'Thumbnail: press 💾 to save it (1920×1080 JPEG, under YouTube’s 2 MB limit).',
         clear: true,
