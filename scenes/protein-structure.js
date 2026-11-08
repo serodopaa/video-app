@@ -450,18 +450,19 @@
   // Two panels side by side. Left: two stretches of backbone, bonded backbone-to-backbone (secondary).
   // Right: two parts of a folded chain, bonded R-group-to-R-group (tertiary). Tabs highlight one at a time.
   const SV = [
+    { id: 'sv-aa', name: 'An amino acid', color: '#2e7d32' },
     { id: 'sv-sec', name: 'Secondary: backbone ↔ backbone', color: '#d6336c' },
     { id: 'sv-ter', name: 'Tertiary: R group ↔ R group', color: '#2f6fde' },
   ];
-  const SV_W = 560, SV_GAP = 24, SV_X = [228, 812], SV_Y = 112, SV_H = 58;
+  const SV_W = 440, SV_GAP = 20, SV_X = [120, 580, 1040], SV_Y = 112, SV_H = 58;
   const svTabsStatic = SV.flatMap((t, i) => [
     { type: 'rect', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, color: '#c9cfda', fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
-    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 26, '#3b4252', { align: 'center', bold: true }),
+    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 23, '#3b4252', { align: 'center', bold: true }),
     { type: 'hotspot', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, action: t.id },
   ]);
   const svTabOn = (t, i) => [
     { type: 'rect', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, color: t.color, fill: t.color, fillOpacity: 1, width: 3, rough: false },
-    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 26, '#ffffff', { align: 'center', bold: true }),
+    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 23, '#ffffff', { align: 'center', bold: true }),
   ];
   // left panel: two short strands of backbone atoms (R groups faded)
   const svStrands = [0, 1].map((st) => {
@@ -493,20 +494,66 @@
   const svPanels = [
     { type: 'rect', x: 60, y: 205, w: 720, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
     { type: 'rect', x: 820, y: 205, w: 720, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
-    txt('Secondary structure', 420, 238, 32, SV[0].color, { align: 'center', bold: true }),
+    txt('Secondary structure', 420, 238, 32, SV[1].color, { align: 'center', bold: true }),
     txt('two stretches of BACKBONE', 420, 276, 22, '#5b6270', { align: 'center', bold: true }),
-    txt('Tertiary structure', 1180, 238, 32, SV[1].color, { align: 'center', bold: true }),
+    txt('Tertiary structure', 1180, 238, 32, SV[2].color, { align: 'center', bold: true }),
     txt('two R GROUPS from far apart', 1180, 276, 22, '#5b6270', { align: 'center', bold: true }),
     svgItem(svStrands.map((a) => backbone(a)).join('')),
     svgItem(svRightArt),
     txt('R groups (faded) stick out and are not involved', 420, 740, 20, '#8a7a45', { align: 'center', bold: true }),
     txt('The backbone (faded) is not what bonds here', 1180, 730, 20, '#5b6270', { align: 'center', bold: true }),
   ];
+  // ---- the opening view: one amino acid as a skeletal line structure ----
+  // Corners and line ends are carbon unless a letter is shown; hydrogens on carbon are left out.
+  const AAS = { N: [250, 590], CA: [380, 515], C: [510, 590], O: [510, 725], OH: [640, 515], R: [380, 380] };
+  const gapLine = (a, b, g1, g2, w = 7) => {
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / d, uy = (b[1] - a[1]) / d;
+    return ln(a[0] + ux * g1, a[1] + uy * g1, b[0] - ux * g2, b[1] - uy * g2, w, '#2d3340');
+  };
+  const dblLine = (a, b, g1, g2) => {
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / d * 5, ny = (b[0] - a[0]) / d * 5;
+    return gapLine([a[0] + nx, a[1] + ny], [b[0] + nx, b[1] + ny], g1, g2, 5) + gapLine([a[0] - nx, a[1] - ny], [b[0] - nx, b[1] - ny], g1, g2, 5);
+  };
+  const aaLabel = (t, x, y, c = '#2d3340', size = 34) => `<text x="${x}" y="${y + size * 0.36}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="${size}" text-anchor="middle" fill="${c}">${t}</text>`;
+  const aaSvg = (() => {
+    const { N, CA, C, O, OH, R } = AAS;
+    return `<ellipse cx="${N[0] - 20}" cy="${N[1] + 6}" rx="78" ry="48" fill="#5b8def" opacity="0.2"/>
+      <ellipse cx="${(C[0] + OH[0]) / 2 + 8}" cy="${(C[1] + OH[1]) / 2 + 20}" rx="150" ry="116" fill="#f26b5b" opacity="0.16"/>
+      <circle cx="${R[0]}" cy="${R[1] - 6}" r="48" fill="#efe2b8" opacity="0.7"/>
+      ${ln(N[0] + 24, N[1] - 14, CA[0], CA[1], 38, '#ffd34d', 0.4)}${ln(CA[0], CA[1], C[0], C[1], 38, '#ffd34d', 0.4)}
+      ${gapLine(N, CA, 52, 0)}${gapLine(CA, C, 0, 0)}${gapLine(CA, R, 0, 34, 7)}${dblLine(C, O, 0, 30)}${gapLine(C, OH, 0, 32)}
+      <circle cx="${CA[0]}" cy="${CA[1]}" r="9" fill="#6b7280"/>
+      ${aaLabel('H₂N', N[0] - 30, N[1] + 6, '#1d4fb0')}${aaLabel('O', O[0], O[1] + 4, '#a8281a')}${aaLabel('OH', OH[0] + 10, OH[1] - 6, '#a8281a')}${aaLabel('R', R[0], R[1] - 6, '#8a7a45', 38)}`;
+  })();
+  const aaPanel = (extra) => ({ ...extra, hideDuring: ['sv-sec', 'sv-ter'] });
+  const aaStatic = [
+    { type: 'rect', x: 60, y: 205, w: 840, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    { type: 'rect', x: 940, y: 205, w: 600, h: 560, color: SV[0].color, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt('One amino acid: line structure', 480, 240, 30, SV[0].color, { align: 'center', bold: true }),
+    svgItem(aaSvg),
+    ...label('Amino group (–NH₂)', 100, 690, [190, 674], [AAS.N[0] - 34, AAS.N[1] + 36], 'left', 20),
+    ...label('Carboxyl group (–COOH)', 600, 742, [720, 726], [AAS.OH[0] + 12, AAS.OH[1] + 70], 'left', 20),
+    ...label('Central carbon (Cα)', 520, 300, [520, 316], [AAS.CA[0] + 10, AAS.CA[1] - 8], 'left', 20),
+    ...label('R group (side chain)', 130, 330, [186, 346], [AAS.R[0] - 30, AAS.R[1] - 6], 'left', 20),
+    txt('BACKBONE', 410, 640, 22, '#8a6d00', { align: 'center', bold: true }),
+    txt('N – Cα – C', 410, 668, 20, '#8a6d00', { align: 'center' }),
+    txt('Line structures: reading the drawing', 1240, 246, 28, SV[0].color, { align: 'center', bold: true }),
+    txt('Each corner or end of a line is a carbon\natom, unless a letter is shown.\n\nHydrogens on carbon are left out.\n\nEvery amino acid has the same\nbackbone: N – Cα – C.\n\nOnly the R group is different.\nThere are 20 different R groups.', 975, 350, 23, '#3b4252'),
+    txt('Backbone = amber   R group = tan', 1240, 726, 21, '#5b6270', { align: 'center', bold: true }),
+  ].map(aaPanel);
+  const svAaAnim = [
+    { type: 'flash', x: AAS.N[0] - 20, y: AAS.N[1], r: 70, color: '#5b8def', duration: 0.9, at: 0.2 },
+    { type: 'flash', x: AAS.CA[0], y: AAS.CA[1], r: 60, color: '#ffd34d', duration: 0.9, at: 1.0 },
+    { type: 'flash', x: AAS.C[0] + 60, y: AAS.C[1] - 10, r: 110, color: '#f26b5b', duration: 0.9, at: 1.8 },
+    { type: 'flash', x: AAS.R[0], y: AAS.R[1], r: 60, color: '#b9a46a', duration: 0.9, at: 2.6 },
+  ];
+
   const svActions = [
+    { id: 'sv-aa', label: 'Amino acid', group: 'sv', stay: true, drawn: false, items: svAaAnim },
     {
       id: 'sv-sec', label: 'Secondary', group: 'sv', stay: true, drawn: false,
       items: [
-        ...svTabOn(SV[0], 0), svDim(820),
+        ...svTabOn(SV[1], 1), ...svPanels, svDim(820),
         ...svBonds.map(([a, b], i) => hbLine(a, b, 0.5 + i * 0.25)),
         txt('Hydrogen bonds between\nBACKBONE atoms (C=O and N–H)', 420, 690, 21, HB, { align: 'center', bold: true, at: 2.0, anim: 'fade', duration: 0.4 }),
       ],
@@ -514,7 +561,7 @@
     {
       id: 'sv-ter', label: 'Tertiary', group: 'sv', stay: true, drawn: false,
       items: [
-        ...svTabOn(SV[1], 1), svDim(60),
+        ...svTabOn(SV[2], 2), ...svPanels, svDim(60),
         ...svPairs.flatMap((q, i) => {
           const mid = (SVR.l + SVR.r) / 2, a = 0.5 + i * 0.7;
           const link = i === 0 ? { type: 'circle', x: mid, y: q.y, rx: 150, ry: 30, color: q.color, width: 4, dashed: true, rough: false, at: a }
@@ -527,11 +574,11 @@
   const secVsTerItems = [
     title('Secondary vs tertiary'),
     ...svTabsStatic,
-    ...svPanels,
-    txt('Click a type above to see what is interacting', 800, 192, 22, '#8a8f98', { align: 'center', bold: true, hideDuring: ['sv-sec', 'sv-ter'] }),
+    ...svTabOn(SV[0], 0).map((it) => ({ ...it, hideDuring: ['sv-sec', 'sv-ter'] })),
+    ...aaStatic,
     { type: 'rect', x: 60, y: 780, w: 1480, h: 100, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
-    txt('Secondary = interactions between the BACKBONES of the amino acids', 800, 812, 27, SV[0].color, { align: 'center', bold: true }),
-    txt('Tertiary = interactions between the R GROUPS', 800, 856, 27, SV[1].color, { align: 'center', bold: true }),
+    txt('Secondary = interactions between the BACKBONES of the amino acids', 800, 812, 27, SV[1].color, { align: 'center', bold: true }),
+    txt('Tertiary = interactions between the R GROUPS', 800, 856, 27, SV[2].color, { align: 'center', bold: true }),
   ];
 
   // ====================================================================== slide 4: tertiary structure
