@@ -1243,11 +1243,21 @@
         }
       }
     }
+    // buttons that live inside an action that is currently showing
+    for (const act of slideActions()) {
+      if (!actionRuns.has(act.id)) continue;
+      for (const it of act.items) {
+        if (it.type === 'hotspot' && px >= it.x && px <= it.x + it.w && py >= it.y && py <= it.y + it.h) {
+          const a = slideActions().find((x) => x.id === it.action);
+          if (a) return a;
+        }
+      }
+    }
     return null;
   }
   function renderActionButtons() {
     if (!actionsBox) return;
-    const list = slideActions();
+    const list = slideActions().filter((a) => !a.hidden);
     actionsBox.innerHTML = '';
     actionsBox.hidden = !player.scene.steps.length;
     const pause = document.createElement('button');
@@ -2231,7 +2241,7 @@
     else if (e.key === '+' || e.key === '=') zoomAt(1.5, ...viewCenter());
     else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.5, ...viewCenter());
     else if (e.key === '0') zoomFit();
-    else if (/^[1-9]$/.test(e.key) && slideActions()[+e.key - 1]) runAction(slideActions()[+e.key - 1]);
+    else if (/^[1-9]$/.test(e.key) && slideActions().filter((a) => !a.hidden)[+e.key - 1]) runAction(slideActions().filter((a) => !a.hidden)[+e.key - 1]);
     else if (e.key === 'R' && e.shiftKey) { actionRuns.clear(); setAnimPaused(false); }
     else if (k === 'a' && window.WB.recorderKey && window.WB.recorderKey()) { /* A paused/resumed the recording */ }
     else if (KEYS[k]) setTool(KEYS[k]);
