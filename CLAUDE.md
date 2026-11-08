@@ -36,7 +36,7 @@ in the video, and clicks pass through the text. A step's `script` is the slide's
 ✎ Edit in the prompter overwrites it for that slide in `localStorage` (`wb-tps-<id>-<n>`; the
 on/off flag is `wb-tp-<id>-<n>`; `n` = slide number, 0 on the blank board). It starts paused at the
 top (key **S** or ▶ to start/pause) and starts by itself when a recording starts (`recorder.js`
-fires a `wb-rec` event with `recording` / `paused` / `idle`). Pace is in words per minute.
+fires a `wb-rec` event with `recording` / `paused` / `idle`). Speed is seconds per line (`1 line / N s`, default 4), independent of word count.
 
 ## Scene format
 The board is **1600 × 900** (x right, y down). Scenes register themselves:

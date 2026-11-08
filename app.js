@@ -1386,7 +1386,7 @@
     toggle: document.getElementById('tpToggle'),
     on: false, paused: true, editing: false, y: 0, maxY: 0, speed: 0, startOff: 0, last: 0, recState: 'idle',
     size: parseFloat(lsGet('wb-tp-size')) || 30,
-    pace: parseInt(lsGet('wb-tp-wpm'), 10) || 140,
+    spl: parseFloat(lsGet('wb-tp-spl')) || 4,   // seconds per line of text
   };
   const tpKeys = () => {
     const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
@@ -1410,11 +1410,12 @@
     const vh = tp.view.clientHeight, th = tp.text.scrollHeight;
     tp.startOff = vh * 0.2;
     tp.maxY = Math.max(0, th + tp.startOff - vh * 0.55);
-    const words = Math.max(1, (tpScript().replace(/\[[^\]]*\]/g, ' ').match(/\S+/g) || []).length);
-    const secs = (words / tp.pace) * 60;
-    tp.speed = tp.maxY / secs;
+    // One line of text scrolls past every `spl` seconds, whatever the line contains.
+    const lineH = tp.size * 1.5;
+    tp.speed = lineH / tp.spl;
+    const secs = tp.maxY / tp.speed;
     const tm = document.getElementById('tpTime');
-    if (tm) tm.textContent = `≈ ${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')} for ${words} words`;
+    if (tm) tm.textContent = `≈ ${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')} in all`;
     tp.y = frac * tp.maxY;
     tpPlace();
     tpButtons();
@@ -1460,14 +1461,14 @@
     tpButtons();
   }
   if (tp.box) {
-    [80, 100, 120, 140, 160, 180, 200, 240].forEach((w) => {
+    [1.5, 2, 2.5, 3, 4, 5, 6, 8].forEach((v) => {
       const o = document.createElement('option');
-      o.value = w;
-      o.textContent = `${w} wpm`;
-      o.selected = w === tp.pace;
+      o.value = v;
+      o.textContent = `1 line / ${v} s`;
+      o.selected = v === tp.spl;
       tp.wpm.appendChild(o);
     });
-    tp.wpm.addEventListener('change', () => { tp.pace = parseInt(tp.wpm.value, 10); lsSet('wb-tp-wpm', String(tp.pace)); tpMeasure(); tp.wpm.blur(); });
+    tp.wpm.addEventListener('change', () => { tp.spl = parseFloat(tp.wpm.value); lsSet('wb-tp-spl', String(tp.spl)); tpMeasure(); tp.wpm.blur(); });
     tp.toggle.addEventListener('click', () => tpSetOn(!tp.on));
     document.getElementById('tpClose').addEventListener('click', () => tpSetOn(false));
     tp.play.addEventListener('click', tpTogglePlay);
