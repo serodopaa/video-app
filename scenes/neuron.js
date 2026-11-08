@@ -976,7 +976,7 @@
   const LAST6 = SITES6[SITES6.length - 1].t;
   const STEPS6 = [
     { from: 0, to: T0_6, x: 100, col: '#a07c00', name: 'Threshold reached', text: 'The axon hillock\nhits −55 mV' },
-    { from: T0_6, to: T0_6 + 0.6, x: 400, col: '#e0453a', name: 'Action potential fires', text: 'Na⁺ rushes in, then\nK⁺ flows back out' },
+    { from: T0_6, to: T0_6 + 0.6, x: 400, col: '#e0453a', name: 'Action potential fires', text: 'Channels open and\npositive charge rushes in' },
     { from: T0_6 + 0.6, to: LAST6, x: 700, col: '#c46f00', name: 'Travels down the axon', text: 'Regenerates, jumping\nnode to node' },
     { from: LAST6, to: LAST6 + 2.2, x: 1000, col: '#5e2f78', name: 'Reaches the terminal', text: 'Ready to release\nneurotransmitters' },
   ];
@@ -1005,8 +1005,8 @@
     {
       type: 'apwave', id: 'ap6t', gx0: 150, gx1: 1340, gy: 170, gh: 250, axonY: AY, axonR: AR,
       sites: SITES6, wave: WAVE6,
-      naStyle: { fill: '#f8cf8f', edge: '#a8640a', dot: '#f0a12e' },
-      kStyle: { fill: '#c3b3f2', edge: '#47309a', dot: '#7b5cd6' },
+      naStyle: { fill: '#f8cf8f', edge: '#a8640a', dot: '#f26b5b', plus: true },
+      kStyle: null,
     },
     ...VES6.map(([x, y]) => ({ type: 'vesicle', x, y, r: 10 })),
     ...label('Axon hillock', 210, 690, [175, 670], [150, AY + 22], 'center', 26),
@@ -1014,10 +1014,10 @@
     ...label('Node of Ranvier', 860, 690, [800, 668], [700, AY + 30], 'center', 26),
     ...label('Axon terminal', 1290, 690, [1290, 668], [1290, AY + 52], 'center', 26),
     // key for the channels
-    { type: 'circle', x: 1385, y: 560, r: 9, color: '#a8640a', fill: '#f8cf8f', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1403, y: 560, text: 'Na⁺ channel', size: 20, font: 'sans', color: 'ink' },
-    { type: 'circle', x: 1385, y: 594, r: 9, color: '#47309a', fill: '#c3b3f2', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1403, y: 594, text: 'K⁺ channel', size: 20, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1376, y: 548, w: 18, h: 24, color: '#a8640a', fill: '#f8cf8f', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1403, y: 560, text: 'Channel', size: 20, font: 'sans', color: 'ink' },
+    { type: 'ion', ion: 'pos', x: 1385, y: 598, r: 11 },
+    { type: 'text', x: 1403, y: 598, text: 'Positive charge', size: 20, font: 'sans', color: 'ink' },
     // the four steps
     ...STEPS6.flatMap((st, i) => [
       { type: 'rect', x: st.x, y: BOX6.y, w: BOX6.w, h: BOX6.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
@@ -1033,7 +1033,7 @@
   // Close-up: the main neuron's axon terminal (top), the synaptic cleft, and the
   // next neuron's dendrite (bottom, green). Voltage-gated Ca2+ channels sit at the
   // sides of the terminal; docked vesicles in the middle; the dendrite has both
-  // excitatory (Na+) and inhibitory (Cl-) receptors. The transmitter is glutamate,
+  // excitatory and inhibitory receptors. The transmitter is excitatory,
   // so only the excitatory receptors respond.
   const PRE_Y = 430, POST_Y = 625;
   const CA7 = [365, 955];                       // Ca2+ channels, at the sides
@@ -1057,10 +1057,10 @@
   </g>
   <ellipse cx="370" cy="290" rx="64" ry="28" fill="#f6c99a" stroke="#b9650b" stroke-width="3"/>
   <!-- reuptake transporters in the terminal membrane -->
-  ${TRANS7.map((x) => `<rect x="${x - 15}" y="${PRE_Y - 34}" width="30" height="68" rx="12" fill="#9ad7e0" stroke="#0b6f7e" stroke-width="3"/>
+  ${[].map((x) => `<rect x="${x - 15}" y="${PRE_Y - 34}" width="30" height="68" rx="12" fill="#9ad7e0" stroke="#0b6f7e" stroke-width="3"/>
     <path d="M${x} ${PRE_Y + 22} L${x} ${PRE_Y - 22} M${x - 6} ${PRE_Y - 14} L${x} ${PRE_Y - 22} L${x + 6} ${PRE_Y - 14}" stroke="#0b6f7e" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join('')}
   <!-- enzymes in the cleft -->
-  ${ENZ7.map(([x, y]) => `<path d="M${x} ${y} L${f1(x + 20 * Math.cos(0.55))} ${f1(y - 20 * Math.sin(0.55))} A20 20 0 1 0 ${f1(x + 20 * Math.cos(0.55))} ${f1(y + 20 * Math.sin(0.55))} Z" fill="#c9b8ea" stroke="#5a3fb0" stroke-width="3" stroke-linejoin="round"/>`).join('')}
+  ${[].map(([x, y]) => `<path d="M${x} ${y} L${f1(x + 20 * Math.cos(0.55))} ${f1(y - 20 * Math.sin(0.55))} A20 20 0 1 0 ${f1(x + 20 * Math.cos(0.55))} ${f1(y + 20 * Math.sin(0.55))} Z" fill="#c9b8ea" stroke="#5a3fb0" stroke-width="3" stroke-linejoin="round"/>`).join('')}
   <path d="M326 290 q10 -18 20 0 t20 0 t20 0 t20 0" stroke="#b9650b" stroke-width="2.5" fill="none"/>
 `);
   const FREE7 = [[545, 225], [685, 205], [825, 235], [935, 310], [600, 325], [760, 330]];
@@ -1080,10 +1080,8 @@
     { from: 1.2, to: 1.6, title: 'Ca²⁺ channels open', text: 'Voltage-gated Ca²⁺ channels in the\nterminal membrane sense it and open.', color: '#9c1f5c' },
     { from: 1.6, to: 2.7, title: 'Ca²⁺ rushes in', text: 'There is far more Ca²⁺ outside, so it\nfloods in and reaches the vesicles.', color: '#9c1f5c' },
     { from: 2.7, to: 3.6, title: 'Vesicles fuse', text: 'Ca²⁺ triggers docked vesicles to\nfuse with the membrane (exocytosis).', color: '#5e2f78' },
-    { from: 3.6, to: 5.0, title: 'Neurotransmitters diffuse', text: 'Glutamate spills into the synaptic\ncleft and drifts across it.', color: '#c46f00' },
-    { from: 5.0, to: 7.6, title: 'They bind the receptors', text: 'Excitatory receptors open and Na⁺\nflows in. The inhibitory (Cl⁻) ones\ndon’t respond to glutamate.', color: '#2e7d32' },
-    { from: 7.6, to: 9.4, title: 'Reuptake', text: 'Transporters pump glutamate back\ninto the terminal to be reused.', color: '#0b6f7e' },
-    { from: 9.4, to: 11.2, title: 'Enzymes break them down', text: 'At some synapses, enzymes in\nthe cleft break the transmitter\napart (e.g. acetylcholine).', color: '#5a3fb0' },
+    { from: 3.6, to: 5.0, title: 'Neurotransmitters diffuse', text: 'They spill into the synaptic\ncleft and drift across it.', color: '#c46f00' },
+    { from: 5.0, to: 7.6, title: 'They bind the receptors', text: 'These excitatory receptors open\nand positive charge flows in.\nThe inhibitory ones stay closed.', color: '#2e7d32' },
   ];
   // Clearing the cleft afterwards: unbinding, reuptake, enzyme breakdown.
   const BOUND7 = EXC7.flatMap((x) => [[x - 36, POST_Y - 36], [x - 20, POST_Y - 36]]);
@@ -1134,7 +1132,7 @@
       return { type: 'mover', once: true, r: 5.5, color: '#f08c1a', smooth: true, path: [[sx, PRE_Y + 4], w1, w2, to], duration: 1.4 + rnd(id, 7) * 0.8, at: 3.4 + rnd(id, 8) * 0.5 };
     })),
     { type: 'value', id: 'r7', from: 0, to: 1, at: 5.2, duration: 0.35 },
-    ...NA_IN7.map(([from, to], i) => ({ type: 'ion', ion: 'na', smooth: true, path: naPore7(EXC7[i], from, to), duration: 1.1, at: 5.5 + i * 0.15 })),
+    ...NA_IN7.map(([from, to], i) => ({ type: 'ion', ion: 'pos', smooth: true, path: naPore7(EXC7[i], from, to), duration: 1.1, at: 5.5 + i * 0.15 })),
     ...EXC7.map((x) => ({ type: 'flash', x, y: POST_Y + 70, r: 46, color: '#2e9e5b', duration: 0.7, at: 6.4 })),
   ];
   const syn7 = [
@@ -1147,33 +1145,29 @@
     ...INH7.map((x) => ({ type: 'channel', id: 'r7-inh', x, y: POST_Y + 10, h: 96, ...CH_STYLE.cl, label: undefined })),
     ...CA_OUT.map(([x, y]) => ({ type: 'ion', ion: 'ca', x, y })),
     ...CA_IN.map(([, from]) => ({ type: 'ion', ion: 'ca', x: from[0], y: from[1], hideDuring: 'syn7' })),
-    ...NA_IN7.map(([from]) => ({ type: 'ion', ion: 'na', x: from[0], y: from[1], hideDuring: 'syn7' })),
-    ...[[280, 850], [560, 770], [1010, 760], [1060, 830], [860, 790]].map(([x, y], i) => ({ type: 'ion', ion: i % 2 ? 'a' : 'k', x, y })),
+    ...NA_IN7.map(([from]) => ({ type: 'ion', ion: 'pos', x: from[0], y: from[1], hideDuring: 'syn7' })),
+    ...[[280, 850], [560, 770], [1010, 760], [1060, 830], [860, 790]].map(([x, y]) => ({ type: 'ion', ion: 'neg', x, y })),
     ...label('Axon terminal\n(sending neuron)', 70, 150, [282, 178], [330, 205], 'left', 24),
     ...label('Vesicles', 70, 345, [170, 345], [576, 325], 'left', 24),
     ...label('Ca²⁺ channel', 70, 410, [228, 410], [CA7[0] - 22, PRE_Y - 10], 'left', 24),
     ...label('Synaptic cleft', 70, 540, [238, 540], [262, 540], 'left', 24),
-    ...label('Excitatory\nreceptor (Na⁺)', 70, 680, [274, 704], [EXC7[0] - 22, POST_Y + 30], 'left', 22),
-    ...label('Inhibitory\nreceptor (Cl⁻)', 70, 790, [274, 812], [INH7[0] - 22, POST_Y + 50], 'left', 22),
+    ...label('Excitatory\nreceptor', 70, 680, [274, 704], [EXC7[0] - 22, POST_Y + 30], 'left', 22),
+    ...label('Inhibitory\nreceptor', 70, 790, [274, 812], [INH7[0] - 22, POST_Y + 50], 'left', 22),
     { type: 'text', x: 660, y: 845, text: 'Dendrite of the next neuron', size: 26, font: 'sans', color: '#1d5a2e', align: 'center' },
     {
-      type: 'stepper', id: 'syn7t', x: 1190, y: 112, w: 370, h: 748, title: 'When the signal arrives', rowH: 46,
-      steps: STEPS7, idleText: 'Press ▶ Action potential arrives,\nthen ▶ Clear the synapse.',
+      type: 'stepper', id: 'syn7t', x: 1190, y: 112, w: 370, h: 748, title: 'When the signal arrives',
+      steps: STEPS7, idleText: 'Press ▶ Action potential arrives\nto see each step.',
     },
-    { type: 'text', x: 440, y: 362, text: 'Transporter', size: 18, font: 'sans', color: '#0b6f7e', align: 'center' },
-    { type: 'text', x: 625, y: 568, text: 'Enzyme', size: 18, font: 'sans', color: '#5a3fb0', align: 'center' },
     { type: 'ion', ion: 'ca', x: 1218, y: 744, r: 15 },
     { type: 'text', x: 1240, y: 744, text: 'Ca²⁺', size: 19, font: 'sans', color: 'ink' },
     { type: 'circle', x: 1388, y: 744, r: 7, color: '#f08c1a', fill: '#f08c1a', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1406, y: 744, text: 'Glutamate', size: 19, font: 'sans', color: 'ink' },
+    { type: 'text', x: 1406, y: 744, text: 'Transmitter', size: 19, font: 'sans', color: 'ink' },
     { type: 'rect', x: 1209, y: 772, w: 18, h: 24, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
     { type: 'text', x: 1240, y: 784, text: 'Excitatory', size: 19, font: 'sans', color: 'ink' },
     { type: 'rect', x: 1379, y: 772, w: 18, h: 24, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
     { type: 'text', x: 1406, y: 784, text: 'Inhibitory', size: 19, font: 'sans', color: 'ink' },
-    { type: 'rect', x: 1209, y: 812, w: 18, h: 24, color: '#0b6f7e', fill: '#9ad7e0', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1240, y: 824, text: 'Transporter', size: 19, font: 'sans', color: 'ink' },
-    { type: 'circle', x: 1388, y: 824, r: 11, color: '#5a3fb0', fill: '#c9b8ea', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1406, y: 824, text: 'Enzyme', size: 19, font: 'sans', color: 'ink' },
+    { type: 'ion', ion: 'pos', x: 1218, y: 824, r: 13 },
+    { type: 'text', x: 1240, y: 824, text: 'Positive charge', size: 19, font: 'sans', color: 'ink' },
   ];
 
   // ---------- slide 8: putting it all together ----------
@@ -1315,7 +1309,6 @@
         clear: true,
         actions: [
           { id: 'syn7', label: 'Action potential arrives', items: syn7Items },
-          { id: 'clean', label: 'Clear the synapse', items: cleanItems },
         ],
         items: syn7,
       },

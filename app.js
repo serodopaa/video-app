@@ -741,22 +741,30 @@
             }
           };
           chan(ay - ar, naOpen, item.naStyle);
-          chan(ay + ar, kOpen, item.kStyle);
+          if (item.kStyle) chan(ay + ar, kOpen, item.kStyle); // kStyle: null = only one channel type
           // Na+ in through the top, K+ out through the bottom
-          const dot = (x, y, c) => {
+          const dot = (x, y, c, plus) => {
             ctx.fillStyle = c;
             ctx.beginPath();
-            ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+            ctx.arc(x, y, plus ? 7 : 4.5, 0, Math.PI * 2);
             ctx.fill();
+            if (plus) {
+              ctx.fillStyle = '#ffffff';
+              ctx.font = `700 12px ${SANS}`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('+', x, y + 0.5);
+            }
           };
           const tPk = wk.reduce((m, k) => (k[1] > m[1] ? k : m))[0];
           const tLo = wk.reduce((m, k) => (k[1] < m[1] ? k : m))[0];
           if (tau > 0 && tau < tPk + 0.25) {
             const f = tau / (tPk + 0.25);
-            dot(s.x - 2, ay - ar - 26 + f * (ar + 18), item.naStyle.dot);
-            if (f > 0.3) dot(s.x + 2, ay - ar - 26 + (f - 0.3) * (ar + 18), item.naStyle.dot);
+            const pl = item.naStyle.plus;
+            dot(s.x - 2, ay - ar - 30 + f * (ar + 22), item.naStyle.dot, pl);
+            if (f > 0.3 && !pl) dot(s.x + 2, ay - ar - 26 + (f - 0.3) * (ar + 18), item.naStyle.dot);
           }
-          if (tau > tPk && tau < tLo + 0.3) {
+          if (item.kStyle && tau > tPk && tau < tLo + 0.3) {
             const f = (tau - tPk) / (tLo + 0.3 - tPk);
             dot(s.x + 2, ay + ar - 8 + f * 34, item.kStyle.dot);
             if (f > 0.3) dot(s.x - 2, ay + ar - 8 + (f - 0.3) * 34, item.kStyle.dot);
