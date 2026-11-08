@@ -469,10 +469,12 @@
     n0: '#79b86a', n1: '#2f6b2a', nStroke: '#24521f', nl: '#1b3f17', b0: '#eaf7e6', b1: '#86c477',
     a0: '#d3efcb', a1: '#8fcc80', shine: '#f2fbef', gran: '#2f6b2a', shadow: '#13361a',
   };
-  const SMALL = 0.28, BIG = 0.6, AXIS = 392, GAP = 24;
+  // Neuron 1 shows only the end of its axon + terminal (rest is off the left edge);
+  // neuron 3 shows its dendrites and cell body (its axon runs off the right edge).
+  const SMALL = 0.7, BIG = 0.86, AXIS = 470, GAP = 24, LEFT_END = 112;
   const TIP = [80, 470];                                   // dendrite tip facing the previous neuron
-  const T_L = { k: SMALL, tx: 2, ty: AXIS - 470 * SMALL };
-  const T_C = { k: BIG, tx: 1348 * SMALL + 2 + GAP - TIP[0] * BIG, ty: AXIS - 470 * BIG };
+  const T_L = { k: SMALL, tx: LEFT_END - 1348 * SMALL, ty: AXIS - 470 * SMALL };
+  const T_C = { k: BIG, tx: LEFT_END + GAP - TIP[0] * BIG, ty: AXIS - 470 * BIG };
   const T_R = { k: SMALL, tx: 1348 * BIG + T_C.tx + GAP - TIP[0] * SMALL, ty: AXIS - 470 * SMALL };
   const mp = (T, [x, y]) => [x * T.k + T.tx, y * T.k + T.ty];
   const gT = (T, inner) => `<g transform="translate(${f1(T.tx)} ${f1(T.ty)}) scale(${T.k})">${inner}</g>`;
@@ -532,7 +534,8 @@
   const AP_START = 4.2, AP_TIME = 1.6;
   const fullItems = [
     // 1. the left neuron fires: its action potential runs down its axon
-    ...fireAxon(T_L, 0.2, 1.0, 5),
+    { type: 'mover', once: true, vanish: true, r: 8, color: AP, path: axonSamples.map((p) => mp(T_L, p)).filter(([x]) => x > -30), duration: 0.7, at: 0.5 },
+    { type: 'flash', x: leftTerm[0] - 20, y: leftTerm[1], r: 50, color: AP, duration: 0.6, at: 1.15 },
     // 2. its neurotransmitters cross the gap onto the main neuron's dendrite
     ...[-5, 0, 5].map((dy, n) => ({
       type: 'mover', once: true, r: 2.6, color: '#f08c1a', smooth: true,
@@ -1030,11 +1033,11 @@
   // The slide-1 circuit with Receive -> Combine -> Send boxes. One button plays
   // the whole chain and highlights each stage as it happens.
   const STAGES8 = [
-    { name: 'Receive', from: 1.3, to: 3.35, x: 290, col: '#2f6fde', text: 'Neurotransmitters bind\nreceptors on the dendrites' },
-    { name: 'Combine', from: 3.35, to: 4.2, x: 650, col: '#e8890c', text: 'Signals add up at the\naxon hillock: threshold?' },
-    { name: 'Send', from: 4.2, to: 8.2, x: 1010, col: '#e0453a', text: 'Action potential travels;\ntransmitters are released' },
+    { name: 'Receive', from: 1.3, to: 3.35, x: 480, col: '#2f6fde', text: 'Transmitters bind\nto the dendrites' },
+    { name: 'Combine', from: 3.35, to: 4.2, x: 725, col: '#e8890c', text: 'Signals add up at\nthe axon hillock' },
+    { name: 'Send', from: 4.2, to: 8.2, x: 970, col: '#e0453a', text: 'Action potential\nfires and travels' },
   ];
-  const BOX8 = { y: 705, w: 300, h: 150 };
+  const BOX8 = { y: 612, w: 215, h: 132 };
   const finalItems = [
     ...fullItems.map((it) => ({ ...it })),
     ...STAGES8.map((st) => ({
@@ -1049,11 +1052,11 @@
     ...NEURON_NAMES(),
     ...STAGES8.flatMap((st, i) => [
       { type: 'rect', x: st.x, y: BOX8.y, w: BOX8.w, h: BOX8.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
-      { type: 'circle', x: st.x + 34, y: BOX8.y + 36, r: 17, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
-      { type: 'text', x: st.x + 34, y: BOX8.y + 37, text: String(i + 1), size: 20, font: 'sans', bold: true, color: 'white', align: 'center' },
-      { type: 'text', x: st.x + 62, y: BOX8.y + 37, text: st.name, size: 30, font: 'sans', bold: true, color: st.col },
-      { type: 'text', x: st.x + 22, y: BOX8.y + 86, text: st.text, size: 20, font: 'sans', color: '#3b4252' },
-      ...(i < 2 ? [{ type: 'arrow', from: [st.x + BOX8.w + 6, BOX8.y + BOX8.h / 2], to: [st.x + BOX8.w + 34, BOX8.y + BOX8.h / 2], color: '#8a8f98', width: 4, rough: false }] : []),
+      { type: 'circle', x: st.x + 28, y: BOX8.y + 32, r: 15, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: st.x + 28, y: BOX8.y + 33, text: String(i + 1), size: 18, font: 'sans', bold: true, color: 'white', align: 'center' },
+      { type: 'text', x: st.x + 52, y: BOX8.y + 33, text: st.name, size: 26, font: 'sans', bold: true, color: st.col },
+      { type: 'text', x: st.x + 16, y: BOX8.y + 78, text: st.text, size: 19, font: 'sans', color: '#3b4252' },
+      ...(i < 2 ? [{ type: 'arrow', from: [st.x + BOX8.w + 6, BOX8.y + BOX8.h / 2], to: [st.x + BOX8.w + 26, BOX8.y + BOX8.h / 2], color: '#8a8f98', width: 4, rough: false }] : []),
     ]),
   ];
 
@@ -1104,23 +1107,24 @@
   // Names under each of the three neurons in the chain.
   function NEURON_NAMES() {
     return [
-      { type: 'text', x: mp(T_L, [700, 0])[0], y: 525, text: 'Neuron 1', size: 26, font: 'sans', bold: true, color: '#2c5a92', align: 'center' },
-      { type: 'text', x: 690, y: 650, text: 'Main neuron', size: 30, font: 'sans', bold: true, color: '#5e2f78', align: 'center' },
-      { type: 'text', x: mp(T_R, [700, 0])[0], y: 525, text: 'Neuron 3', size: 26, font: 'sans', bold: true, color: '#2f6b2a', align: 'center' },
+      { type: 'text', x: 18, y: 612, text: 'From\nneuron 1', size: 24, font: 'sans', bold: true, color: '#2c5a92' },
+      { type: 'text', x: 820, y: 790, text: 'Main neuron', size: 32, font: 'sans', bold: true, color: '#5e2f78', align: 'center' },
+      { type: 'text', x: 1585, y: 800, text: 'To neuron 3', size: 24, font: 'sans', bold: true, color: '#2f6b2a', align: 'right' },
     ];
   }
-  // Part labels for the main neuron (and the two synapses).
   function SLIDE1_LABELS() {
     const c = (p) => mp(T_C, p).map(Math.round);
+    const syn1 = [Math.round((LEFT_END + mainTip[0]) / 2), AXIS + 10];
+    const syn2 = [Math.round((mp(T_C, [1348, 470])[0] + rightTip[0]) / 2), AXIS + 10];
     return [
-      ...label('Dendrites', 360, 150, [395, 168], c([205, 236]), 'center', 28),
-      ...label('Cell body', 650, 150, [640, 168], c([420, 425]), 'center', 28),
-      ...label('Axon hillock', 520, 730, [530, 708], c([500, 488]), 'center', 28),
-      ...label('Myelin sheath', 905, 150, [905, 168], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 10][k]), 'center', 28),
-      ...label('Axon', 840, 730, [840, 708], c(axonAt((sheaths[0].b + sheaths[1].a) / 2)), 'center', 28),
-      ...label('Axon terminal', 1150, 150, [1150, 168], c([1300, 425]), 'center', 28),
-      ...label('Synapse', 330, 470, [356, 452], [Math.round((mp(T_L, [1348, 470])[0] + mainTip[0]) / 2), AXIS + 8], 'center', 28),
-      ...label('Synapse', 1110, 470, [1140, 452], [Math.round((mp(T_C, [1348, 470])[0] + rightTip[0]) / 2), AXIS + 8], 'center', 28),
+      ...label('Dendrites', 150, 190, [180, 210], c([205, 236]), 'center', 28),
+      ...label('Cell body', 640, 190, [620, 210], c([420, 420]), 'center', 28),
+      ...label('Axon hillock', 590, 650, [585, 628], c([500, 490]), 'center', 28),
+      ...label('Myelin sheath', 930, 330, [930, 350], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 14][k]), 'center', 28),
+      ...label('Axon', 830, 650, [830, 628], c(axonAt((sheaths[0].b + sheaths[1].a) / 2)), 'center', 28),
+      ...label('Axon terminal', 1080, 300, [1110, 320], c([1290, 425]), 'center', 28),
+      ...label('Synapse', 120, 400, [128, 418], syn1, 'center', 26),
+      ...label('Synapse', 1150, 600, [1168, 580], syn2, 'center', 26),
     ];
   }
 
