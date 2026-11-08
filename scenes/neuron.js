@@ -317,6 +317,24 @@
     ]),
   ];
 
+  // ---------- "where we are" inset ----------
+  // A tiny whole neuron with a magnifier around the spot a zoomed-in slide shows.
+  // spot: point on the neuron (neuron coords); terminal: true draws an incoming
+  // axon terminal touching that spot (a synapse onto a dendrite).
+  function locatorInset({ x, y, w, spot, terminal = false, title: head = 'Where we are' }) {
+    const k = Math.min(w / 1500, 0.175), tx = x + 46 - 50 * k, ty = y + 6 - 120 * k;
+    const sp = [spot[0] * k + tx, spot[1] * k + ty];
+    const svg = svgDoc(`<g transform="translate(${f1(tx)} ${f1(ty)}) scale(${k.toFixed(4)})">${neuronMarkup(PURPLE, 'loc' + Math.round(x + y), { releasing: false })}</g>` +
+      (terminal ? `<path d="M${f1(sp[0] - 40)} ${f1(sp[1] - 22)} Q${f1(sp[0] - 22)} ${f1(sp[1] - 4)} ${f1(sp[0] - 9)} ${f1(sp[1])}" stroke="#2c5a92" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="${f1(sp[0] - 8)}" cy="${f1(sp[1])}" r="5.5" fill="#9cc0ea" stroke="#2c5a92" stroke-width="2"/>` : '') +
+      `<circle cx="${f1(sp[0])}" cy="${f1(sp[1])}" r="20" fill="#ffd34d" fill-opacity="0.18" stroke="#e0453a" stroke-width="3.5"/>
+       <path d="M${f1(sp[0] + 14)} ${f1(sp[1] + 14)} L${f1(sp[0] + 30)} ${f1(sp[1] + 30)}" stroke="#e0453a" stroke-width="6" stroke-linecap="round"/>`);
+    return [
+      { type: 'text', x, y, text: head, size: 20, font: 'sans', bold: true, color: '#5b6270' },
+      { type: 'svg', svg },
+    ];
+  }
+
   // ---------- slide 2: receiving (simple) ----------
   // An excitatory and an inhibitory axon terminal above one dendrite. Generic
   // + / − ions only: more + outside, more − inside. Each terminal has its own
@@ -413,17 +431,19 @@
     { type: 'text', x: 80, y: 142, text: 'Outside: more +', size: 24, font: 'sans', color: '#a8281a' },
     { type: 'text', x: 80, y: 838, text: 'Inside the dendrite: more −', size: 24, font: 'sans', color: '#1d4fb0' },
     {
-      type: 'meter', id: 'vm2', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 290, min: -90, max: 40,
+      type: 'meter', id: 'vm2', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 210, min: -90, max: 40,
       title: 'Membrane potential', upText: 'Depolarized (excitatory)', downText: 'Hyperpolarized (inhibitory)',
     },
-    { type: 'ion', ion: 'pos', x: 1225, y: 668 },
-    { type: 'text', x: 1252, y: 668, text: 'Positive ion', size: 22, font: 'sans', color: 'ink' },
-    { type: 'ion', ion: 'neg', x: 1225, y: 712 },
-    { type: 'text', x: 1252, y: 712, text: 'Negative ion', size: 22, font: 'sans', color: 'ink' },
-    { type: 'rect', x: 1214, y: 744, w: 22, h: 28, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1252, y: 758, text: 'Excitatory receptor', size: 22, font: 'sans', color: 'ink' },
-    { type: 'rect', x: 1214, y: 788, w: 22, h: 28, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1252, y: 802, text: 'Inhibitory receptor', size: 22, font: 'sans', color: 'ink' },
+    { type: 'ion', ion: 'pos', x: 1222, y: 562, r: 13 },
+    { type: 'text', x: 1244, y: 562, text: 'Positive ion', size: 20, font: 'sans', color: 'ink' },
+    { type: 'ion', ion: 'neg', x: 1222, y: 598, r: 13 },
+    { type: 'text', x: 1244, y: 598, text: 'Negative ion', size: 20, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1213, y: 621, w: 18, h: 24, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1244, y: 634, text: 'Excitatory receptor', size: 20, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1213, y: 657, w: 18, h: 24, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1244, y: 670, text: 'Inhibitory receptor', size: 20, font: 'sans', color: 'ink' },
+    { type: 'line', from: [1210, 698], to: [1540, 698], color: '#e3e6ec', width: 2, rough: false },
+    ...locatorInset({ x: 1212, y: 722, w: 330, spot: [66, 442], terminal: true }),
   ];
 
   // ---------- slide 3: glutamate vs GABA synapse ----------
