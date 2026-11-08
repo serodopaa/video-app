@@ -1411,7 +1411,10 @@
     tp.startOff = vh * 0.2;
     tp.maxY = Math.max(0, th + tp.startOff - vh * 0.55);
     const words = Math.max(1, (tpScript().replace(/\[[^\]]*\]/g, ' ').match(/\S+/g) || []).length);
-    tp.speed = tp.maxY / ((words / tp.pace) * 60);
+    const secs = (words / tp.pace) * 60;
+    tp.speed = tp.maxY / secs;
+    const tm = document.getElementById('tpTime');
+    if (tm) tm.textContent = `≈ ${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')} for ${words} words`;
     tp.y = frac * tp.maxY;
     tpPlace();
     tpButtons();
@@ -1457,7 +1460,7 @@
     tpButtons();
   }
   if (tp.box) {
-    [100, 120, 140, 160, 180, 200].forEach((w) => {
+    [80, 100, 120, 140, 160, 180, 200, 240].forEach((w) => {
       const o = document.createElement('option');
       o.value = w;
       o.textContent = `${w} wpm`;
@@ -1498,7 +1501,7 @@
     });
     const tick = (ts) => {
       if (tp.on && !tp.paused && !tp.editing) {
-        const dt = Math.min(0.1, (ts - tp.last) / 1000);
+        const dt = Math.min(0.5, (ts - tp.last) / 1000); // real elapsed time, so slow frames (e.g. while recording) don't slow the scroll
         tp.y = Math.min(tp.maxY, tp.y + tp.speed * dt);
         if (tp.y >= tp.maxY) { tp.paused = true; tpButtons(); }
         tpPlace();
