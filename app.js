@@ -1386,6 +1386,8 @@
     toggle: document.getElementById('tpToggle'),
     on: false, paused: true, editing: false, y: 0, maxY: 0, speed: 0, startOff: 0, last: 0, recState: 'idle',
     size: parseFloat(lsGet('wb-tp-size')) || 30,
+    w: parseFloat(lsGet('wb-tp-w')) || 0,   // window size you dragged to (0 = default)
+    h: parseFloat(lsGet('wb-tp-h')) || 0,
     spl: parseFloat(lsGet('wb-tp-spl')) || 4,   // seconds per line of text
   };
   const tpKeys = () => {
@@ -1460,7 +1462,37 @@
     tp.paused = !tp.paused;
     tpButtons();
   }
+  function tpApplySize() {
+    if (tp.w) tp.box.style.setProperty('--tp-w', tp.w + 'px'); else tp.box.style.removeProperty('--tp-w');
+    if (tp.h) tp.box.style.setProperty('--tp-h', tp.h + 'px'); else tp.box.style.removeProperty('--tp-h');
+  }
   if (tp.box) {
+    tpApplySize();
+    // Drag the corner grip to resize the window (it stays centred); double-click to reset.
+    const grip = document.getElementById('tpResize');
+    let drag = null;
+    grip.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, y: e.clientY, w: tp.box.offsetWidth, h: tp.view.clientHeight || tp.editor.clientHeight };
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const stage = tp.box.parentElement;
+      tp.w = Math.round(Math.max(320, Math.min(stage.clientWidth - 24, drag.w + 2 * (e.clientX - drag.x))));
+      tp.h = Math.round(Math.max(tp.size * 1.5 * 2, Math.min(stage.clientHeight * 0.85, drag.h + (e.clientY - drag.y))));
+      tpApplySize();
+      if (!tp.editing) tpMeasure();
+    });
+    const end = () => { if (!drag) return; drag = null; lsSet('wb-tp-w', String(tp.w)); lsSet('wb-tp-h', String(tp.h)); };
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
+    grip.addEventListener('dblclick', () => {
+      tp.w = 0; tp.h = 0;
+      lsSet('wb-tp-w', '0'); lsSet('wb-tp-h', '0');
+      tpApplySize();
+      if (!tp.editing) tpMeasure();
+    });
     [1.5, 2, 2.5, 3, 4, 5, 6, 8].forEach((v) => {
       const o = document.createElement('option');
       o.value = v;
