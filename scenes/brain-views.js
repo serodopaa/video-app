@@ -171,19 +171,37 @@
   // with the brain inside it). The eye and arrow show where you are looking from for each view.
   const HEAD = { x: 1120, y: 540, s: 0.9 };
   const SKIN = '#f5d5bc', HLINE = '#6b4a3a';
+  // Realistic profile: cranium bigger behind the ear, forehead, brow, nose, lips, chin, jaw, ear,
+  // short hair with a natural hairline, and the neck. Local coords ~0..260 x 0..330, facing left.
+  const HEAD_OUT = 'M150 14 C214 14 252 58 254 120 C254 160 244 190 228 212 C220 226 218 246 222 270 L232 330 L112 330 L104 300 C100 284 86 272 68 264 C54 258 50 248 52 238 C54 230 56 226 54 222 C48 218 46 212 50 208 C46 204 46 198 48 196 C46 192 50 188 52 186 C46 184 32 180 30 172 C30 164 40 154 50 140 C54 132 58 128 56 122 C52 118 52 110 56 104 C58 56 92 14 150 14 Z';
+  const HAIR = 'M60 78 C70 36 108 10 156 10 C214 10 256 54 258 118 C259 156 250 186 232 212 C226 200 222 186 222 170 C222 156 214 144 202 140 C192 132 178 132 170 140 C162 132 152 112 150 100 C138 92 118 84 100 78 C88 74 72 74 60 78 Z';
   const headArt = () => `<g transform="translate(${HEAD.x} ${HEAD.y}) scale(${HEAD.s})">
-    <path d="M128 322 L126 262 C124 250 120 242 112 240 C96 244 78 244 66 238 C56 234 50 226 52 218 C54 212 58 208 56 202 C52 200 52 194 56 190 C52 188 52 183 55 180 C50 178 46 174 42 170 C36 170 30 164 33 158 C38 150 52 134 56 124 C54 116 54 106 56 96 C60 52 96 14 148 14 C206 14 244 62 244 120 C244 168 232 200 216 220 C212 232 214 244 216 256 L222 322 Z" fill="${SKIN}" stroke="${HLINE}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M60 94 C66 50 100 14 148 14 C206 14 244 62 244 120 C244 150 238 172 230 188 C228 160 222 132 206 106 C190 80 152 62 112 66 C88 70 70 80 60 94 Z" fill="#7a5644" stroke="${HLINE}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M55 191 C61 193 67 193 72 191" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M64 110 C72 104 84 104 92 109" fill="none" stroke="${HLINE}" stroke-width="3.5" stroke-linecap="round"/>
-    <ellipse cx="78" cy="122" rx="6" ry="4.5" fill="#fff" stroke="${HLINE}" stroke-width="2"/><circle cx="76" cy="122" r="3" fill="#3b4252"/>
-    <path d="M56 124 C58 140 56 150 50 158" fill="none" stroke="${HLINE}" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-    <path d="M164 122 C154 124 150 142 154 156 C158 170 172 172 176 158 C180 146 176 126 164 122 Z" fill="#efc6a8" stroke="${HLINE}" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M165 132 C158 136 158 148 164 156" fill="none" stroke="${HLINE}" stroke-width="2.5" stroke-linecap="round"/></g>`;
+    <defs>
+      <linearGradient id="skinG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f7dcc6"/><stop offset="0.6" stop-color="#f1cdb2"/><stop offset="1" stop-color="#e6b998"/></linearGradient>
+      <linearGradient id="hairG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a6450"/><stop offset="1" stop-color="#5e4234"/></linearGradient>
+      <clipPath id="headClip"><path d="${HEAD_OUT}"/></clipPath>
+    </defs>
+    <path d="${HEAD_OUT}" fill="url(#skinG)"/>
+    <g clip-path="url(#headClip)">
+      <path d="M104 300 C140 268 176 252 222 250 L240 340 L100 340 Z" fill="#e2b493" opacity="0.35"/>
+      <path d="M66 262 C104 264 142 252 168 222" fill="none" stroke="#d29f80" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <path d="${HAIR}" fill="url(#hairG)"/>
+    ${[['M90 40 C120 26 160 24 196 36', 0.35], ['M110 62 C150 46 196 48 232 74', 0.3], ['M196 98 C220 110 238 132 244 158', 0.3], ['M80 58 C100 50 124 48 146 54', 0.25]].map(([d, o]) => `<path d="${d}" fill="none" stroke="#3f2b22" stroke-width="2.5" stroke-linecap="round" opacity="${o}"/>`).join('')}
+    <path d="${HEAD_OUT}" fill="none" stroke="${HLINE}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M60 106 C70 100 84 100 96 106" fill="none" stroke="#5e4234" stroke-width="5" stroke-linecap="round"/>
+    <path d="M64 124 C70 118 82 117 90 122 C84 128 72 130 64 124 Z" fill="#ffffff" stroke="${HLINE}" stroke-width="2"/>
+    <circle cx="72" cy="123" r="4" fill="#4a3a32"/><circle cx="71" cy="122" r="1.4" fill="#ffffff"/>
+    <path d="M63 119 C70 113 82 112 92 118" fill="none" stroke="${HLINE}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M44 172 C46 176 52 178 58 176" fill="none" stroke="${HLINE}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M50 207 L60 206" stroke="${HLINE}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M178 142 C194 132 210 144 209 164 C208 184 198 200 186 202 C176 203 172 194 176 186 C172 172 170 152 178 142 Z" fill="#efc2a3" stroke="${HLINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M184 152 C194 148 200 158 198 170 C196 182 190 188 184 186 M186 168 C190 168 192 172 190 178" fill="none" stroke="${HLINE}" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M222 270 L232 330" stroke="${HLINE}" stroke-width="0"/></g>`;
   // eye position and where its arrow points (board coordinates), per view
   const LOOK = {
     lateral: { eye: [1376, 766], to: [1296, 700], text: 'Looking at the left side of the head' },
-    medial: { eye: [1404, 584], to: [1282, 642], dashed: true, text: 'Looking from the midline, after cutting the head in half' },
+    medial: { eye: [1404, 584], to: [1282, 642], dashed: true, text: 'Looking from the midline (head cut in half)' },
     superior: { eye: [1237, 520], to: [1252, 546], text: 'Looking down on the top of the head' },
     inferior: { eye: [1190, 838], to: [1192, 786], text: 'Looking up at the underside of the head' },
     anterior: { eye: [1052, 702], to: [1132, 700], text: 'Looking at the front of the head (the face)' },
