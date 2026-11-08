@@ -471,7 +471,7 @@
   };
   // Neuron 1 shows only the end of its axon + terminal (rest is off the left edge);
   // neuron 3 shows its dendrites and cell body (its axon runs off the right edge).
-  const SMALL = 0.7, BIG = 0.86, AXIS = 470, GAP = 24, LEFT_END = 112;
+  const SMALL = 0.7, BIG = 0.86, AXIS = 510, GAP = 24, LEFT_END = 112;
   const TIP = [80, 470];                                   // dendrite tip facing the previous neuron
   const T_L = { k: SMALL, tx: LEFT_END - 1348 * SMALL, ty: AXIS - 470 * SMALL };
   const T_C = { k: BIG, tx: LEFT_END + GAP - TIP[0] * BIG, ty: AXIS - 470 * BIG };
@@ -1037,7 +1037,7 @@
     { name: 'Combine', from: 3.35, to: 4.2, x: 725, col: '#e8890c', text: 'Signals add up at\nthe axon hillock' },
     { name: 'Send', from: 4.2, to: 8.2, x: 970, col: '#e0453a', text: 'Action potential\nfires and travels' },
   ];
-  const BOX8 = { y: 612, w: 215, h: 132 };
+  const BOX8 = { y: 680, w: 215, h: 132 };
   const finalItems = [
     ...fullItems.map((it) => ({ ...it })),
     ...STAGES8.map((st) => ({
@@ -1049,7 +1049,6 @@
     title('Putting it all together'),
     { type: 'svg', svg: chainSvg },
     ...chainVesicles('final'),
-    ...NEURON_NAMES(),
     ...STAGES8.flatMap((st, i) => [
       { type: 'rect', x: st.x, y: BOX8.y, w: BOX8.w, h: BOX8.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
       { type: 'circle', x: st.x + 28, y: BOX8.y + 32, r: 15, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
@@ -1104,14 +1103,6 @@
     { type: 'text', x: 92, y: 562, text: 'WORKS', size: 126, font: 'sans', bold: true, color: '#1f2430' },
   ];
 
-  // Names under each of the three neurons in the chain.
-  function NEURON_NAMES() {
-    return [
-      { type: 'text', x: 18, y: 612, text: 'From\nneuron 1', size: 24, font: 'sans', bold: true, color: '#2c5a92' },
-      { type: 'text', x: 820, y: 790, text: 'Main neuron', size: 32, font: 'sans', bold: true, color: '#5e2f78', align: 'center' },
-      { type: 'text', x: 1585, y: 800, text: 'To neuron 3', size: 24, font: 'sans', bold: true, color: '#2f6b2a', align: 'right' },
-    ];
-  }
   function SLIDE1_LABELS() {
     const c = (p) => mp(T_C, p).map(Math.round);
     const syn1 = [Math.round((LEFT_END + mainTip[0]) / 2), AXIS + 10];
@@ -1119,12 +1110,12 @@
     return [
       ...label('Dendrites', 150, 190, [180, 210], c([205, 236]), 'center', 28),
       ...label('Cell body', 640, 190, [620, 210], c([420, 420]), 'center', 28),
-      ...label('Axon hillock', 590, 650, [585, 628], c([500, 490]), 'center', 28),
-      ...label('Myelin sheath', 930, 330, [930, 350], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 14][k]), 'center', 28),
-      ...label('Axon', 830, 650, [830, 628], c(axonAt((sheaths[0].b + sheaths[1].a) / 2)), 'center', 28),
-      ...label('Axon terminal', 1080, 300, [1110, 320], c([1290, 425]), 'center', 28),
-      ...label('Synapse', 120, 400, [128, 418], syn1, 'center', 26),
-      ...label('Synapse', 1150, 600, [1168, 580], syn2, 'center', 26),
+      ...label('Axon hillock', 590, 700, [585, 678], c([500, 490]), 'center', 28),
+      ...label('Myelin sheath', 930, 370, [930, 390], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 14][k]), 'center', 28),
+      ...label('Axon', 830, 700, [830, 678], c(axonAt((sheaths[0].b + sheaths[1].a) / 2)), 'center', 28),
+      ...label('Axon terminal', 1095, 300, [1120, 320], c([1290, 425]), 'center', 28),
+      ...label('Synapse', 12, 440, [58, 458], syn1, 'left', 24),
+      ...label('Synapse', 1150, 650, [1168, 630], syn2, 'center', 26),
     ];
   }
 
@@ -1145,7 +1136,6 @@
           { type: 'text', x: 800, y: 80, text: 'How a neuron works', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
           { type: 'svg', svg: chainSvg },
           ...chainVesicles(['release', 'full']),
-          ...NEURON_NAMES(),
           ...SLIDE1_LABELS(),
         ],
       },
