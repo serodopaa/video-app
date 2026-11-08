@@ -14,6 +14,8 @@ dependencies. Open `index.html` in a browser.
   IndexedDB), preview, and export (plays trimmed clips in order and re-records
   them into one file, in real time). Prefers H.264 MP4, else WebM.
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
+- `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as
+  `window.WB_BRAIN_MID`; `brain-art.js` uses it for the medial view and the midsagittal cut face. Load it first.
 - `scenes/brain-art.js` – stylised brain illustrations (lateral, medial, superior, inferior, anterior,
   posterior views, coronal/axial sections) as SVG markup, shared via `window.WB_BRAIN_ART`; used by
   `brain-views.js` (must be loaded before it).

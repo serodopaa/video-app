@@ -46,6 +46,9 @@
   }];
 
   // ====================================================================== slide 2: anatomical planes
+  // Each plane is shown edge-on, as a line cutting through the brain, from a view where that is
+  // obvious (side view for coronal and axial, top view for the sagittal planes). The two parts it
+  // separates are labelled, and the right panel shows what the cut surface looks like.
   const PLANES = [
     { id: 'sagittal', name: 'Sagittal', color: '#2f6fde' },
     { id: 'midsagittal', name: 'Midsagittal', color: '#7b3fd0' },
@@ -54,52 +57,87 @@
   ];
   const PTAB_W = 330, PTAB_GAP = 24;
   const PX = tabGeometry(PLANES.length, PTAB_W, PTAB_GAP);
-  const R = { x: 150, y: 340, w: 450, h: 352 }, D = [170, -120];      // front face of the 3-D box, and the "depth" direction
   const poly = (pts, fill, stroke, w = 4, dash = '') => `<polygon points="${pts.map((p) => p.map(f1).join(',')).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="round" ${dash ? `stroke-dasharray="${dash}"` : ''}/>`;
-  const rectAt = (t) => [[R.x + D[0] * t, R.y + D[1] * t], [R.x + R.w + D[0] * t, R.y + D[1] * t], [R.x + R.w + D[0] * t, R.y + R.h + D[1] * t], [R.x + D[0] * t, R.y + R.h + D[1] * t]];
-  const boxSvg = svgDoc(`
-    ${poly(rectAt(0), 'none', '#c4cad6', 2.5, '8 6')}${poly(rectAt(1), 'none', '#c4cad6', 2.5, '8 6')}
-    ${rectAt(0).map((p, i) => `<line x1="${p[0]}" y1="${p[1]}" x2="${rectAt(1)[i][0]}" y2="${rectAt(1)[i][1]}" stroke="#c4cad6" stroke-width="2.5" stroke-dasharray="8 6"/>`).join('')}
-    ${art('lateral', 'pb', R.x + D[0] / 2, R.y + D[1] / 2, 0.75)}`);
-  const planeShape = {
-    sagittal: () => poly(rectAt(0.68), 'none', '#2f6fde', 2.5, '10 8') + poly(rectAt(0.86), 'none', '#2f6fde', 2.5, '10 8') + poly(rectAt(0.22), 'rgba(47,111,222,0.30)', '#2f6fde', 5),
-    midsagittal: () => poly(rectAt(0.5), 'rgba(123,63,208,0.26)', '#7b3fd0', 5),
-    coronal: () => { const xc = R.x + R.w * 0.52; return poly([[xc, R.y], [xc, R.y + R.h], [xc + D[0], R.y + R.h + D[1]], [xc + D[0], R.y + D[1]]], 'rgba(232,137,12,0.30)', '#e8890c', 5); },
-    axial: () => { const yc = R.y + R.h * 0.56; return poly([[R.x, yc], [R.x + R.w, yc], [R.x + R.w + D[0], yc + D[1]], [R.x + D[0], yc + D[1]]], 'rgba(29,154,90,0.30)', '#1d9a5a', 5); },
+  const REF = { x: 205, y: 205, s: 0.85 };                         // where the reference brain sits
+  const bx = (x) => REF.x + x * REF.s, by = (y) => REF.y + y * REF.s;
+  // a plane seen edge-on: a translucent band with a solid line through it
+  const planeLine = (x1, y1, x2, y2, color) => `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke="${color}" stroke-opacity="0.22" stroke-width="26" stroke-linecap="round"/>
+    <line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="16 9"/>`;
+  // orientation compass for the reference picture
+  const compass = (up, down, left, right) => {
+    const cx = 150, cy = 650, L = 38;
+    const arrow = (dx, dy) => { const x2 = cx + dx * L, y2 = cy + dy * L; return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#8a8f98" stroke-width="3"/><polygon points="${x2 + dx * 10},${y2 + dy * 10} ${x2 - dy * 7},${y2 + dx * 7} ${x2 + dy * 7},${y2 - dx * 7}" fill="#8a8f98"/>`; };
+    return [
+      { type: 'svg', svg: svgDoc(arrow(0, -1) + arrow(0, 1) + arrow(-1, 0) + arrow(1, 0)) },
+      txt(up, cx, cy - L - 20, 17, '#5b6270', { align: 'center', bold: true }), txt(down, cx, cy + L + 20, 17, '#5b6270', { align: 'center', bold: true }),
+      txt(left, cx - L - 14, cy, 17, '#5b6270', { align: 'right', bold: true }), txt(right, cx + L + 14, cy, 17, '#5b6270', { bold: true }),
+    ];
   };
-  const PLANE_TEXT = {
-    sagittal: { head: 'Sagittal plane', body: 'A vertical cut from front to back.\nIt divides the brain into left and right parts.\nAny plane parallel to the midline is sagittal.', cut: 'medial', cap: 'A slice through one hemisphere' },
-    midsagittal: { head: 'Midsagittal plane', body: 'The sagittal plane exactly through the midline.\nIt divides the brain into equal left\nand right halves.', cut: 'medial', cap: 'The inner (medial) face of one half' },
-    coronal: { head: 'Coronal plane', body: 'A vertical cut from side to side.\nIt divides the brain into anterior (front)\nand posterior (back) parts.', cut: 'coronalSection', cap: 'A slice seen from the front' },
-    axial: { head: 'Axial plane', body: 'A horizontal cut, parallel to the ground.\nIt divides the brain into superior (top)\nand inferior (bottom) parts.', cut: 'axialSection', cap: 'A slice seen from above' },
+  const PLANE_INFO = {
+    sagittal: {
+      ref: 'superior', seen: 'Seen from above', at: { x: 390 }, parts: ['← Left part', 'Right part →'],
+      head: 'Sagittal plane', body: 'A vertical cut running from front to back.\nIt divides the brain into left and right parts.\nAny cut parallel to the midline is sagittal.',
+      cut: 'sagittalSection', cap: 'The cut face, seen from the side', note: 'Off the midline: through one hemisphere',
+    },
+    midsagittal: {
+      ref: 'superior', seen: 'Seen from above', at: { x: 300 }, parts: ['← Left half', 'Right half →'],
+      head: 'Midsagittal plane', body: 'The sagittal plane exactly on the midline,\nbetween the two hemispheres. It divides the\nbrain into equal left and right halves.',
+      cut: 'medial', cap: 'The cut face (medial surface), seen from the side', note: 'Shows the corpus callosum and brainstem',
+    },
+    coronal: {
+      ref: 'lateral', seen: 'Seen from the side', at: { x: 330 }, parts: ['← Anterior part', 'Posterior part →'],
+      head: 'Coronal plane', body: 'A vertical cut running from side to side\n(like a headband). It divides the brain into\nanterior (front) and posterior (back) parts.',
+      cut: 'coronalSection', cap: 'The cut face, seen from the front', note: 'Both hemispheres, ventricles and deep nuclei',
+    },
+    axial: {
+      ref: 'lateral', seen: 'Seen from the side', at: { y: 230 }, parts: ['Superior part ↑', 'Inferior part ↓'],
+      head: 'Axial (horizontal) plane', body: 'A horizontal cut, parallel to the ground.\nIt divides the brain into superior (top)\nand inferior (bottom) parts.',
+      cut: 'axialSection', cap: 'The cut face, seen from above', note: 'Front of the brain at the top',
+    },
   };
+  const COMPASS = {
+    lateral: ['Superior', 'Inferior', 'Anterior', 'Posterior'],
+    superior: ['Anterior', 'Posterior', 'Left', 'Right'],
+  };
+  const SEC = { x: 940, y: 262, s: 0.95 };
   const planeActions = PLANES.map((pl, i) => {
-    const t = PLANE_TEXT[pl.id];
+    const t = PLANE_INFO[pl.id];
+    const c = pl.color;
+    let line, lineLabel, partItems;
+    if (t.at.x !== undefined) {
+      const X = bx(t.at.x);
+      line = planeLine(X, 198, X, 632, c);
+      lineLabel = txt(pl.name + ' plane', X, 186, 24, c, { align: 'center', bold: true });
+      partItems = [txt(t.parts[0], X - 16, 656, 22, '#3b4252', { align: 'right', bold: true }), txt(t.parts[1], X + 16, 656, 22, '#3b4252', { bold: true })];
+    } else {
+      const Y = by(t.at.y);
+      line = planeLine(188, Y, 732, Y, c);
+      lineLabel = txt('Axial plane', 746, Y, 24, c, { bold: true });
+      partItems = [txt(t.parts[0], 222, Y - 70, 22, '#3b4252', { align: 'right', bold: true }), txt(t.parts[1], 222, Y + 70, 22, '#3b4252', { align: 'right', bold: true })];
+    }
     return {
       id: pl.id, label: pl.name, group: 'plane', stay: true, drawn: false,
       items: [
         ...tabOn(pl, PX[i], PTAB_W),
-        { type: 'svg', svg: svgDoc(planeShape[pl.id]()) },
-        txt(t.head, 930, 252, 42, pl.color, { bold: true }),
-        txt(t.body, 930, 328, 25, '#3b4252'),
-        txt('What the cut looks like', 930, 470, 22, '#8a8f98', { bold: true }),
-        { type: 'svg', svg: svgDoc(`<g transform="translate(1030 490) scale(0.6)">${A[t.cut === 'medial' ? 'medial' : t.cut]('cut')}</g>`) },
-        txt(t.cap, 1210, 806, 22, '#5b6270', { align: 'center' }),
+        { type: 'svg', svg: svgDoc(art(t.ref, 'pr' + i, REF.x, REF.y, REF.s) + line) },
+        lineLabel, ...partItems,
+        ...compass(...COMPASS[t.ref]),
+        txt(t.seen, 150, 556, 17, '#8a8f98', { align: 'center', bold: true }),
+        txt(t.head, 470, 708, 36, c, { align: 'center', bold: true }),
+        txt(t.body, 470, 752, 22, '#3b4252', { align: 'center' }),
+        { type: 'rect', x: 910, y: 200, w: 630, h: 660, color: c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+        txt('What the cut looks like', 1225, 232, 26, c, { align: 'center', bold: true }),
+        { type: 'svg', svg: svgDoc(`<g transform="translate(${SEC.x} ${SEC.y}) scale(${SEC.s})">${A[t.cut]('cut' + i)}</g>`) },
+        txt(t.cap, 1225, 778, 22, '#3b4252', { align: 'center', bold: true }),
+        txt(t.note, 1225, 814, 20, '#5b6270', { align: 'center' }),
       ],
     };
   });
   const planeItems = [
     title('Anatomical planes'),
     ...tabsStatic(PLANES, PTAB_W, PTAB_GAP),
-    { type: 'svg', svg: boxSvg },
-    txt('Superior', 96, 316, 24, '#5b6270', { bold: true, align: 'center' }), txt('Inferior', 96, 716, 24, '#5b6270', { bold: true, align: 'center' }),
-    { type: 'line', from: [96, 336], to: [96, 696], color: '#9aa1ae', width: 2, rough: false },
-    { type: 'line', from: [150, 730], to: [600, 730], color: '#9aa1ae', width: 2, rough: false },
-    txt('Anterior', 150, 762, 24, '#5b6270', { bold: true }), txt('Posterior', 600, 762, 24, '#5b6270', { bold: true, align: 'right' }),
-    txt('Left', 612, 716, 22, '#8a8f98', { bold: true }), txt('Right', 790, 566, 22, '#8a8f98', { bold: true }),
-    { type: 'line', from: [606, 696], to: [776, 576], color: '#9aa1ae', width: 2, rough: false },
-    { type: 'rect', x: 900, y: 200, w: 640, h: 660, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
-    txt('Click a plane above\nto see where it cuts', 1220, 480, 34, '#8a8f98', { align: 'center', bold: true, hideDuring: PLANES.map((p) => p.id) }),
+    { type: 'rect', x: 910, y: 200, w: 630, h: 660, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    txt('Click a plane above to see\nwhere it cuts through the brain', 470, 480, 34, '#8a8f98', { align: 'center', bold: true, hideDuring: PLANES.map((p) => p.id) }),
   ];
 
   // ====================================================================== slide 3: anatomical views
@@ -168,7 +206,7 @@
         edge(left, FIG.x + l * s - 14, cyy, 'right'), edge(right, FIG.x + r * s + 14, cyy, 'left'),
         txt(v.name + ' view', 950, 252, 44, v.color, { bold: true }),
         txt(info.body, 950, 326, 25, '#3b4252'),
-        txt('Where you are looking from', 950, 520, 22, '#8a8f98', { bold: true }),
+        txt('Where you are looking from', 950, 486, 22, '#8a8f98', { bold: true }),
         { type: 'svg', svg: cubeSvg(info.cube, v.color) },
         ...(v.id === 'medial' ? [txt('after cutting along the midline', 1330, 800, 20, '#5b6270', { align: 'center' })] : []),
       ],
