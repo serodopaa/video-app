@@ -167,29 +167,34 @@
     posterior: { ext: [104, 496, 24, 470], edges: ['Superior', 'Inferior', 'Left', 'Right'], cube: 'posterior',
       body: 'Seen from behind.\nShows the occipital lobes (and\nparietal lobes) with the\ncerebellum below them.' },
   };
-  // a see-through cube: the face being looked at is coloured, with an eye and arrow
-  const CUBE = { x: 1120, y: 640, s: 140, d: [66, -56] };
-  const cubeSvg = (kind, color) => {
-    const { x, y, s, d } = CUBE;
-    const F = [[x, y], [x + s, y], [x + s, y + s], [x, y + s]], B = F.map(([a, b]) => [a + d[0], b + d[1]]);
-    const face = {
-      anterior: F, posterior: B,
-      superior: [F[0], F[1], B[1], B[0]], inferior: [F[3], F[2], B[2], B[3]], lateral: [F[1], B[1], B[2], F[2]],
-      medial: [[x + s / 2, y], [x + s / 2 + d[0], y + d[1]], [x + s / 2 + d[0], y + s + d[1]], [x + s / 2, y + s]],
-    }[kind];
-    const cx = face.reduce((a, p) => a + p[0], 0) / 4, cy = face.reduce((a, p) => a + p[1], 0) / 4;
-    const eyePos = {
-      anterior: [cx - 70, cy + 86], posterior: [cx + 76, cy - 70], superior: [cx, cy - 92], inferior: [cx, cy + 92],
-      lateral: [cx + 110, cy + 10], medial: [cx + 190, cy + 10],
-    }[kind];
-    const [ex, ey] = eyePos, len = Math.hypot(cx - ex, cy - ey), ux = (cx - ex) / len, uy = (cy - ey) / len;
-    const ax = cx - ux * 14, ay = cy - uy * 14, sx = ex + ux * 26, sy = ey + uy * 26;
-    const wire = (pts) => poly(pts, 'none', '#aab1bf', 2.5);
-    return svgDoc(`${wire(F)}${wire(B)}${F.map((p, i) => `<line x1="${p[0]}" y1="${p[1]}" x2="${B[i][0]}" y2="${B[i][1]}" stroke="#aab1bf" stroke-width="2.5"/>`).join('')}
-      ${poly(face, color + '55', color, 5)}
-      <line x1="${f1(sx)}" y1="${f1(sy)}" x2="${f1(ax)}" y2="${f1(ay)}" stroke="${color}" stroke-width="5" stroke-linecap="round" ${kind === 'medial' ? 'stroke-dasharray="10 8"' : ''}/>
-      <polygon points="${f1(ax)},${f1(ay)} ${f1(ax - ux * 16 - uy * 9)},${f1(ay - uy * 16 + ux * 9)} ${f1(ax - ux * 16 + uy * 9)},${f1(ay - uy * 16 - ux * 9)}" fill="${color}"/>
-      <ellipse cx="${ex}" cy="${ey}" rx="26" ry="15" fill="#fff" stroke="#3b4252" stroke-width="3.5"/><circle cx="${ex}" cy="${ey}" r="9" fill="${color}"/><circle cx="${ex}" cy="${ey}" r="4" fill="#1f2430"/>`);
+  // A human head in profile (facing left, like the brain pictures, so we see the left side of the head,
+  // with the brain inside it). The eye and arrow show where you are looking from for each view.
+  const HEAD = { x: 1120, y: 540, s: 0.9 };
+  const SKIN = '#f3d3b8', HLINE = '#6b4a3a';
+  const headArt = () => `<g transform="translate(${HEAD.x} ${HEAD.y}) scale(${HEAD.s})">
+    <path d="M150 14 C96 14 58 56 56 108 L52 122 C46 140 30 158 20 174 C16 184 24 190 38 188 L46 192 C40 200 46 206 50 209 C44 215 50 219 53 223 C49 234 55 246 64 254 C80 264 102 268 120 262 L126 296 L128 306 L218 306 L208 262 C228 238 242 192 240 140 C238 70 202 14 150 14 Z" fill="${SKIN}" stroke="${HLINE}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M44 190 C50 196 62 198 74 196" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M53 224 C62 228 72 227 80 222" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M64 122 C72 116 82 116 90 122" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/><circle cx="78" cy="130" r="4.5" fill="${HLINE}"/>
+    <ellipse cx="196" cy="184" rx="12" ry="24" fill="#efc6a8" stroke="${HLINE}" stroke-width="3.5"/><path d="M194 166 C201 172 201 192 194 200" fill="none" stroke="${HLINE}" stroke-width="2.5"/>
+    <g transform="translate(78 36) scale(0.27)" opacity="0.93">${A.lateral('hd')}</g></g>`;
+  // eye position and where its arrow points (board coordinates), per view
+  const LOOK = {
+    lateral: { eye: [1368, 790], to: [1306, 722], text: 'Looking at the left side of the head' },
+    medial: { eye: [1404, 584], to: [1282, 642], dashed: true, text: 'Looking from the midline, after cutting the head in half' },
+    superior: { eye: [1237, 520], to: [1252, 546], text: 'Looking down on the top of the head' },
+    inferior: { eye: [1190, 838], to: [1192, 786], text: 'Looking up at the underside of the head' },
+    anterior: { eye: [1052, 702], to: [1132, 700], text: 'Looking at the front of the head (the face)' },
+    posterior: { eye: [1418, 652], to: [1348, 662], text: 'Looking at the back of the head' },
+  };
+  const headSvg = (kind, color) => {
+    const { eye: [ex, ey], to: [tx, ty], dashed } = LOOK[kind];
+    const len = Math.hypot(tx - ex, ty - ey), ux = (tx - ex) / len, uy = (ty - ey) / len;
+    const sx = ex + ux * 30, sy = ey + uy * 30;
+    return svgDoc(`${headArt()}
+      <line x1="${f1(sx)}" y1="${f1(sy)}" x2="${f1(tx - ux * 14)}" y2="${f1(ty - uy * 14)}" stroke="${color}" stroke-width="6" stroke-linecap="round" ${dashed ? 'stroke-dasharray="11 9"' : ''}/>
+      <polygon points="${f1(tx)},${f1(ty)} ${f1(tx - ux * 20 - uy * 11)},${f1(ty - uy * 20 + ux * 11)} ${f1(tx - ux * 20 + uy * 11)},${f1(ty - uy * 20 - ux * 11)}" fill="${color}"/>
+      <ellipse cx="${ex}" cy="${ey}" rx="28" ry="16" fill="#fff" stroke="#3b4252" stroke-width="3.5" ${dashed ? 'stroke-dasharray="8 6"' : ''}/><circle cx="${ex}" cy="${ey}" r="10" fill="${color}"/><circle cx="${ex}" cy="${ey}" r="4.5" fill="#1f2430"/>`);
   };
   const viewActions = VIEWS.map((v, i) => {
     const info = VIEW_INFO[v.id];
@@ -206,9 +211,9 @@
         edge(left, FIG.x + l * s - 14, cyy, 'right'), edge(right, FIG.x + r * s + 14, cyy, 'left'),
         txt(v.name + ' view', 950, 252, 44, v.color, { bold: true }),
         txt(info.body, 950, 326, 25, '#3b4252'),
-        txt('Where you are looking from', 950, 486, 22, '#8a8f98', { bold: true }),
-        { type: 'svg', svg: cubeSvg(info.cube, v.color) },
-        ...(v.id === 'medial' ? [txt('after cutting along the midline', 1330, 800, 20, '#5b6270', { align: 'center' })] : []),
+        txt('Where you are looking from', 950, 450, 22, '#8a8f98', { bold: true }),
+        txt(LOOK[v.id].text, 950, 480, 22, v.color, { bold: true }),
+        { type: 'svg', svg: headSvg(info.cube, v.color) },
       ],
     };
   });
