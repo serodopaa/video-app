@@ -416,38 +416,154 @@
     return { actions, items };
   })();
 
-  // ---------- recap ----------
+  // ---------- recap: click a bullet to see that idea in action ----------
+  // Each bullet has an invisible click target (hotspot) that plays one demo on the right.
+  // The demos use `stay` (the last frame stays on screen for talking over) and share a
+  // `group` (clicking another bullet replaces the demo). All of them drive the same meter.
   const slideRecap = (() => {
     const W = window.WB_SUMMATION;
     if (!W) return null;
-    const { EXC, INH } = W;
-    const row = (y, color, name, desc) => [
-      { type: 'circle', x: 100, y, r: 20, color: color[0], fill: color[1], fillOpacity: 1, width: 3, rough: false },
-      { type: 'text', x: 146, y, text: name, size: 34, font: 'sans', bold: true, color: 'ink' },
-      { type: 'text', x: 146, y: y + 44, text: desc, size: 24, font: 'sans', color: '#5b6270' },
-    ];
-    const lab = (text, color, at, until) => ({ type: 'text', x: 1375, y: 660, text, size: 24, font: 'sans', bold: true, color, align: 'center', anim: 'pop', duration: 0.3, at, until });
+    const { EXC, INH, SPARK, AP } = W;
+    const CX = 1205;                       // centre of the demo panel
+    const GROUP = 'concept';
     const v = (from, to, at, duration) => ({ type: 'value', id: 'rec', from, to, at, duration });
-    const actions = [{
-      id: 'seq', label: 'Add it up: one at a time',
-      items: [
-        v(REST, -63, 0.3, 0.4), v(-63, REST, 0.8, 1.2), lab('EPSP: up', '#e8890c', 0.3, 2.2),
-        v(REST, -76, 2.6, 0.4), v(-76, REST, 3.1, 1.2), lab('IPSP: down', '#2f6fde', 2.6, 4.4),
-        v(REST, -62, 4.6, 0.4), v(-62, -65, 5.0, 0.7), v(-65, -57, 5.7, 0.4), v(-57, -62, 6.1, 0.7), v(-62, -50, 6.8, 0.4),
-        v(-50, 30, 7.2, 0.25), v(30, -80, 7.45, 0.55), v(-80, REST, 8.0, 1.8),
-        lab('Three EPSPs in\nquick succession:\nthreshold reached!', '#e0453a', 4.7, 9.0),
-      ],
-    }];
+    const caption = (text, at = 0, until) => ({ type: 'text', x: CX, y: 138, text, size: 21, font: 'sans', bold: true, color: '#3b4252', align: 'center', anim: 'pop', duration: 0.3, at, until });
+    const ids = ['epsp', 'ipsp', 'spatial', 'temporal', 'hillock'];
+    const ROWS = [
+      { id: 'epsp', y: 190, color: [EXC.edge, EXC.fill], name: 'Excitatory input (EPSP)', desc: 'Glutamate opens Na⁺ channels:\nthe potential moves up toward −55 mV.' },
+      { id: 'ipsp', y: 330, color: [INH.edge, INH.fill], name: 'Inhibitory input (IPSP)', desc: 'GABA opens Cl⁻ channels: the potential\nmoves down, away from threshold.' },
+      { id: 'spatial', y: 470, color: ['#5e2f78', '#c69ad8'], name: 'Spatial summation', desc: 'Inputs from different places add up at the\naxon hillock. Nearby inhibition is strongest.' },
+      { id: 'temporal', y: 610, color: ['#2c5a92', '#9cc0ea'], name: 'Temporal summation', desc: 'Inputs close together in time add up\nbefore they fade.' },
+      { id: 'hillock', y: 750, color: ['#b3261e', '#ff8a7a'], name: 'The axon hillock decides', desc: 'If the total reaches −55 mV,\nan action potential fires.' },
+    ];
+    const ring = (id) => ({ type: 'circle', x: 100, y: ROWS.find((r) => r.id === id).y, r: 30, color: '#1f2430', width: 4, rough: false });
+
+    // --- a tiny synapse: terminal above, membrane with one receptor, ions crossing ---
+    const synapse = (kind) => {
+      const glu = kind === 'glu';
+      const nt = glu ? EXC.nt : INH.nt, st = glu ? CH_STYLE.na : CH_STYLE.cl, ion = glu ? 'na' : 'cl';
+      const peak = glu ? -60 : -74, nameColor = glu ? '#b05f00' : '#0b6f7e';
+      const MT = 330, MB = 372, MID = 351;
+      const flows = [[-60, -46, 402], [30, 6, 408], [-14, 52, 398]].map(([sx, ex, ey], i) => [sx, ex, ey, i]);
+      const items = [
+        { type: 'rect', x: 866, y: MT, w: 678, h: MB - MT, color: '#b67d3c', fill: '#fbecd6', fillOpacity: 1, width: 2, rough: false },
+        { type: 'circle', x: CX, y: 235, rx: 150, ry: 52, color: '#2c5a92', fill: '#bcd5f2', fillOpacity: 1, width: 4, rough: false },
+        ...[[-90, 228], [-30, 214], [40, 224], [100, 238]].map(([dx, y]) => ({ type: 'vesicle', x: CX + dx, y, r: 10, color: '#2c5a92', dot: nt })),
+        { type: 'vesicle', fuse: true, r: 10, color: '#2c5a92', dot: nt, path: [[CX - 55, 258], [CX - 24, 288]], duration: 1.2, at: 0 },
+        { type: 'vesicle', fuse: true, r: 10, color: '#2c5a92', dot: nt, path: [[CX + 10, 256], [CX + 24, 288]], duration: 1.2, at: 0.15 },
+        { type: 'text', x: CX + 166, y: 235, text: glu ? 'Excitatory\nterminal\n(glutamate)' : 'Inhibitory\nterminal\n(GABA)', size: 19, font: 'sans', bold: true, color: nameColor },
+        { type: 'text', x: 872, y: 312, text: 'Outside', size: 17, font: 'sans', color: '#8a8f98' },
+        { type: 'text', x: 872, y: 392, text: 'Inside', size: 17, font: 'sans', color: '#8a8f98' },
+        { type: 'channel', id: 'rc', x: CX, y: MID, h: 80, ...st, label: undefined },
+        { type: 'text', x: CX + 80, y: MID, text: glu ? 'Glutamate receptor' : 'GABA receptor', size: 18, font: 'sans', bold: true, color: st.edge },
+        // ions that stay put
+        { type: 'ion', ion: 'na', x: CX - 250, y: 304, r: 14 }, { type: 'ion', ion: 'cl', x: CX + 240, y: 306, r: 14 }, { type: 'ion', ion: 'na', x: CX - 150, y: 312, r: 14 },
+        { type: 'ion', ion: 'k', x: CX - 230, y: 402, r: 14 }, { type: 'ion', ion: 'a', x: CX + 210, y: 404, r: 14 }, { type: 'ion', ion: 'k', x: CX + 110, y: 410, r: 14 },
+        // the neurotransmitter binds
+        { type: 'mover', once: true, r: 6, color: nt, smooth: true, path: [[CX - 22, 290], [CX - 26, 310], [CX - 28, 324]], duration: 0.7, at: 0.8, until: 3.4 },
+        { type: 'mover', once: true, vanish: true, r: 6, color: nt, smooth: true, path: [[CX - 28, 324], [CX - 70, 312], [CX - 110, 296]], duration: 0.8, at: 4.2 },
+        { type: 'mover', once: true, vanish: true, r: 5, color: nt, smooth: true, path: [[CX + 22, 290], [CX + 50, 306], [CX + 80, 300]], duration: 1.6, at: 0.9 },
+        { type: 'value', id: 'rc', from: 0, to: 1, at: 1.5, duration: 0.35 },
+        ...flows.map(([sx, ex, ey, i]) => ({ type: 'ion', ion, smooth: true, path: [[CX + sx, 306], [CX, MT - 8], [CX, MID], [CX, MB + 10], [CX + ex, ey]], duration: 1.4, at: 1.7 + i * 0.35 })),
+        { type: 'value', id: 'rc', from: 1, to: 0, at: 4.1, duration: 0.35 },
+        v(REST, peak, 1.9, 1.9), v(peak, REST, 4.6, 2.2),
+        caption(glu ? 'Glutamate opens Na⁺ channels.\nNa⁺ flows in: the potential rises (EPSP).' : 'GABA opens Cl⁻ channels.\nCl⁻ flows in: the potential falls (IPSP).'),
+      ];
+      return items;
+    };
+
+    // --- a dendrite strip leading to the cell body and axon hillock ---
+    const bulb = (t) => [
+      { type: 'line', from: [t.x, t.y], to: [t.x, 185], color: t.st.edge, width: 14, rough: false },
+      { type: 'line', from: [t.x, t.y], to: [t.x, 185], color: t.st.fill, width: 8, rough: false },
+      { type: 'circle', x: t.x, y: t.y, r: 20, color: t.st.edge, fill: t.st.fill, fillOpacity: 1, width: 4, rough: false },
+      { type: 'text', x: t.x - 30, y: t.y, text: t.name, size: 22, font: 'sans', bold: true, color: t.st.edge, align: 'right' },
+    ];
+    const HX = 1458, HY = 300;
+    const strip = (terms) => [
+      { type: 'line', from: [880, 300], to: [1340, 300], color: '#5e2f78', width: 34, rough: false },
+      { type: 'line', from: [880, 300], to: [1340, 300], color: '#c69ad8', width: 26, rough: false },
+      { type: 'line', from: [HX, HY], to: [1555, HY], color: '#5e2f78', width: 12, rough: false },
+      { type: 'line', from: [HX, HY], to: [1555, HY], color: '#d4afe2', width: 7, rough: false },
+      { type: 'circle', x: 1395, y: 300, r: 60, color: '#5e2f78', fill: '#d4afe2', fillOpacity: 1, width: 4, rough: false },
+      { type: 'circle', x: 1385, y: 292, r: 18, color: '#5a2b75', fill: '#5a2b75', fillOpacity: 1, width: 2, rough: false },
+      { type: 'circle', x: HX, y: HY, r: 24, color: AP, width: 3, dashed: true, rough: false },
+      { type: 'text', x: 1498, y: 352, text: 'Axon hillock', size: 18, font: 'sans', bold: true, color: '#3b4252', align: 'center' },
+      { type: 'text', x: 960, y: 345, text: 'Dendrite', size: 18, font: 'sans', color: '#5b6270', align: 'center' },
+      ...terms.flatMap(bulb),
+    ];
+    const E1 = { x: 930, y: 250, st: EXC, name: 'E1' }, E2 = { x: 1070, y: 250, st: EXC, name: 'E2' };
+    const INHT = { x: 1478, y: 232, st: INH, name: 'I' };
+    const send = (t, at, dur = 1.5) => [
+      { type: 'flash', x: t.x, y: t.y, r: 26, color: t.st.nt, duration: 0.5, at },
+      { type: 'mover', once: true, vanish: true, r: 7, color: SPARK, smooth: true, path: [[t.x, t.y + 22], [t.x, 300], [1330, 300], [HX, HY]], duration: dur, at: at + 0.3 },
+    ];
+    const fireAP = (t0) => [
+      { type: 'flash', x: HX, y: HY, r: 44, color: AP, duration: 0.8, at: t0 },
+      v(-50, 30, t0, 0.25), v(30, -80, t0 + 0.25, 0.55), v(-80, REST, t0 + 0.8, 1.8),
+      { type: 'mover', once: true, vanish: true, r: 8, color: AP, path: [[HX, HY], [1555, HY]], duration: 0.6, at: t0 + 0.1 },
+    ];
+
+    const spatial = () => {
+      const S = 6.6;
+      return [
+        ...strip([E1, E2, INHT]),
+        // 1. two excitatory inputs from different places add up: threshold
+        ...send(E1, 0), ...send(E2, 0),
+        v(REST, -50, 1.7, 0.45), { type: 'flash', x: HX, y: HY, r: 34, color: SPARK, duration: 0.5, at: 1.75 }, ...fireAP(2.1),
+        caption('Two excitatory inputs from different places\nadd up at the hillock: threshold reached!', 0, 6.0),
+        // 2. add the inhibitory input right next to the hillock: blocked
+        ...send(E1, S), ...send(E2, S),
+        { type: 'flash', x: INHT.x, y: INHT.y, r: 26, color: INH.nt, duration: 0.5, at: S + 0.7 },
+        { type: 'mover', once: true, vanish: true, r: 6, color: INH.nt, smooth: true, path: [[INHT.x, INHT.y + 20], [HX + 8, HY - 22]], duration: 0.5, at: S + 1.0 },
+        { type: 'flash', x: HX, y: HY, r: 34, color: SPARK, duration: 0.5, at: S + 1.75 },
+        { type: 'flash', x: HX, y: HY, r: 46, color: INH.nt, duration: 0.8, at: S + 1.9 },
+        v(REST, -58, S + 1.7, 0.35), v(-58, -66, S + 2.05, 0.5), v(-66, REST, S + 2.55, 1.8),
+        caption('Add inhibition right next to the hillock:\nthe neuron is blocked.', S),
+      ];
+    };
+    const temporal = () => {
+      const T = { x: 1100, y: 250, st: EXC, name: 'E1' };
+      const GAP = 1.2, ARR = 1.3, PEAKS = [-62, -57, -50], FADED = [-65, -62], ORD = ['1st', '2nd', '3rd'];
+      const out = [...strip([T]), caption('The same input firing again and again:\nthe EPSPs pile up to threshold!')];
+      let level = REST;
+      for (let k = 0; k < 3; k++) {
+        const t = k * GAP, a = t + ARR;
+        out.push(...send(T, t, 1.0),
+          { type: 'text', x: T.x + 34, y: T.y, text: `${ORD[k]} firing`, size: 20, font: 'sans', bold: true, color: EXC.edge, anim: 'pop', duration: 0.3, at: t, until: GAP - 0.05 },
+          v(level, PEAKS[k], a - 0.2, 0.4));
+        if (k < 2) { out.push(v(PEAKS[k], FADED[k], a + 0.2, GAP - 0.5)); level = FADED[k]; }
+      }
+      out.push({ type: 'flash', x: HX, y: HY, r: 34, color: SPARK, duration: 0.5, at: 2 * GAP + ARR }, ...fireAP(2 * GAP + ARR + 0.25));
+      return out;
+    };
+    const hillock = () => [
+      ...strip([]),
+      { type: 'text', x: 1474, y: 376, text: 'threshold: −55 mV', size: 16, font: 'sans', bold: true, color: '#e0453a', align: 'center' },
+      v(REST, -60, 0.3, 0.6), { type: 'flash', x: HX, y: HY, r: 30, color: SPARK, duration: 0.6, at: 0.6 },
+      caption('Below −55 mV: nothing happens.', 0, 3.2),
+      v(-60, -50, 3.6, 0.4), { type: 'flash', x: HX, y: HY, r: 34, color: SPARK, duration: 0.5, at: 3.8 }, ...fireAP(4.1),
+      caption('It reaches −55 mV: an action potential fires!', 3.4),
+    ];
+
+    const bodies = { epsp: () => synapse('glu'), ipsp: () => synapse('gaba'), spatial, temporal, hillock };
+    const actions = ROWS.map((r) => ({
+      id: r.id, label: r.name.replace(/ \(.*\)/, ''), group: GROUP, stay: true, drawn: false,
+      items: [ring(r.id), ...bodies[r.id]()],
+    }));
     const items = [
       title('Putting it together'),
-      ...row(190, [EXC.edge, EXC.fill], 'Excitatory input (EPSP)', 'Glutamate opens Na⁺ channels: the potential moves up, toward −55 mV.'),
-      ...row(320, [INH.edge, INH.fill], 'Inhibitory input (IPSP)', 'GABA opens Cl⁻ channels: the potential moves down, away from threshold.'),
-      ...row(450, ['#5e2f78', '#c69ad8'], 'Spatial summation', 'Inputs from different places add up at the axon hillock.\nInhibition close to the hillock is the strongest.'),
-      ...row(600, ['#2c5a92', '#9cc0ea'], 'Temporal summation', 'Inputs close together in time add up before they fade.'),
-      ...row(730, ['#b3261e', '#ff8a7a'], 'The axon hillock decides', 'If the total reaches −55 mV, an action potential fires.'),
+      ...ROWS.flatMap((r) => [
+        { type: 'circle', x: 100, y: r.y, r: 20, color: r.color[0], fill: r.color[1], fillOpacity: 1, width: 3, rough: false },
+        { type: 'text', x: 146, y: r.y, text: r.name, size: 32, font: 'sans', bold: true, color: 'ink' },
+        { type: 'text', x: 146, y: r.y + 42, text: r.desc, size: 22, font: 'sans', color: '#5b6270' },
+        { type: 'hotspot', x: 60, y: r.y - 38, w: 90, h: 76, action: r.id },
+      ]),
+      { type: 'rect', x: 850, y: 112, w: 710, h: 316, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: CX, y: 270, text: 'Click a bullet on the left\nto see it in action', size: 30, font: 'sans', bold: true, color: '#8a8f98', align: 'center', hideDuring: ids },
       {
-        type: 'meter', id: 'rec', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
-        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
+        type: 'meter', id: 'rec', value: REST, x: 850, y: 438, w: 710, h: 422, graphH: 200, min: -90, max: 40,
+        title: 'Membrane potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
         fireText: 'Action potential fired!',
       },
     ];
@@ -523,7 +639,7 @@
       }] : []),
       // Slide 6: recap.
       ...(slideRecap ? [{
-        say: 'Excitatory inputs push toward threshold, inhibitory inputs push away, and the axon hillock adds them up over space and time.',
+        say: 'Click each bullet to see it in action: excitatory inputs push toward threshold, inhibitory inputs push away, and the axon hillock adds them up over space and time.',
         clear: true,
         actions: slideRecap.actions,
         items: slideRecap.items,

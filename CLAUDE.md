@@ -60,6 +60,11 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
 });
 ```
 
+Actions can also have `stay: true` (the last frame stays on screen instead of resetting after 1 s),
+`group: 'name'` (starting one action of a group stops the others; with `stay` this makes a
+click-to-switch demo panel) and `drawn: false` (items appear fully formed at once; without it,
+action items without `at` play one after another).
+
 Within a step, items animate **one after another**. Each item can have:
 `duration` (seconds), `wait` (extra delay before it starts), `with: true`
 (start at the same time as the previous item), or `at` (exact start time in
@@ -90,6 +95,7 @@ Colors: `ink, blue, red, green, orange, purple, gray, yellow, white` or any CSS 
 | `apwave` | `id` (live value = seconds, −1 idle), `sites` [{x, t, node}], `wave` [[τ, mV]…], `gx0, gx1, gy, gh` (graph strip, x lined up with the axon), `axonY, axonR`, `naStyle`/`kStyle` {fill, edge, dot}. Action potential travelling along a straight axon: voltage-vs-position graph plus Na⁺/K⁺ channels opening, ions crossing and a glow at each site |
 | `value` | (in actions) `id`, `from`, `to`, `at`, `duration`, `linear`: animates live value `id` (used by `meter`, `channel`, `charges`, `apgraph`). Eased unless `linear: true`. Latest started segment wins |
 | `inset` | `x, y, w, h`, `svg` (its viewBox must be that rect; draw it large for crispness), `title`, `hoverTop`. Small picture that, after a 1 s hover, grows to fill the slide (also in recordings); pointer leaving the board or a click shrinks it. `locatorInset()` in neuron.js builds a "Where we are" one |
+| `hotspot` | `x, y, w, h`, `action` (an action id on the same slide). Invisible click target on the board: clicking it (any tool) runs that action instead of drawing. Used for clickable bullets |
 | `pulse` | `x, y, r`, `color`, `speed`. Repeating rings to draw attention |
 
 Strokes get a slight hand-drawn wobble. Set `rough: false` to turn it off.

@@ -1052,8 +1052,9 @@
         ctx.fill();
         break;
       }
+      case 'hotspot':
       case 'value':
-        break; // drives a live value (see liveValue); draws nothing
+        break; // drives a live value / is an invisible click target (see liveValue); draws nothing
       case 'flash': {
         if (p <= 0 || p >= 1) break;
         const fr = (item.r || 40) * (0.4 + 0.8 * p);
@@ -1223,7 +1224,26 @@
   const HOLD_AT_END = 1; // seconds an action's last frame stays before the slide resets
   function runAction(a) {
     setAnimPaused(false);
+    // Actions in the same `group` replace each other (e.g. one demo shown at a time).
+    if (a.group) for (const o of slideActions()) if (o !== a && o.group === a.group) actionRuns.delete(o.id);
     actionRuns.set(a.id, animNow());
+  }
+  // A `hotspot` item ({ x, y, w, h, action: '<action id>' }) is an invisible click target:
+  // clicking it on the board runs that action. Works with any tool.
+  function hotspotAt(px, py) {
+    const steps = player.scene.steps;
+    if (player.step < 0) return null;
+    let first = player.step;
+    while (first > 0 && !steps[first].clear) first--;
+    for (let i = first; i <= player.step; i++) {
+      for (const it of steps[i].items || []) {
+        if (it.type === 'hotspot' && px >= it.x && px <= it.x + it.w && py >= it.y && py <= it.y + it.h) {
+          const a = slideActions().find((x) => x.id === it.action);
+          if (a) return a;
+        }
+      }
+    }
+    return null;
   }
   function renderActionButtons() {
     if (!actionsBox) return;
@@ -1598,6 +1618,12 @@
   window.addEventListener('blur', releaseHold);
 
   canvas.addEventListener('pointerdown', (e) => {
+    // Clickable bullets on a slide (hotspot items) run their animation instead of drawing.
+    if (e.button === 0 && !current) {
+      const [hx, hy] = toBoard(e);
+      const hot = hotspotAt(hx, hy);
+      if (hot) { e.preventDefault(); runAction(hot); return; }
+    }
     // Move tool: drag one of your drawings / text boxes to move it.
     if (state.tool === 'pan' && e.button === 0) {
       const [x, y] = toBoard(e);
@@ -1636,10 +1662,14 @@
     current = { kind: state.tool, color: state.color, size: state.size / view.z, pts: [[x, y]], t0: now() };
   });
 
+  let hotCursor = false;
   canvas.addEventListener('pointermove', (e) => {
     const [px, py] = toBoard(e);
     window.WB.pointer = { x: px, y: py, t: now() };
     if (!current) {
+      const overHot = !!hotspotAt(px, py);
+      if (overHot) { canvas.style.cursor = 'pointer'; hotCursor = true; return; }
+      if (hotCursor) { hotCursor = false; setTool(state.tool); }
       if (state.tool === 'pan') canvas.style.cursor = inkAt(px, py) >= 0 ? 'move' : 'grab';
       return;
     }
@@ -1711,6 +1741,7 @@
   canvas.addEventListener('click', (e) => {
     if (state.tool !== 'text') return;
     const [x, y] = toBoard(e);
+    if (hotspotAt(x, y)) return;
     openTextEntry(x, y);
   });
   canvas.addEventListener('wheel', (e) => {
@@ -1900,7 +1931,7 @@
     for (const a of slideActions()) {
       if (!actionRuns.has(a.id)) continue;
       const elapsed = t - actionRuns.get(a.id);
-      if (elapsed > a._len + HOLD_AT_END * clock.rate) { actionRuns.delete(a.id); continue; } // finished: back to the start state
+      if (!a.stay && elapsed > a._len + HOLD_AT_END * clock.rate) { actionRuns.delete(a.id); continue; } // finished: back to the start state (unless `stay`)
       for (const item of a.items) {
         if (item.until !== undefined && elapsed - item._start > item.until) continue; // its part is over
         renderItem(item, clamp((elapsed - item._start) / item._dur), t);
