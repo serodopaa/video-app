@@ -31,6 +31,8 @@ Open `index.html` in any browser. No install needed.
   it; let go to carry on (you can draw while holding).
 - **Speed** (next to Pause, or **[** slower / **]** faster) sets one speed for every animation:
   ¼×, ½×, ¾×, 1×, 1.5×, 2×. It's remembered next time.
+- **📝 Notes:** opens a notes panel beside the board, one page of notes per slide, saved
+  automatically in this browser. It's outside the board, so it never appears in recordings.
 Keyboard: P pen · H marker · L line · A arrow · R box · O circle · T text · E eraser · M move · + / − / 0 zoom · Space play/pause.
 
 ## Recording videos (for YouTube)

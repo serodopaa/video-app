@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611080450" />
+  <link rel="stylesheet" href="style.css?v=202611080454" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -33,6 +33,7 @@
       <button id="clearInk" title="Erase all of my drawing">🗑️</button>
       <button id="replay" title="Replay my drawing as an animation">🎬<span>Replay ink</span></button>
       <button id="export" title="Save the board as a PNG image">💾<span>PNG</span></button>
+      <button id="notesToggle" title="Show or hide your notes for this slide (never in the video)">📝<span>Notes</span></button>
     </div>
     <div class="group" role="group" aria-label="Zoom">
       <button id="zoomOut" title="Zoom out (−)">−</button>
@@ -43,12 +44,26 @@
     <div class="group actions" id="slideActions" role="group" aria-label="Animations for this slide" hidden></div>
   </header>
 
+<div class="workspace">
   <main class="stage" id="stage">
     <canvas id="board" aria-label="Whiteboard"></canvas>
     <div id="countdown" class="countdown" hidden></div>
     <div id="recBadge" class="rec-badge" hidden><i></i> REC</div>
     <div id="pausedBadge" class="paused-badge" hidden>⏸ Animations paused</div>
   </main>
+  <aside class="notes" id="notesPanel" hidden>
+    <div class="notes-head">
+      <b id="notesTitle">Notes</b>
+      <span class="notes-hint">Only you see these. Not in the video.</span>
+    </div>
+    <textarea id="notesText" spellcheck="true" placeholder="Talking points for this slide…"></textarea>
+    <div class="notes-foot">
+      <button id="notesSmaller" title="Smaller text">A−</button>
+      <button id="notesBigger" title="Bigger text">A+</button>
+      <span id="notesSaved" class="notes-saved"></span>
+    </div>
+  </aside>
+</div>
 
   <footer class="player">
     <select id="sceneSelect" aria-label="Choose an explainer"></select>
@@ -122,9 +137,9 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611080450"></script>
-  <script src="app.js?v=202611080450"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611080450"></script>
-  <script src="recorder.js?v=202611080450"></script>
+  <script src="scenes/neuron.js?v=202611080454"></script>
+  <script src="app.js?v=202611080454"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611080454"></script>
+  <script src="recorder.js?v=202611080454"></script>
 </body>
 </html>

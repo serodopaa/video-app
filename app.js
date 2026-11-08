@@ -1266,6 +1266,58 @@
     if (step && animate) speak(step.say);
     updateLabels();
     renderActionButtons();
+    loadNotes();
+  }
+
+  // ---------- speaker notes (side panel, never on the board or in recordings) ----------
+  const notes = {
+    panel: document.getElementById('notesPanel'),
+    text: document.getElementById('notesText'),
+    title: document.getElementById('notesTitle'),
+    saved: document.getElementById('notesSaved'),
+    toggle: document.getElementById('notesToggle'),
+    key: null,
+    timer: 0,
+  };
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
+  function loadNotes() {
+    if (!notes.text) return;
+    flushNotes();
+    const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
+    notes.key = 'wb-notes-' + player.scene.id + '-' + n;
+    notes.text.value = lsGet(notes.key) || '';
+    notes.title.textContent = n ? `Notes: slide ${n}` : 'Notes';
+    notes.saved.textContent = '';
+  }
+  function flushNotes() {
+    if (!notes.key || !notes.text) return;
+    clearTimeout(notes.timer);
+    if (lsSet(notes.key, notes.text.value)) notes.saved.textContent = 'Saved';
+  }
+  if (notes.text) {
+    notes.text.addEventListener('input', () => {
+      notes.saved.textContent = '…';
+      clearTimeout(notes.timer);
+      notes.timer = setTimeout(flushNotes, 400);
+    });
+    notes.text.addEventListener('blur', flushNotes);
+    // keep typing in the notes from triggering board shortcuts
+    notes.text.addEventListener('keydown', (e) => e.stopPropagation());
+    const setOpen = (open) => {
+      notes.panel.hidden = !open;
+      notes.toggle.classList.toggle('active', open);
+      lsSet('wb-notes-open', open ? '1' : '0');
+      window.dispatchEvent(new Event('resize'));
+    };
+    notes.toggle.addEventListener('click', () => setOpen(notes.panel.hidden));
+    let size = parseFloat(lsGet('wb-notes-size')) || 17;
+    const applySize = () => { notes.text.style.fontSize = size + 'px'; lsSet('wb-notes-size', String(size)); };
+    document.getElementById('notesSmaller').addEventListener('click', () => { size = Math.max(12, size - 2); applySize(); });
+    document.getElementById('notesBigger').addEventListener('click', () => { size = Math.min(32, size + 2); applySize(); });
+    applySize();
+    if (lsGet('wb-notes-open') === '1') setOpen(true);
+    window.addEventListener('beforeunload', flushNotes);
   }
 
   function updateLabels() {
