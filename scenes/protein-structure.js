@@ -673,19 +673,19 @@ Let's start at the very beginning, with primary structure.`,
         actions: hookActions,
         items: hookItems,
       },
-      // Slide 2: secondary vs tertiary (preview of the idea that trips people up).
-      {
-        say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
-        clear: true,
-        actions: svActions,
-        items: secVsTerItems,
-      },
-      // Slide 3: primary structure.
+      // Slide 2: primary structure.
       {
         say: 'Primary structure is the sequence of amino acids, joined by peptide bonds.',
         clear: true,
         actions: pepActions,
         items: primaryItems,
+      },
+      // Slide 3: secondary vs tertiary (preview of the idea that trips people up).
+      {
+        say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
+        clear: true,
+        actions: svActions,
+        items: secVsTerItems,
       },
       // Slide 4: secondary structure.
       {
