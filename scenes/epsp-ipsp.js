@@ -6,6 +6,7 @@
   const title = (text) => ({ type: 'text', x: 800, y: 66, text, size: 56, font: 'sans', bold: true, align: 'center', color: 'ink' });
 
   const REST = -70;
+  const f1 = (n) => n.toFixed(1);
   const PEAK = { glu: -60, gaba: -74 }; // EPSP 10 mV up; IPSP down, but never past E(Cl⁻) = −75
   const E_ION = { na: 60, cl: -75 }; // equilibrium potentials (same values as the neuron explainer)
   const ION_TEXT = { na: '#c46f00', cl: '#1d6a3c' };
@@ -189,6 +190,71 @@
     return { actions, items };
   })();
 
+  // ---------- slide 3: temporal summation ----------
+  // The same neuron, but only E1 is active: it fires 1, 2 or 3 times in quick succession.
+  // Each EPSP fades on its own, so only when they pile up does the hillock reach -55 mV.
+  const slide3 = (() => {
+    const W = window.WB_SUMMATION;
+    if (!W) return null;
+    const { fire, actionPotential, hillockPt, inputs, EXC, SPARK, label } = W;
+    const e1 = inputs.E1;
+    const GAP = 1.2;              // seconds between firings
+    const ARRIVE = 1.8;           // a firing at t reaches the hillock at t + ARRIVE (fire() travel time)
+    const PEAKS = [-62, -57, -50];   // hillock potential right after the 1st, 2nd, 3rd EPSP arrives
+    const FADED = [-65, -62];        // how far each EPSP has faded by the time the next one arrives
+    const ORD = ['1st', '2nd', '3rd'];
+    const v = (from, to, at, duration) => ({ type: 'value', id: 'axh', from, to, at, duration });
+    const pop = (text, color, at, until, x = e1.c[0] + 46, y = e1.c[1], align = 'left', size = 28) =>
+      ({ type: 'text', x, y, text, size, font: 'sans', bold: true, color, align, anim: 'pop', duration: 0.3, at, until });
+    const repeated = (n) => {
+      const items = [];
+      let level = REST;
+      for (let k = 0; k < n; k++) {
+        const t = k * GAP, a = t + ARRIVE;
+        items.push(...fire('E1', t), pop(`${ORD[k]} firing`, EXC.edge, t, t + GAP - 0.05));
+        items.push({ type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 26 + 6 * k, color: SPARK, duration: 0.5, at: a });
+        items.push(v(level, PEAKS[k], a - 0.2, 0.4));        // this EPSP arrives and adds on top of what is left
+        if (k < n - 1) { items.push(v(PEAKS[k], FADED[k], a + 0.2, GAP - 0.5)); level = FADED[k]; }
+      }
+      const last = (n - 1) * GAP + ARRIVE;
+      if (n === 3) {
+        items.push(pop('Piled up past −55 mV!', '#e0453a', last + 0.1, last + 3.5, 860, 545, 'center', 26), ...actionPotential(last + 0.25));
+      } else {
+        items.push(v(PEAKS[n - 1], REST, last + 0.4, 2.4),
+          pop(n === 1 ? 'Fades away. Not enough.' : 'Closer, but still below threshold', '#5b6270', last + 0.3, last + 3.2, 860, 545, 'center', 26));
+      }
+      return items;
+    };
+    const actions = [
+      { id: 'r1', label: 'Fire 1 time', items: repeated(1) },
+      { id: 'r2', label: 'Fire 2 times', items: repeated(2) },
+      { id: 'r3', label: 'Fire 3 times', items: repeated(3) },
+    ];
+    const terminal = `<g filter="url(#sh3)">
+      <path d="M${e1.c.map(f1)} L${e1.axonEnd.map(f1)}" stroke="${EXC.edge}" stroke-width="16" stroke-linecap="round"/>
+      <path d="M${e1.c.map(f1)} L${e1.axonEnd.map(f1)}" stroke="${EXC.fill}" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="${f1(e1.c[0])}" cy="${f1(e1.c[1])}" r="21" fill="${EXC.edge}"/>
+      <circle cx="${f1(e1.c[0])}" cy="${f1(e1.c[1])}" r="18" fill="${EXC.fill}"/>
+      ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${f1(e1.c[0] + a)}" cy="${f1(e1.c[1] + b)}" r="3.2" fill="${EXC.nt}"/>`).join('')}</g>`;
+    const items = [
+      title('Temporal summation'),
+      { type: 'svg', svg: W.svgDoc(`<defs><filter id="sh3" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#13294a" flood-opacity="0.25"/></filter></defs>
+        <g transform="translate(${W.TX4} ${W.TY4}) scale(${W.K4})">${W.neuronMarkup(W.PURPLE, 'sum3', { releasing: false })}</g>${terminal}`) },
+      { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: W.AP, width: 3, dashed: true, rough: false },
+      ...label('Axon hillock\n(adds up the signals)', 640, 290, [600, 340], [hillockPt[0] + 12, hillockPt[1] - 30], 'center', 28),
+      { type: 'text', x: e1.c[0] - 36, y: e1.c[1], text: 'E1', size: 26, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
+      { type: 'text', x: 520, y: 640, text: 'One excitatory neuron,\nfiring again and again', size: 26, font: 'sans', color: EXC.edge },
+      {
+        type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
+        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
+        fireText: 'Action potential fired!',
+      },
+      { type: 'text', x: 1375, y: 650, text: 'Each EPSP fades fast.\nOne that arrives before the\nlast has faded adds on top.', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
+      { type: 'text', x: 1375, y: 770, text: 'Reach −55 mV and\nthe neuron fires', size: 22, font: 'sans', bold: true, color: '#e0453a', align: 'center' },
+    ];
+    return { actions, items };
+  })();
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'epsp-ipsp',
     title: '⚡ EPSP and IPSP',
@@ -210,6 +276,13 @@
         clear: true,
         actions: slide2.actions,
         items: slide2.items,
+      }] : []),
+      // Slide 3: temporal summation - the same excitatory neuron firing 1, 2, then 3 times in a row.
+      ...(slide3 ? [{
+        say: 'Each EPSP fades quickly, but if the same neuron fires again before it has faded, the EPSPs add up: three in a row reach threshold.',
+        clear: true,
+        actions: slide3.actions,
+        items: slide3.items,
       }] : []),
     ],
   });
