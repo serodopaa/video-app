@@ -14,6 +14,9 @@ dependencies. Open `index.html` in a browser.
   IndexedDB), preview, and export (plays trimmed clips in order and re-records
   them into one file, in real time). Prefers H.264 MP4, else WebM.
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
+- `scenes/brain-art.js` – stylised brain illustrations (lateral, medial, superior, inferior, anterior,
+  posterior views, coronal/axial sections) as SVG markup, shared via `window.WB_BRAIN_ART`; used by
+  `brain-views.js` (must be loaded before it).
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**
