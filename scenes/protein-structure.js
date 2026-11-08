@@ -212,32 +212,186 @@
   ];
 
   // ====================================================================== slide 3: secondary structure
-  const HX = helix(380, 210, 720, 70, 5, {});
-  const HX_HB = helix(380, 210, 720, 70, 5, { hbonds: true });
-  const STR = [[930, 1450, 280], [1450, 930, 400], [930, 1450, 520], [1450, 930, 640]];
-  const sheetSvg = STR.map(([a, b, y], i) => strand(a, b, y, 46, i % 2 ? -5 : 5)).join('');
-  const sheetHb = STR.slice(0, -1).map(([, , y], i) => [0, 1, 2, 3, 4, 5].map((k) => {
-    const x = 990 + k * 70;
-    return `<line x1="${x}" y1="${y + 30}" x2="${x}" y2="${STR[i + 1][2] - 30}" stroke="${HB}" stroke-width="3.5" stroke-dasharray="6 5"/>`;
-  }).join('')).join('');
-  const secondaryActions = [{
-    id: 'hb', label: 'Show hydrogen bonds', stay: true, drawn: false,
-    items: [
-      svgItem(HX_HB.hb + sheetHb),
-      txt('Hydrogen bonds', 690, 620, 26, HB, { align: 'center', bold: true }),
-      ...label('', 0, 0, [610, 606], HX_HB.hbPts[2], 'center', 24).slice(1),
-      ...label('', 0, 0, [780, 640], [1130, 580], 'center', 24).slice(1),
-    ],
-  }];
+  // Three tabs (α-helix, β-sheet, random coil). Each one draws the BACKBONE atom by atom
+  // (N, Cα, C with C=O and N–H groups): secondary structure is hydrogen bonds between backbone
+  // groups. The R groups are drawn faded, on purpose, to show they are not involved.
+  const SS = [
+    { id: 'ss-helix', name: 'α-helix', color: '#d6336c' },
+    { id: 'ss-sheet', name: 'β-sheet', color: '#c58a00' },
+    { id: 'ss-coil', name: 'Random coil', color: '#5f6b7a' },
+  ];
+  const SS_W = 330, SS_GAP = 24, SS_Y = 112, SS_H = 58;
+  const SS_X = SS.map((_, i) => Math.round((1600 - (SS.length * SS_W + (SS.length - 1) * SS_GAP)) / 2) + i * (SS_W + SS_GAP));
+  const ssTabsStatic = SS.flatMap((t, i) => [
+    { type: 'rect', x: SS_X[i], y: SS_Y, w: SS_W, h: SS_H, color: '#c9cfda', fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(t.name, SS_X[i] + SS_W / 2, SS_Y + SS_H / 2, 28, '#3b4252', { align: 'center', bold: true }),
+    { type: 'hotspot', x: SS_X[i], y: SS_Y, w: SS_W, h: SS_H, action: t.id },
+  ]);
+  const ssTabOn = (t, i) => [
+    { type: 'rect', x: SS_X[i], y: SS_Y, w: SS_W, h: SS_H, color: t.color, fill: t.color, fillOpacity: 1, width: 3, rough: false },
+    txt(t.name, SS_X[i] + SS_W / 2, SS_Y + SS_H / 2, 28, '#ffffff', { align: 'center', bold: true }),
+  ];
+
+  // ---- atoms ----
+  const ATM = {
+    N: { fill: '#5b8def', stroke: '#1d4fb0', r: 15, t: 'N', tc: '#ffffff' },
+    CA: { fill: '#d5d9e0', stroke: '#6b7280', r: 13, t: 'Cα', tc: '#3b4252' },
+    C: { fill: '#6b7280', stroke: '#2d3340', r: 15, t: 'C', tc: '#ffffff' },
+    O: { fill: '#f26b5b', stroke: '#a8281a', r: 12, t: 'O', tc: '#ffffff' },
+    H: { fill: '#ffffff', stroke: '#8a8f98', r: 9, t: 'H', tc: '#3b4252' },
+  };
+  const atomSvg = (x, y, k, op = 1) => {
+    const a = ATM[k];
+    return `<g opacity="${op}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${a.r}" fill="${a.fill}" stroke="${a.stroke}" stroke-width="2.5"/>
+      <text x="${f1(x)}" y="${f1(y + a.r * 0.36)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="${f1(a.r * (k === 'CA' ? 0.8 : 1.0))}" text-anchor="middle" fill="${a.tc}">${a.t}</text></g>`;
+  };
+  const ln = (x1, y1, x2, y2, w, c, op = 1, extra = '') => `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round" opacity="${op}" ${extra}/>`;
+  // A backbone drawn from atoms [{x, y, k:'N'|'CA'|'C', d: depth (1 = front), o:[dx,dy] for C's oxygen,
+  // h:[dx,dy] for N's hydrogen, r:[dx,dy] for Cα's R group}]. The backbone gets an amber glow.
+  const backbone = (atoms) => {
+    const halo = atoms.slice(1).map((b, i) => ln(atoms[i].x, atoms[i].y, b.x, b.y, 34, '#ffd34d', 0.4)).join('');
+    const els = [];
+    atoms.forEach((a, i) => {
+      const op = a.d !== undefined && a.d < 0 ? 0.38 : 1, d = a.d ?? 1;
+      if (i > 0) { const p = atoms[i - 1]; els.push([(d + (p.d ?? 1)) / 2, ln(p.x, p.y, a.x, a.y, 7, '#3b4252', (op + (p.d !== undefined && p.d < 0 ? 0.38 : 1)) / 2)]); }
+      if (a.d !== undefined && a.d < 0) return;         // back of the coil: just the faint backbone line
+      let side = '';
+      if (a.k === 'C' && a.o) {
+        const [dx, dy] = a.o, l = Math.hypot(dx, dy), nx = -dy / l * 3.5, ny = dx / l * 3.5;
+        side = ln(a.x + nx, a.y + ny, a.x + dx + nx, a.y + dy + ny, 3.5, '#3b4252', op) + ln(a.x - nx, a.y - ny, a.x + dx - nx, a.y + dy - ny, 3.5, '#3b4252', op) + atomSvg(a.x + dx, a.y + dy, 'O', op);
+      } else if (a.k === 'N' && a.h) {
+        side = ln(a.x, a.y, a.x + a.h[0], a.y + a.h[1], 4, '#3b4252', op) + atomSvg(a.x + a.h[0], a.y + a.h[1], 'H', op);
+      } else if (a.k === 'CA' && a.r) {
+        const [dx, dy] = a.r;
+        side = ln(a.x, a.y, a.x + dx, a.y + dy, 4, '#b9a46a', 0.5 * op) + `<g opacity="${0.55 * op}"><circle cx="${f1(a.x + dx)}" cy="${f1(a.y + dy)}" r="14" fill="#efe2b8" stroke="#b9a46a" stroke-width="2.5" stroke-dasharray="4 3"/><text x="${f1(a.x + dx)}" y="${f1(a.y + dy + 5)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#8a7a45">R</text></g>`;
+      }
+      els.push([d + 0.01, side + atomSvg(a.x, a.y, a.k, op)]);
+    });
+    els.sort((p, q) => p[0] - q[0]);
+    return halo + els.map((e) => e[1]).join('');
+  };
+  const hbLine = (p, q, at) => ({ type: 'line', from: p, to: q, color: HB, width: 4.5, dashed: true, rough: false, at, duration: 0.35 });
+
+  // ---- α-helix: 12 residues, 3.6 per turn, drawn as a coil seen from the side ----
+  const HC = { cx: 420, y0: 322, y1: 722, R: 130 }, DT = (Math.PI * 2) / 3.6, NRES = 11;
+  const hxAtoms = [];
+  for (let a = 0; a < NRES * 3; a++) {
+    const t = (a * DT) / 3, T = NRES * DT;
+    const x = HC.cx + HC.R * Math.sin(t), y = HC.y0 + ((HC.y1 - HC.y0) * t) / T - HC.R * 0.34 * Math.cos(t), d = Math.cos(t), k = ['N', 'CA', 'C'][a % 3];
+    hxAtoms.push({ x, y, k, d, o: [4, 30], h: [0, -28], r: d > 0.25 ? [Math.sin(t) * 46, -d * 20 - 16] : undefined });
+  }
+  const bbPt = hxAtoms.filter((a) => a.k === 'C' && a.d > 0.6)[0], rPt = hxAtoms.filter((a) => a.k === 'CA' && a.r && a.d > 0.2).reduce((best, a) => (!best || a.x + a.r[0] > best.x + best.r[0] ? a : best), null);
+  const hxO = (r) => { const a = hxAtoms[3 * r + 2]; return [a.x + a.o[0], a.y + a.o[1]]; };
+  const hxH = (r) => { const a = hxAtoms[3 * r]; return [a.x + a.h[0], a.y + a.h[1]]; };
+  const hxBonds = [...Array(NRES - 4)].map((_, r) => r).filter((r) => hxAtoms[3 * r + 2].d > 0 && hxAtoms[3 * (r + 4)].d > 0).map((r) => [hxO(r), hxH(r + 4)]);
+
+  // ---- β-sheet: three antiparallel strands, residues alternate which side their C=O / N–H face ----
+  const BS = { x0: 200, dx: 54, ys: [295, 465, 635], nres: 4 };
+  const strandAtoms = (s) => {
+    const out = [];
+    for (let j = 0; j < BS.nres * 3; j++) {
+      const r = Math.floor(j / 3), m = j % 3;
+      const k = s % 2 === 0 ? ['N', 'CA', 'C'][m] : ['C', 'CA', 'N'][m];          // strand 2 runs the other way
+      const down = (r + (s + 1)) % 2 === 1;                                       // which neighbour this residue's groups face
+      const y = BS.ys[s] + (j % 2 ? 15 : -15);
+      const dir = down ? 1 : -1;
+      out.push({ x: BS.x0 + j * BS.dx, y, k, o: [0, 40 * dir], h: [0, 34 * dir], r: [0, (j % 2 ? 1 : -1) * 44], _down: down, _r: r, _m: m });
+    }
+    return out;
+  };
+  const shAtoms = [0, 1, 2].map(strandAtoms);
+  // H-bonds join groups that face each other in the same column
+  const shBonds = [];
+  [0, 1].forEach((s) => shAtoms[s].forEach((a, j) => {
+    const b = shAtoms[s + 1][j];
+    if (!a._down || b._down || a.k === 'CA') return;
+    const p = a.k === 'C' ? [a.x + a.o[0], a.y + a.o[1]] : [a.x + a.h[0], a.y + a.h[1]];
+    const q = b.k === 'C' ? [b.x + b.o[0], b.y + b.o[1]] : [b.x + b.h[0], b.y + b.h[1]];
+    shBonds.push([p, q]);
+  }));
+
+  // ---- random coil: an irregular backbone with no repeating pattern of bonds ----
+  const coilPts = [[140, 636], [200, 604], [260, 636], [320, 604], [380, 636], [440, 604], [492, 590], [500, 530], [466, 484], [406, 456], [346, 484], [288, 456], [228, 484], [168, 456], [110, 484], [96, 424], [130, 372], [190, 356], [250, 376], [300, 350], [360, 330], [420, 346]];
+  const coilOff = { o: [[0, 38], [8, 38], [30, 24], [-26, 30], [0, 38], [0, -38], [30, 20], [-34, -14], [0, -38], [26, -30]], h: [[-8, 36], [10, 34], [-30, 24], [26, 30], [-8, 36], [-6, 34], [30, 20], [-30, 20], [26, -30], [0, 34]], r: [[10, -42], [-14, 42], [-38, -20], [36, 22], [0, 44], [-30, 30], [28, -36], [30, 34], [14, 42], [-26, -34]] };
+  const coilAtoms = coilPts.map(([x, y], i) => ({
+    x, y, k: ['N', 'CA', 'C'][i % 3],
+    o: coilOff.o[Math.floor(i / 3)], h: coilOff.h[Math.floor(i / 3)], r: coilOff.r[Math.floor(i / 3)],
+  }));
+  // one tight turn does form a single hydrogen bond: C=O of one residue to the N–H facing it
+  const coilBond = [[coilAtoms[5].x + coilAtoms[5].o[0], coilAtoms[5].y + coilAtoms[5].o[1]], [coilAtoms[9].x + coilAtoms[9].h[0], coilAtoms[9].y + coilAtoms[9].h[1]]];
+
+  const ssLegend = svgItem(
+    `<rect x="84" y="780" width="296" height="42" rx="21" fill="#ffd34d" opacity="0.4"/>`
+    + [['N'], ['CA'], ['C'], ['O'], ['H']].map(([k], i) => atomSvg(122 + i * 56, 801, k)).join('')
+    + `<g opacity="0.7"><circle cx="700" cy="801" r="14" fill="#efe2b8" stroke="#b9a46a" stroke-width="2.5" stroke-dasharray="4 3"/><text x="700" y="806" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#8a7a45">R</text></g>`);
+  const ssLegendText = [
+    txt('Backbone atoms', 398, 801, 20, '#8a6d00', { bold: true }),
+    txt('R group (faded): not involved', 724, 801, 20, '#8a7a45', { bold: true }),
+  ];
+
+  const ssPanel = (t, head, body, extra) => [
+    { type: 'rect', x: 940, y: 200, w: 600, h: 566, color: t.color, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(head, 1240, 238, 36, t.color, { align: 'center', bold: true }),
+    txt(body, 970, 330, 23, '#3b4252'),
+    ...extra,
+  ];
+  const ribbonMini = (kind) => svgItem(kind === 'helix' ? at(1180, 608, 0.6, helix(60, 10, 180, 36, 3).svg) : kind === 'sheet'
+    ? at(1100, 616, 0.4, strand(60, 330, 50, 40, 4) + strand(330, 60, 140, 40, -4) + strand(60, 330, 230, 40, 4)) : at(1080, 640, 1, tube('M20 70 C60 10 120 120 170 50 C210 0 260 100 300 40', 14)));
+  const ssActions = [
+    {
+      id: 'ss-helix', label: 'α-helix', group: 'ss', stay: true, drawn: false,
+      items: [
+        ...ssTabOn(SS[0], 0),
+        svgItem(backbone(hxAtoms)),
+        ...hxBonds.map(([p, q], i) => hbLine(p, q, 0.8 + i * 0.28)),
+        ...label('Backbone (N – Cα – C, repeating)', 560, 226, [600, 242], [bbPt.x + 12, bbPt.y - 14], 'left', 20),
+        ...label('R group points outward', 640, rPt.y + rPt.r[1] - 70, [660, rPt.y + rPt.r[1] - 54], [rPt.x + rPt.r[0] + 8, rPt.y + rPt.r[1] - 8], 'left', 20),
+        txt('Hydrogen bonds:\nC=O of residue n to\nN–H of residue n+4', 690, 500, 20, HB, { bold: true, at: 2.0, anim: 'fade', duration: 0.4 }),
+        ...ssPanel(SS[0], 'α-helix',
+          'The backbone coils into a spiral.\n\nEach C=O forms a hydrogen bond with the\nN–H four residues further along the chain.\n\nThe bonds run along the helix, holding the\ncoil in shape like the turns of a spring.\n\nThe R groups stick out to the sides and\ntake no part in these bonds.',
+          [txt('The same helix drawn as a ribbon:', 970, 604, 20, '#5b6270', { bold: true }), ribbonMini('helix'),
+            txt('Backbone to backbone', 1240, 744, 22, HB, { align: 'center', bold: true })]),
+      ],
+    },
+    {
+      id: 'ss-sheet', label: 'β-sheet', group: 'ss', stay: true, drawn: false,
+      items: [
+        ...ssTabOn(SS[1], 1),
+        svgItem(shAtoms.map((s) => backbone(s)).join('')),
+        ...shBonds.map(([p, q], i) => hbLine(p, q, 0.8 + i * 0.12)),
+        txt('N-term', 70, 295, 17, '#5b6270', { bold: true }), txt('C-term', 822, 295, 17, '#5b6270', { bold: true }),
+        txt('C-term', 70, 465, 17, '#5b6270', { bold: true }), txt('N-term', 822, 465, 17, '#5b6270', { bold: true }),
+        txt('N-term', 70, 635, 17, '#5b6270', { bold: true }), txt('C-term', 822, 635, 17, '#5b6270', { bold: true }),
+        txt('Hydrogen bonds join neighbouring strands', 480, 728, 20, HB, { align: 'center', bold: true, at: 2.4, anim: 'fade', duration: 0.4 }),
+        ...ssPanel(SS[1], 'β-pleated sheet',
+          'Stretches of backbone (β-strands) lie\nside by side.\n\nC=O groups on one strand form hydrogen\nbonds with N–H groups on the next strand.\n\nThe bonds link different strands, across\nthe sheet. The R groups point alternately\nabove and below it, and are not involved.',
+          [txt('The same sheet drawn as ribbons:', 970, 604, 20, '#5b6270', { bold: true }), ribbonMini('sheet'),
+            txt('Backbone to backbone', 1240, 740, 22, HB, { align: 'center', bold: true })]),
+      ],
+    },
+    {
+      id: 'ss-coil', label: 'Random coil', group: 'ss', stay: true, drawn: false,
+      items: [
+        ...ssTabOn(SS[2], 2),
+        svgItem(backbone(coilAtoms)),
+        hbLine(coilBond[0], coilBond[1], 1.0),
+        txt('Irregular backbone: no repeating pattern', 480, 228, 22, '#5f6b7a', { align: 'center', bold: true }),
+        txt('Only an occasional\nhydrogen bond', 560, 548, 20, HB, { bold: true, at: 1.2, anim: 'fade', duration: 0.4 }),
+        ...ssPanel(SS[2], 'Random coil (loops and turns)',
+          'Regions with no regular, repeating shape.\n\nThe backbone bends and turns irregularly,\nso there is no steady series of hydrogen\nbonds like in a helix or a sheet.\n\nCoils and loops join helices and sheets\ntogether and make the chain flexible.',
+          [txt('The same region drawn as a ribbon:', 970, 604, 20, '#5b6270', { bold: true }), ribbonMini('coil')]),
+      ],
+    },
+  ];
   const secondaryItems = [
     title('Secondary structure'),
-    svgItem(tube('M262 262 C290 230 330 200 376 192', 12) + HX.svg + tube('M392 724 C400 760 430 780 470 786', 12) + sheetSvg
-      + tube('M1450 280 C1500 290 1510 390 1450 400', 12) + tube('M930 400 C880 410 880 510 930 520', 12) + tube('M1450 520 C1500 530 1510 630 1450 640', 12)),
-    txt('α-helix', 380, 150, 40, HELIX.front, { align: 'center', bold: true }),
-    txt('β-pleated sheet', 1190, 200, 40, '#c58a00', { align: 'center', bold: true }),
-    txt('The backbone coils\ninto a spiral', 490, 330, 22, '#3b4252'),
-    txt('Strands lie side by side;\nthe sheet zig-zags (pleats)', 1190, 730, 22, '#3b4252', { align: 'center' }),
-    txt('Both are held together by hydrogen bonds between backbone atoms (C=O and N–H), not by the R groups.', 800, 846, 23, 'ink', { align: 'center', bold: true }),
+    ...ssTabsStatic,
+    { type: 'rect', x: 60, y: 200, w: 840, h: 566, color: '#e3e6ec', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    { type: 'rect', x: 940, y: 200, w: 600, h: 566, color: '#e3e6ec', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    txt('Choose a type of secondary structure above', 800, 470, 34, '#8a8f98', { align: 'center', bold: true, hideDuring: SS.map((s) => s.id) }),
+    ssLegend, ...ssLegendText,
+    { type: 'rect', x: 60, y: 836, w: 1480, h: 50, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('Secondary structure = hydrogen bonds between BACKBONE atoms (C=O and N–H).  R groups are not involved: they matter in tertiary structure.', 800, 861, 20, '#1d4fb0', { align: 'center', bold: true }),
   ];
 
   // ====================================================================== slide 4: tertiary structure
@@ -388,9 +542,9 @@ Let's start at the very beginning, with primary structure.`,
       },
       // Slide 3: secondary structure.
       {
-        say: 'Secondary structure: the backbone folds into α-helices and β-pleated sheets, held by hydrogen bonds.',
+        say: 'Secondary structure comes from hydrogen bonds between backbone atoms: α-helices, β-sheets and random coils. The R groups are not involved.',
         clear: true,
-        actions: secondaryActions,
+        actions: ssActions,
         items: secondaryItems,
       },
       // Slide 4: tertiary structure.
