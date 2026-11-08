@@ -623,18 +623,18 @@
         const cur = liveValue(item.id, -1, t);
         const idle = cur < 0;
         const wk = item.wave;
-        const wave = (tau) => {
-          if (tau <= wk[0][0]) return wk[0][1];
-          for (let i = 1; i < wk.length; i++) {
-            if (tau <= wk[i][0]) {
-              const [t0, v0] = wk[i - 1], [t1, v1] = wk[i];
+        const wave = (tau, keys = wk) => {
+          if (tau <= keys[0][0]) return keys[0][1];
+          for (let i = 1; i < keys.length; i++) {
+            if (tau <= keys[i][0]) {
+              const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
               return v0 + (v1 - v0) * easeInOut(clamp((tau - t0) / (t1 - t0)));
             }
           }
-          return wk[wk.length - 1][1];
+          return keys[keys.length - 1][1];
         };
         const sites = item.sites;
-        const vSite = (i) => (idle ? wk[0][1] : wave(cur - sites[i].t));
+        const vSite = (i) => (idle ? wk[0][1] : wave(cur - sites[i].t, sites[i].wave || wk)); // a site may have its own waveform
         const vAtX = (x) => {
           if (x <= sites[0].x) return vSite(0);
           for (let i = 1; i < sites.length; i++) {
@@ -707,6 +707,7 @@
         // --- channels and ions at each site ---
         const ay = item.axonY, ar = item.axonR;
         sites.forEach((s, i) => {
+          if (s.hidden) return; // a site that only shapes the graph
           const tau = idle ? -99 : cur - s.t;
           const v = vSite(i);
           // phases come from the waveform: rising (Na+ open) until the peak, falling (K+ open) until the low point

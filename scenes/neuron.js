@@ -734,7 +734,7 @@
   const inputs = {
     E1: { at: [228, 145], dir: norm([-0.35, -1]), st: EXC },
     E2: { at: [332, 125], dir: norm([0.25, -1]), st: EXC },
-    I: { at: [403, 352], dir: norm([0.3, -1]), st: INH },   // base of an upper dendrite, next to the hillock
+    I: { at: [497, 503], dir: norm([0.35, 1]), st: INH },   // just under the axon hillock, coming from below
   };
   for (const s of Object.values(inputs)) {
     const p = S4(s.at);
@@ -758,7 +758,7 @@
   const routes = {
     E1: [[228, 145], [230, 190], [250, 225], [255, 280], [300, 330], [340, 400], [380, 470], HILLOCK],
     E2: [[332, 125], [345, 175], [360, 210], [390, 250], [410, 310], [400, 380], [380, 470], HILLOCK],
-    I: [[403, 352], [400, 390], [420, 440], HILLOCK],
+    I: [[497, 503], [490, 488], HILLOCK],
   };
   const hillockPt = S4(HILLOCK);
 
@@ -815,12 +815,12 @@
     { type: 'svg', svg: terminalsSvg },
     // the trigger zone
     { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: AP, width: 3, dashed: true, rough: false },
-    ...label('Axon hillock\n(adds up all the inputs)', 640, 640, [600, 612], [hillockPt[0] + 20, hillockPt[1] + 30], 'center', 28),
+    ...label('Axon hillock\n(adds up all the inputs)', 640, 290, [600, 340], [hillockPt[0] + 12, hillockPt[1] - 30], 'center', 28),
     ...Object.entries(inputs).map(([name, s]) => ({
       type: 'text', x: s.c[0] + (s.dir[0] < 0 ? -36 : 36), y: s.c[1], text: name,
       size: 26, font: 'sans', bold: true, color: s.st.edge, align: s.dir[0] < 0 ? 'right' : 'left',
     })),
-    { type: 'text', x: 450, y: 250, text: 'Inhibitory synapse,\nright next to the\naxon hillock', size: 24, font: 'sans', color: INH.edge },
+    { type: 'text', x: 520, y: 640, text: 'Inhibitory synapse,\nright next to the\naxon hillock', size: 24, font: 'sans', color: INH.edge },
     {
       type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
       title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
@@ -935,9 +935,12 @@
   // 30 px every 0.2 s. Through the myelin: 200 px node to node in 0.35 s (~4x faster).
   const STEP6 = 0.2, JUMP6 = 0.35;
   const SITES6 = [];
-  [180, 210, 240, 270, 300].forEach((x, i) => SITES6.push({ x, t: 0.4 + i * STEP6 }));
+  const T0_6 = 1.3; // the hillock spends the first 1.3 s reaching threshold
+  [180, 210, 240, 270, 300].forEach((x, i) => SITES6.push({ x, t: T0_6 + i * STEP6 }));
+  SITES6[0].wave = [[-1.2, -70], [0, -55], [0.15, 30], [0.4, -80], [0.95, -70]]; // hillock: slow climb to threshold first
   NODES6.forEach((x) => SITES6.push({ x, t: SITES6[SITES6.length - 1].t + JUMP6, node: true }));
   [1100, 1130, 1160, 1190, 1220].forEach((x, i) => SITES6.push({ x, t: SITES6[SITES6.length - 1].t + (i ? STEP6 : JUMP6) }));
+  SITES6.push({ x: 1288, t: SITES6[SITES6.length - 1].t + STEP6, hidden: true }); // the terminal itself (no channels drawn)
   // The action potential at one spot: brief, so it shows as a bump that travels.
   const WAVE6 = [[-0.15, -70], [0, -55], [0.15, 30], [0.4, -80], [0.95, -70]];
   const TERM6 = { x: 1288, y: AY, r: 52 };
@@ -966,40 +969,38 @@
     ${SHEATHS6.map(([a, b]) => `<rect x="${a}" y="${AY - 38}" width="${b - a}" height="76" rx="34" fill="#f5e4b8" stroke="#a9802f" stroke-width="4"/>
       <path d="M${a + 26} ${AY - 26} H${b - 26} M${a + 26} ${AY + 26} H${b - 26}" stroke="#e2c98a" stroke-width="3" opacity="0.8"/>
       <path d="M${a + 26} ${AY - 31} H${b - 26}" stroke="#fffaf0" stroke-width="4" opacity="0.8"/>`).join('')}
-    <!-- dendrite of the next neuron -->
-    <path d="${taperD(DEND6)}" fill="${GREEN.outline}" stroke="${GREEN.outline}" stroke-width="6" stroke-linejoin="round"/>
-    <circle cx="${DEND6.p1[0]}" cy="${DEND6.p1[1]}" r="${DEND6.w1 / 2 + 3}" fill="${GREEN.outline}"/>
-    <path d="${taperD(DEND6)}" fill="url(#dend6)"/>
-    <circle cx="${DEND6.p1[0]}" cy="${DEND6.p1[1]}" r="${DEND6.w1 / 2}" fill="${GREEN.fill}"/>
   </g>
-  ${RECEPT6.map((y) => `<rect x="${DEND6.p1[0] - DEND6.w1 / 2 - 4}" y="${y - 3}" width="7" height="6" rx="2" fill="#1d5a2e"/>`).join('')}
 `);
   const NODE_T = (x) => SITES6.find((s) => s.x === x).t;
   const T_TERM = SITES6[SITES6.length - 1].t + 0.3;
+  const LAST6 = SITES6[SITES6.length - 1].t;
+  const STEPS6 = [
+    { from: 0, to: T0_6, x: 100, col: '#a07c00', name: 'Threshold reached', text: 'The axon hillock\nhits −55 mV' },
+    { from: T0_6, to: T0_6 + 0.6, x: 400, col: '#e0453a', name: 'Action potential fires', text: 'Na⁺ rushes in, then\nK⁺ flows back out' },
+    { from: T0_6 + 0.6, to: LAST6, x: 700, col: '#c46f00', name: 'Travels down the axon', text: 'Regenerates, jumping\nnode to node' },
+    { from: LAST6, to: LAST6 + 2.2, x: 1000, col: '#5e2f78', name: 'Reaches the terminal', text: 'Ready to release\nneurotransmitters' },
+  ];
+  const BOX6 = { y: 742, w: 280, h: 112 };
   const propItems6 = [
-    { type: 'value', id: 'ap6t', from: 0, to: 9.5, at: 0, duration: 9.5, linear: true },
+    { type: 'value', id: 'ap6t', from: 0, to: LAST6 + 2.4, at: 0, duration: LAST6 + 2.4, linear: true },
+    // the hillock climbing to threshold
+    { type: 'pulse', x: 150, y: AY, r: 40, color: '#f5c518', speed: 0.8, at: 0.1, until: T0_6 - 0.1 },
     // the fast jump inside the myelinated stretch, node to node
     ...[[300, 500], [500, 700], [700, 900], [900, 1100]].map(([a, b]) => ({
       type: 'mover', once: true, vanish: true, r: 7, color: '#ffb21e', path: [[a, AY], [b, AY]],
       duration: NODE_T(b) - NODE_T(a), at: NODE_T(a),
     })),
-    { type: 'flash', x: TERM6.x, y: TERM6.y, r: 70, color: AP, duration: 0.7, at: T_TERM },
-    // vesicles fuse and release neurotransmitters, which bind the next dendrite
-    ...FUSE6.map(([vi, to], k) => ({ type: 'vesicle', fuse: true, path: [VES6[vi], to], r: 10, duration: 1.2, at: T_TERM + 0.2 + k * 0.15 })),
-    ...FUSE6.flatMap(([, [fx, fy]], k) => [0, 1].map((n) => {
-      const ry = RECEPT6[(k + n) % RECEPT6.length];
-      return {
-        type: 'mover', once: true, r: 3.5, color: '#f08c1a', smooth: true,
-        path: [[fx + 8, fy], [fx + 22, (fy + ry) / 2 + (n ? 5 : -5)], [DEND6.p1[0] - DEND6.w1 / 2 - 8, ry]],
-        duration: 0.9, at: T_TERM + 0.95 + k * 0.15 + n * 0.1,
-      };
+    // it arrives: the terminal lights up, its vesicles ready to go
+    { type: 'flash', x: TERM6.x, y: TERM6.y, r: 80, color: AP, duration: 0.8, at: LAST6 + 0.15 },
+    { type: 'pulse', x: TERM6.x, y: TERM6.y, r: 60, color: '#8a4fd8', speed: 1.2, at: LAST6 + 0.5, until: 1.7 },
+    // highlight the current step
+    ...STEPS6.map((st) => ({
+      type: 'rect', x: st.x, y: BOX6.y, w: BOX6.w, h: BOX6.h, color: st.col, width: 5, fill: st.col, fillOpacity: 0.12,
+      rough: false, duration: 0.2, at: st.from, until: st.to - st.from,
     })),
-    { type: 'flash', x: DEND6.p1[0] + 10, y: AY, r: 40, color: '#2e9e5b', duration: 0.7, at: T_TERM + 2.0 },
-    { type: 'pulse', x: DEND6.p1[0] + 10, y: AY, r: 30, color: '#2e9e5b', speed: 1.4, at: T_TERM + 2.0 },
-    { type: 'mover', once: true, vanish: true, r: 8, color: '#2e9e5b', path: [[DEND6.p1[0] + 10, AY], [1640, AY]], duration: 1.6, at: T_TERM + 2.1 },
   ];
   const propItems = [
-    title('The action potential travels'),
+    title('Sending a signal'),
     { type: 'svg', svg: propSvg },
     {
       type: 'apwave', id: 'ap6t', gx0: 150, gx1: 1340, gy: 170, gh: 250, axonY: AY, axonR: AR,
@@ -1007,17 +1008,25 @@
       naStyle: { fill: '#f8cf8f', edge: '#a8640a', dot: '#f0a12e' },
       kStyle: { fill: '#c3b3f2', edge: '#47309a', dot: '#7b5cd6' },
     },
-    ...VES6.map(([x, y], vi) => ({ type: 'vesicle', x, y, r: 10, hideDuring: FUSE6.some(([fi]) => fi === vi) ? 'prop' : undefined })),
-    ...label('Axon hillock', 195, 700, [160, 678], [150, AY + 22], 'center', 26),
-    ...label('Unmyelinated: regenerates\nstep by step (slow)', 330, 790, [322, 790], [240, AY + 30], 'left', 22),
+    ...VES6.map(([x, y]) => ({ type: 'vesicle', x, y, r: 10 })),
+    ...label('Axon hillock', 210, 690, [175, 670], [150, AY + 22], 'center', 26),
     ...label('Myelin sheath', 600, 690, [600, 668], [600, AY + 38], 'center', 26),
-    ...label('Node of Ranvier: the signal\njumps node to node (fast)', 760, 790, [752, 790], [700, AY + 30], 'left', 22),
+    ...label('Node of Ranvier', 860, 690, [800, 668], [700, AY + 30], 'center', 26),
     ...label('Axon terminal', 1290, 690, [1290, 668], [1290, AY + 52], 'center', 26),
-    ...label('Dendrite of the\nnext neuron', 1500, 690, [1500, 664], [1500, AY + 22], 'center', 24),
-    { type: 'circle', x: 1180, y: 810, r: 9, color: '#a8640a', fill: '#f8cf8f', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1198, y: 810, text: 'Na⁺ channel (top)', size: 20, font: 'sans', color: 'ink' },
-    { type: 'circle', x: 1180, y: 844, r: 9, color: '#47309a', fill: '#c3b3f2', fillOpacity: 1, width: 2, rough: false },
-    { type: 'text', x: 1198, y: 844, text: 'K⁺ channel (bottom)', size: 20, font: 'sans', color: 'ink' },
+    // key for the channels
+    { type: 'circle', x: 1385, y: 560, r: 9, color: '#a8640a', fill: '#f8cf8f', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1403, y: 560, text: 'Na⁺ channel', size: 20, font: 'sans', color: 'ink' },
+    { type: 'circle', x: 1385, y: 594, r: 9, color: '#47309a', fill: '#c3b3f2', fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1403, y: 594, text: 'K⁺ channel', size: 20, font: 'sans', color: 'ink' },
+    // the four steps
+    ...STEPS6.flatMap((st, i) => [
+      { type: 'rect', x: st.x, y: BOX6.y, w: BOX6.w, h: BOX6.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
+      { type: 'circle', x: st.x + 26, y: BOX6.y + 30, r: 14, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: st.x + 26, y: BOX6.y + 31, text: String(i + 1), size: 17, font: 'sans', bold: true, color: 'white', align: 'center' },
+      { type: 'text', x: st.x + 48, y: BOX6.y + 31, text: st.name, size: 19, font: 'sans', bold: true, color: st.col },
+      { type: 'text', x: st.x + 16, y: BOX6.y + 70, text: st.text, size: 19, font: 'sans', color: '#3b4252' },
+      ...(i < 3 ? [{ type: 'arrow', from: [st.x + BOX6.w + 2, BOX6.y + BOX6.h / 2], to: [st.x + BOX6.w + 18, BOX6.y + BOX6.h / 2], color: '#8a8f98', width: 3, rough: false }] : []),
+    ]),
   ];
 
   // ---------- slide 7: what happens at the synapse when the action potential arrives ----------
@@ -1293,18 +1302,11 @@
         actions: sumActions,
         items: sumItems,
       },
-      // Slide 5: the action potential at the axon hillock, graph in step with the channels.
+      // Slide 4: sending a signal - threshold at the hillock, the action potential travels to the terminal.
       {
-        say: 'At threshold, voltage-gated Na⁺ channels open (rise), then inactivate while K⁺ channels open (fall).',
+        say: 'Once the axon hillock reaches threshold, an action potential fires and races down the axon to the axon terminal.',
         clear: true,
-        actions: [{ id: 'ap', label: 'Fire an action potential', items: apTimeline }],
-        items: apItems,
-      },
-      // Slide 6: the action potential travels down the axon (saltatory conduction) and is passed on.
-      {
-        say: 'The action potential regenerates along the axon, jumping node to node through the myelin, then triggers release at the terminal.',
-        clear: true,
-        actions: [{ id: 'prop', label: 'Send the action potential', items: propItems6 }],
+        actions: [{ id: 'prop', label: 'Send the signal', items: propItems6 }],
         items: propItems,
       },
       // Slide 7: at the synapse - Ca2+ entry, vesicle fusion, neurotransmitters crossing the cleft.
