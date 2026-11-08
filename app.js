@@ -1388,6 +1388,7 @@
     size: parseFloat(lsGet('wb-tp-size')) || 30,
     w: parseFloat(lsGet('wb-tp-w')) || 0,   // window size you dragged to (0 = default)
     h: parseFloat(lsGet('wb-tp-h')) || 0,
+    bg: Number.isFinite(parseFloat(lsGet('wb-tp-bg'))) ? parseFloat(lsGet('wb-tp-bg')) : 0.8,   // background opacity (text stays solid)
     spl: parseFloat(lsGet('wb-tp-spl')) || 4,   // seconds per line of text
   };
   const tpKeys = () => {
@@ -1466,8 +1467,16 @@
     if (tp.w) tp.box.style.setProperty('--tp-w', tp.w + 'px'); else tp.box.style.removeProperty('--tp-w');
     if (tp.h) tp.box.style.setProperty('--tp-h', tp.h + 'px'); else tp.box.style.removeProperty('--tp-h');
   }
+  function tpApplyBg() {
+    tp.box.style.setProperty('--tp-bg', String(tp.bg));
+    document.getElementById('tpBgVal').textContent = `${Math.round(tp.bg * 100)}%`;
+  }
   if (tp.box) {
     tpApplySize();
+    tpApplyBg();
+    const bgStep = (d) => { tp.bg = Math.round(Math.max(0, Math.min(1, tp.bg + d)) * 10) / 10; lsSet('wb-tp-bg', String(tp.bg)); tpApplyBg(); };
+    document.getElementById('tpBgLess').addEventListener('click', () => bgStep(-0.1));
+    document.getElementById('tpBgMore').addEventListener('click', () => bgStep(0.1));
     // Drag the corner grip to resize the window (it stays centred); double-click to reset.
     const grip = document.getElementById('tpResize');
     let drag = null;

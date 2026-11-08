@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611082140" />
+  <link rel="stylesheet" href="style.css?v=202611082160" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -59,6 +59,9 @@
         <span id="tpTime" class="tp-time" title="How long the whole script takes at this speed"></span>
         <button id="tpSmaller" title="Smaller text">A−</button>
         <button id="tpBigger" title="Bigger text">A+</button>
+        <button id="tpBgLess" title="Make the background more see-through (the text stays solid)">◐ −</button>
+        <button id="tpBgMore" title="Make the background more solid (the text stays solid)">◐ +</button>
+        <span id="tpBgVal" class="tp-time" title="Background opacity"></span>
         <button id="tpEdit" title="Edit this slide's script">✎ Edit</button>
         <button id="tpClose" title="Turn the teleprompter off for this slide (G)">✕</button>
         <span class="tp-hint">Only you see this. It is not in the video.</span>
@@ -158,10 +161,10 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611082140"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611082140"></script>
-  <script src="app.js?v=202611082140"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611082140"></script>
-  <script src="recorder.js?v=202611082140"></script>
+  <script src="scenes/neuron.js?v=202611082160"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611082160"></script>
+  <script src="app.js?v=202611082160"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611082160"></script>
+  <script src="recorder.js?v=202611082160"></script>
 </body>
 </html>

@@ -428,11 +428,11 @@ button, select {
 .prompter {
   position: absolute; left: 50%; transform: translateX(-50%); width: var(--tp-w, min(880px, calc(100% - 24px))); max-width: calc(100% - 24px); top: 12px; z-index: 6;
   display: flex; flex-direction: column; overflow: hidden;
-  border-radius: 12px; background: rgba(16, 18, 28, 0.82); color: #fff;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28); pointer-events: none;
+  border-radius: 12px; background: rgba(16, 18, 28, var(--tp-bg, 0.8)); color: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, calc(var(--tp-bg, 0.8) * 0.35)); pointer-events: none;
 }
 .prompter[hidden] { display: none; }
-.tp-bar { pointer-events: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); font-size: 13px; }
+.tp-bar { pointer-events: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 6px 8px; background: rgba(20, 22, 32, 0.92); font-size: 13px; }
 .tp-bar button, .tp-bar select { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 8px; padding: 3px 9px; font-size: 13px; }
 .tp-bar button:hover { background: rgba(255, 255, 255, 0.26); }
 .tp-bar select option { color: #1f2430; }
@@ -442,7 +442,7 @@ button, select {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 70%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 70%, transparent 100%);
 }
-.tp-text { position: absolute; left: 0; right: 0; padding: 0 28px; font-size: var(--tp-size, 30px); line-height: 1.5; font-weight: 600; white-space: pre-wrap; will-change: transform; }
+.tp-text { position: absolute; left: 0; right: 0; padding: 0 28px; font-size: var(--tp-size, 30px); line-height: 1.5; font-weight: 600; white-space: pre-wrap; will-change: transform; text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 0.85); }
 .tp-cue { color: #ffc857; font-style: italic; font-weight: 500; }
 .tp-editor { pointer-events: auto; width: 100%; box-sizing: border-box; height: calc(var(--tp-size, 30px) * 1.5 * 4); resize: none; border: 0; padding: 10px 16px; height: var(--tp-h, calc(var(--tp-size, 30px) * 1.5 * 4)); font: 500 17px/1.5 inherit; background: #fffdf8; color: #1f2430; }
 .tp-time { font-size: 12px; opacity: 0.8; white-space: nowrap; }
