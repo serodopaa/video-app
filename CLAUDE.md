@@ -21,6 +21,14 @@ dependencies. Open `index.html` in a browser.
 Every local `<link>`/`<script>` in `index.html` has a `?v=` stamp so browsers fetch
 updates. **Bump it (all of them) whenever any file changes.**
 
+## Topics
+Every scene in the menu is a **topic**, and topics are isolated: ink (`wb-ink-<id>`), notes
+(`wb-notes-<id>-<n>`) and recorded clips (IndexedDB `clips`, field `scene` = scene id) are all
+keyed by the scene id. Users can make quick empty topics with ➕ (saved in localStorage
+`wb-topics`, deletable with 🗑️); topics Claude builds are scene files in `scenes/` (e.g.
+`epsp-ipsp.js`) and can't be deleted from the UI. `app.js` fires `wb-scene` on every topic
+switch, and `recorder.js` reloads the timeline from it.
+
 ## Scene format
 The board is **1600 × 900** (x right, y down). Scenes register themselves:
 
