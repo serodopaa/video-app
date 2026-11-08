@@ -170,17 +170,19 @@
   // A human head in profile (facing left, like the brain pictures, so we see the left side of the head,
   // with the brain inside it). The eye and arrow show where you are looking from for each view.
   const HEAD = { x: 1120, y: 540, s: 0.9 };
-  const SKIN = '#f3d3b8', HLINE = '#6b4a3a';
+  const SKIN = '#f5d5bc', HLINE = '#6b4a3a';
   const headArt = () => `<g transform="translate(${HEAD.x} ${HEAD.y}) scale(${HEAD.s})">
-    <path d="M150 14 C96 14 58 56 56 108 L52 122 C46 140 30 158 20 174 C16 184 24 190 38 188 L46 192 C40 200 46 206 50 209 C44 215 50 219 53 223 C49 234 55 246 64 254 C80 264 102 268 120 262 L126 296 L128 306 L218 306 L208 262 C228 238 242 192 240 140 C238 70 202 14 150 14 Z" fill="${SKIN}" stroke="${HLINE}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M44 190 C50 196 62 198 74 196" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M53 224 C62 228 72 227 80 222" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M64 122 C72 116 82 116 90 122" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/><circle cx="78" cy="130" r="4.5" fill="${HLINE}"/>
-    <ellipse cx="196" cy="184" rx="12" ry="24" fill="#efc6a8" stroke="${HLINE}" stroke-width="3.5"/><path d="M194 166 C201 172 201 192 194 200" fill="none" stroke="${HLINE}" stroke-width="2.5"/>
-    <g transform="translate(78 36) scale(0.27)" opacity="0.93">${A.lateral('hd')}</g></g>`;
+    <path d="M128 322 L126 262 C124 250 120 242 112 240 C96 244 78 244 66 238 C56 234 50 226 52 218 C54 212 58 208 56 202 C52 200 52 194 56 190 C52 188 52 183 55 180 C50 178 46 174 42 170 C36 170 30 164 33 158 C38 150 52 134 56 124 C54 116 54 106 56 96 C60 52 96 14 148 14 C206 14 244 62 244 120 C244 168 232 200 216 220 C212 232 214 244 216 256 L222 322 Z" fill="${SKIN}" stroke="${HLINE}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M60 94 C66 50 100 14 148 14 C206 14 244 62 244 120 C244 150 238 172 230 188 C228 160 222 132 206 106 C190 80 152 62 112 66 C88 70 70 80 60 94 Z" fill="#7a5644" stroke="${HLINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M55 191 C61 193 67 193 72 191" fill="none" stroke="${HLINE}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M64 110 C72 104 84 104 92 109" fill="none" stroke="${HLINE}" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse cx="78" cy="122" rx="6" ry="4.5" fill="#fff" stroke="${HLINE}" stroke-width="2"/><circle cx="76" cy="122" r="3" fill="#3b4252"/>
+    <path d="M56 124 C58 140 56 150 50 158" fill="none" stroke="${HLINE}" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <path d="M164 122 C154 124 150 142 154 156 C158 170 172 172 176 158 C180 146 176 126 164 122 Z" fill="#efc6a8" stroke="${HLINE}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M165 132 C158 136 158 148 164 156" fill="none" stroke="${HLINE}" stroke-width="2.5" stroke-linecap="round"/></g>`;
   // eye position and where its arrow points (board coordinates), per view
   const LOOK = {
-    lateral: { eye: [1368, 790], to: [1306, 722], text: 'Looking at the left side of the head' },
+    lateral: { eye: [1376, 766], to: [1296, 700], text: 'Looking at the left side of the head' },
     medial: { eye: [1404, 584], to: [1282, 642], dashed: true, text: 'Looking from the midline, after cutting the head in half' },
     superior: { eye: [1237, 520], to: [1252, 546], text: 'Looking down on the top of the head' },
     inferior: { eye: [1190, 838], to: [1192, 786], text: 'Looking up at the underside of the head' },
