@@ -337,6 +337,8 @@
     ];
   }
 
+  window.WB_LOCATOR = locatorInset; // shared with other scene files (e.g. epsp-ipsp.js)
+
   // ---------- slide 2: receiving (simple) ----------
   // An excitatory and an inhibitory axon terminal above one dendrite. Generic
   // + / − ions only: more + outside, more − inside. Each terminal has its own

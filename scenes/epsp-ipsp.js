@@ -6,7 +6,8 @@
   const title = (text) => ({ type: 'text', x: 800, y: 66, text, size: 56, font: 'sans', bold: true, align: 'center', color: 'ink' });
 
   const REST = -70;
-  const PEAK = { glu: -60, gaba: -80 }; // EPSP is 10 mV up, IPSP 10 mV down
+  const PEAK = { glu: -60, gaba: -74 }; // EPSP 10 mV up; IPSP down, but never past E(Cl⁻) = −75
+  const E_ION = { na: 60, cl: -75 }; // equilibrium potentials (same values as the neuron explainer)
   const ION_TEXT = { na: '#c46f00', cl: '#1d6a3c' };
   const CH_STYLE = {
     na: { fill: '#f8cf8f', edge: '#a8640a' },
@@ -113,15 +114,23 @@
     ]),
     { type: 'text', x: 80, y: 838, text: 'Inside the dendrite of the receiving neuron', size: 24, font: 'sans', color: '#6b3c87' },
     {
-      type: 'meter', id: 'psp', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 330, min: -100, max: 0,
+      type: 'meter', id: 'psp', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 220, min: -90, max: -40,
       title: 'Membrane potential', upText: 'EPSP: depolarized (excitatory)', downText: 'IPSP: hyperpolarized (inhibitory)',
     },
+    { type: 'text', x: 1540, y: 556, text: 'Equilibrium potential', size: 17, font: 'sans', color: '#5b6270', align: 'right' },
     ...[['ion', 'na', 'Sodium (Na⁺)'], ['ion', 'cl', 'Chloride (Cl⁻)'], ['nt', SYN.glu.nt, 'Glutamate'], ['nt', SYN.gaba.nt, 'GABA']].flatMap(([kind, v, name], i) => [
       kind === 'ion'
-        ? { type: 'ion', ion: v, x: 1222, y: 664 + i * 40, r: 15 }
-        : { type: 'circle', x: 1222, y: 664 + i * 40, r: 8, color: v, fill: v, fillOpacity: 1, width: 2, rough: false },
-      { type: 'text', x: 1248, y: 664 + i * 40, text: name, size: 21, font: 'sans', color: kind === 'ion' ? ION_TEXT[v] : 'ink' },
+        ? { type: 'ion', ion: v, x: 1222, y: 584 + i * 34, r: 15 }
+        : { type: 'circle', x: 1222, y: 584 + i * 34, r: 8, color: v, fill: v, fillOpacity: 1, width: 2, rough: false },
+      { type: 'text', x: 1248, y: 584 + i * 34, text: name, size: 21, font: 'sans', color: kind === 'ion' ? ION_TEXT[v] : 'ink' },
+      ...(kind === 'ion' ? [{
+        type: 'text', x: 1540, y: 584 + i * 34, size: 21, font: 'sans', bold: true, align: 'right', color: ION_TEXT[v],
+        text: `${E_ION[v] > 0 ? '+' : '−'}${Math.abs(E_ION[v])} mV`,
+      }] : []),
     ]),
+    { type: 'line', from: [1210, 710], to: [1540, 710], color: '#e3e6ec', width: 2, rough: false },
+    // "Where we are": hover for a second to see the whole neuron with the dendrite spot circled
+    ...(window.WB_LOCATOR ? window.WB_LOCATOR({ x: 1212, y: 728, w: 330, h: 120, spot: [66, 442], terminal: true }) : []),
   ];
 
   (window.WB_SCENES = window.WB_SCENES || []).push({
