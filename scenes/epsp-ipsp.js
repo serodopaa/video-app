@@ -133,6 +133,62 @@
     ...(window.WB_LOCATOR ? window.WB_LOCATOR({ x: 1212, y: 728, w: 330, h: 120, spot: [66, 442], terminal: true }) : []),
   ];
 
+  // ---------- slide 2: spatial summation ----------
+  // A zoomed-out neuron with three input neurons: two excitatory ones far out on the
+  // dendrites and an inhibitory one at the base, right next to the axon hillock.
+  // The neuron drawing and signal animations come from neuron.js (window.WB_SUMMATION).
+  const slide2 = (() => {
+    const W = window.WB_SUMMATION;
+    if (!W) return null;
+    const { fire, actionPotential, hillockPt, inputs, INH, EXC, SPARK, label } = W;
+    const AXH = 'axh'; // live value actionPotential() drives
+    const spark = (t, r = 40) => ({ type: 'flash', x: hillockPt[0], y: hillockPt[1], r, color: SPARK, duration: 0.5, at: t });
+    const verdict = (text, color, t) => ({ type: 'text', x: 600, y: 400, text, size: 26, font: 'sans', bold: true, color, anim: 'pop', duration: 0.4, at: t, until: t + 1.6 });
+    const v = (from, to, at, duration) => ({ type: 'value', id: AXH, from, to, at, duration });
+    const actions = [
+      { // one excitatory input: a small bump, nowhere near threshold
+        id: 'one', label: 'Fire one excitatory (E1)',
+        items: [...fire('E1', 0), spark(1.75, 26), v(REST, -62, 1.6, 0.5), v(-62, REST, 2.5, 1.8),
+          verdict('Not enough: stays below threshold', '#5b6270', 2.0)],
+      },
+      { // both excitatory inputs add up and reach threshold
+        id: 'two', label: 'Fire both excitatory (E1 + E2)',
+        items: [...fire('E1', 0), ...fire('E2', 0), spark(1.75), v(REST, -50, 1.6, 0.45), ...actionPotential(2.05)],
+      },
+      { // the inhibitory input pulls the sum back below threshold
+        id: 'all', label: 'Fire all three (E1 + E2 + I)',
+        items: [...fire('E1', 0), ...fire('E2', 0), ...fire('I', 0.75, { travel: 0.6 }),
+          { type: 'pulse', x: inputs.I.p[0], y: inputs.I.p[1], r: 26, color: INH.nt, speed: 1.2, at: 1.0, until: 2.4 },
+          spark(1.75), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 52, color: INH.nt, duration: 0.8, at: 1.9 },
+          v(REST, -58, 1.6, 0.35), v(-58, -66, 1.95, 0.5), v(-66, REST, 2.45, 1.8),
+          verdict('Blocked: no action potential', INH.edge, 2.0)],
+      },
+    ];
+    const items = [
+      title('Spatial summation'),
+      { type: 'svg', svg: W.svgDoc(`<g transform="translate(${W.TX4} ${W.TY4}) scale(${W.K4})">${W.neuronMarkup(W.PURPLE, 'sum2', { releasing: false })}</g>`) },
+      { type: 'svg', svg: W.terminalsSvg },
+      { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: W.AP, width: 3, dashed: true, rough: false },
+      ...label('Axon hillock\n(adds up all the inputs)', 640, 290, [600, 340], [hillockPt[0] + 12, hillockPt[1] - 30], 'center', 28),
+      ...Object.entries(inputs).map(([name, s]) => ({
+        type: 'text', x: s.c[0] + (s.dir[0] < 0 ? -36 : 36), y: s.c[1], text: name,
+        size: 26, font: 'sans', bold: true, color: s.st.edge, align: s.dir[0] < 0 ? 'right' : 'left',
+      })),
+      { type: 'text', x: 520, y: 640, text: 'Inhibitory synapse,\nright next to the\naxon hillock', size: 24, font: 'sans', color: INH.edge },
+      {
+        type: 'meter', id: AXH, value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
+        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
+        fireText: 'Action potential fired!',
+      },
+      { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 24, font: 'sans', color: '#3b4252', align: 'center' },
+      { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 790, text: 'E1, E2: excitatory', size: 21, font: 'sans', color: 'ink' },
+      { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
+    ];
+    return { actions, items };
+  })();
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'epsp-ipsp',
     title: '⚡ EPSP and IPSP',
@@ -148,6 +204,13 @@
         ],
         items: slide1,
       },
+      // Slide 2: spatial summation - three inputs add up (or cancel) at the axon hillock.
+      ...(slide2 ? [{
+        say: 'Inputs add up at the axon hillock: one excitatory input is not enough, two reach threshold, and the nearby inhibitory input blocks it.',
+        clear: true,
+        actions: slide2.actions,
+        items: slide2.items,
+      }] : []),
     ],
   });
 })();

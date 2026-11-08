@@ -835,6 +835,9 @@
     { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
   ];
 
+  // Shared with other scene files (epsp-ipsp.js builds its own spatial-summation slide from these).
+  window.WB_SUMMATION = { neuronMarkup, PURPLE, svgDoc, label, terminalsSvg, inputs, fire, actionPotential, bump, hillockPt, K4, TX4, TY4, SPARK, AP, EXC, INH, REST };
+
   // ---------- slide 5: the action potential at the axon hillock ----------
   // Membrane close-up with voltage-gated Na+ channels (activation gate + an
   // inactivation ball) and a voltage-gated K+ channel, next to an action
