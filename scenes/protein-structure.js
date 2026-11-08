@@ -446,6 +446,94 @@
     txt('Secondary structure = hydrogen bonds between BACKBONE atoms (C=O and N–H).  R groups are not involved: they matter in tertiary structure.', 800, 861, 20, '#1d4fb0', { align: 'center', bold: true }),
   ];
 
+  // ====================================================================== secondary vs tertiary (preview slide)
+  // Two panels side by side. Left: two stretches of backbone, bonded backbone-to-backbone (secondary).
+  // Right: two parts of a folded chain, bonded R-group-to-R-group (tertiary). Tabs highlight one at a time.
+  const SV = [
+    { id: 'sv-sec', name: 'Secondary: backbone ↔ backbone', color: '#d6336c' },
+    { id: 'sv-ter', name: 'Tertiary: R group ↔ R group', color: '#2f6fde' },
+  ];
+  const SV_W = 560, SV_GAP = 24, SV_X = [228, 812], SV_Y = 112, SV_H = 58;
+  const svTabsStatic = SV.flatMap((t, i) => [
+    { type: 'rect', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, color: '#c9cfda', fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 26, '#3b4252', { align: 'center', bold: true }),
+    { type: 'hotspot', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, action: t.id },
+  ]);
+  const svTabOn = (t, i) => [
+    { type: 'rect', x: SV_X[i], y: SV_Y, w: SV_W, h: SV_H, color: t.color, fill: t.color, fillOpacity: 1, width: 3, rough: false },
+    txt(t.name, SV_X[i] + SV_W / 2, SV_Y + SV_H / 2, 26, '#ffffff', { align: 'center', bold: true }),
+  ];
+  // left panel: two short strands of backbone atoms (R groups faded)
+  const svStrands = [0, 1].map((st) => {
+    const out = [];
+    for (let j = 0; j < 9; j++) {
+      const r = Math.floor(j / 3), m = j % 3, down = (r + st + 1) % 2 === 1, dir = down ? 1 : -1;
+      out.push({ x: 130 + j * 66, y: st ? 610 : 440, k: (st ? ['C', 'CA', 'N'] : ['N', 'CA', 'C'])[m] , o: [0, 40 * dir], h: [0, 34 * dir], r: [0, (st ? 1 : -1) * 44], _down: down });
+    }
+    return out;
+  });
+  const svBonds = [];
+  svStrands[0].forEach((a, j) => {
+    const b = svStrands[1][j];
+    if (!a._down || b._down || a.k === 'CA') return;
+    const pt = (q) => (q.k === 'C' ? [q.x + q.o[0], q.y + q.o[1]] : [q.x + q.h[0], q.y + q.h[1]]);
+    svBonds.push([pt(a), pt(b)]);
+  });
+  // right panel: two arms of a folded chain whose R groups meet
+  const SVR = { a: 900, b: 1250, ys: [395, 485, 575, 665], l: 985, r: 1165 };
+  const svPairs = [
+    { y: 395, kinds: ['np', 'np'], names: ['', ''], label: 'Hydrophobic', color: '#a07c00' },
+    { y: 485, kinds: ['pos', 'neg'], names: ['+', '−'], label: 'Ionic bond', color: '#7b3fd0' },
+    { y: 575, kinds: ['np', 'np'], names: ['S', 'S'], label: 'Disulfide bridge', color: '#b38600' },
+    { y: 665, kinds: ['p', 'p'], names: ['', ''], label: 'Hydrogen bond', color: HB },
+  ];
+  const svRightArt = `<g opacity="0.5">${tube(`M${SVR.a} 720 L${SVR.a} 380 C${SVR.a} 300 ${SVR.b} 300 ${SVR.b} 380 L${SVR.b} 720`, 12)}</g>`
+    + svPairs.map((q) => `${ln(SVR.a, q.y, SVR.l, q.y, 5, '#9aa1ae')}${ln(SVR.b, q.y, SVR.r, q.y, 5, '#9aa1ae')}${bead(SVR.l, q.y, 24, q.kinds[0], q.names[0])}${bead(SVR.r, q.y, 24, q.kinds[1], q.names[1])}`).join('');
+  const svDim = (x) => ({ type: 'rect', x: x + 3, y: 208, w: 714, h: 554, color: '#ffffff', fill: '#ffffff', fillOpacity: 0.72, width: 1, rough: false });
+  const svPanels = [
+    { type: 'rect', x: 60, y: 205, w: 720, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    { type: 'rect', x: 820, y: 205, w: 720, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    txt('Secondary structure', 420, 238, 32, SV[0].color, { align: 'center', bold: true }),
+    txt('two stretches of BACKBONE', 420, 276, 22, '#5b6270', { align: 'center', bold: true }),
+    txt('Tertiary structure', 1180, 238, 32, SV[1].color, { align: 'center', bold: true }),
+    txt('two R GROUPS from far apart', 1180, 276, 22, '#5b6270', { align: 'center', bold: true }),
+    svgItem(svStrands.map((a) => backbone(a)).join('')),
+    svgItem(svRightArt),
+    txt('R groups (faded) stick out and are not involved', 420, 740, 20, '#8a7a45', { align: 'center', bold: true }),
+    txt('The backbone (faded) is not what bonds here', 1180, 730, 20, '#5b6270', { align: 'center', bold: true }),
+  ];
+  const svActions = [
+    {
+      id: 'sv-sec', label: 'Secondary', group: 'sv', stay: true, drawn: false,
+      items: [
+        ...svTabOn(SV[0], 0), svDim(820),
+        ...svBonds.map(([a, b], i) => hbLine(a, b, 0.5 + i * 0.25)),
+        txt('Hydrogen bonds between\nBACKBONE atoms (C=O and N–H)', 420, 690, 21, HB, { align: 'center', bold: true, at: 2.0, anim: 'fade', duration: 0.4 }),
+      ],
+    },
+    {
+      id: 'sv-ter', label: 'Tertiary', group: 'sv', stay: true, drawn: false,
+      items: [
+        ...svTabOn(SV[1], 1), svDim(60),
+        ...svPairs.flatMap((q, i) => {
+          const mid = (SVR.l + SVR.r) / 2, a = 0.5 + i * 0.7;
+          const link = i === 0 ? { type: 'circle', x: mid, y: q.y, rx: 150, ry: 30, color: q.color, width: 4, dashed: true, rough: false, at: a }
+            : { type: 'line', from: [SVR.l + 26, q.y], to: [SVR.r - 26, q.y], color: q.color, width: i === 2 ? 10 : 5, dashed: i === 3 || i === 1, rough: false, at: a };
+          return [link, txt(q.label, mid, q.y - (i === 0 ? 50 : 40), 19, q.color, { align: 'center', bold: true, at: a + 0.2, anim: 'fade', duration: 0.3 })];
+        }),
+      ],
+    },
+  ];
+  const secVsTerItems = [
+    title('Secondary vs tertiary'),
+    ...svTabsStatic,
+    ...svPanels,
+    txt('Click a type above to see what is interacting', 800, 192, 22, '#8a8f98', { align: 'center', bold: true, hideDuring: ['sv-sec', 'sv-ter'] }),
+    { type: 'rect', x: 60, y: 780, w: 1480, h: 100, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('Secondary = interactions between the BACKBONES of the amino acids', 800, 812, 27, SV[0].color, { align: 'center', bold: true }),
+    txt('Tertiary = interactions between the R GROUPS', 800, 856, 27, SV[1].color, { align: 'center', bold: true }),
+  ];
+
   // ====================================================================== slide 4: tertiary structure
   // A single chain folded into a compact shape: two helices, a three-strand sheet and loops,
   // with the R-group interactions that hold the fold together marked on it.
@@ -585,35 +673,42 @@ Let's start at the very beginning, with primary structure.`,
         actions: hookActions,
         items: hookItems,
       },
-      // Slide 2: primary structure.
+      // Slide 2: secondary vs tertiary (preview of the idea that trips people up).
+      {
+        say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
+        clear: true,
+        actions: svActions,
+        items: secVsTerItems,
+      },
+      // Slide 3: primary structure.
       {
         say: 'Primary structure is the sequence of amino acids, joined by peptide bonds.',
         clear: true,
         actions: pepActions,
         items: primaryItems,
       },
-      // Slide 3: secondary structure.
+      // Slide 4: secondary structure.
       {
         say: 'Secondary structure comes from hydrogen bonds between backbone atoms: α-helices, β-sheets and random coils. The R groups are not involved.',
         clear: true,
         actions: ssActions,
         items: secondaryItems,
       },
-      // Slide 4: tertiary structure.
+      // Slide 5: tertiary structure.
       {
         say: 'Tertiary structure: the whole chain folds into one 3-D shape, held by R-group interactions.',
         clear: true,
         actions: tertiaryActions,
         items: tertiaryItems,
       },
-      // Slide 5: quaternary structure.
+      // Slide 6: quaternary structure.
       {
         say: 'Quaternary structure: two or more folded chains fit together, like the four subunits of hemoglobin.',
         clear: true,
         actions: quaternaryActions,
         items: quaternaryItems,
       },
-      // Slide 6: review.
+      // Slide 7: review.
       {
         say: 'Primary, secondary, tertiary, quaternary: each level builds on the one before.',
         clear: true,
