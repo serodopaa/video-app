@@ -118,7 +118,7 @@
   const VIEW_INFO = {
     lateral: { ext: [28, 592, 22, 468], edges: ['Superior', 'Inferior', 'Anterior', 'Posterior'], cube: 'lateral',
       body: 'Seen from the side: the outer\nsurface of one hemisphere.\nShows the four lobes, the\ncerebellum and the brainstem.' },
-    medial: { ext: [28, 592, 22, 468], edges: ['Superior', 'Inferior', 'Anterior', 'Posterior'], cube: 'medial',
+    medial: { ext: [0, 600, 0, 470], edges: ['Superior', 'Inferior', 'Anterior', 'Posterior'], cube: 'medial',
       body: 'Seen from the midline, after a\nmidsagittal cut: the inner surface.\nShows the corpus callosum,\nthalamus, brainstem and cerebellum.' },
     superior: { ext: [108, 492, 20, 470], edges: ['Anterior', 'Posterior', 'Left', 'Right'], cube: 'superior',
       body: 'Seen from above (dorsal view).\nShows both hemispheres and the\nlongitudinal fissure between them.' },

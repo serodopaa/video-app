@@ -39,26 +39,13 @@
     <path d="${CER_LAT}" fill="none" stroke="${C.line}" stroke-width="4" stroke-linejoin="round"/>`;
 
   // ---------------------------------------------------------------- medial (midsagittal cut, anterior = left)
-  const CER_MED = 'M30 215 C28 130 110 45 230 32 C330 21 450 36 520 86 C576 126 592 200 570 250 C560 285 530 300 495 304 C455 314 410 324 372 334 L300 334 C260 334 216 322 186 302 C120 292 62 272 30 215 Z';
-  const medial = (id) => `<defs><clipPath id="c${id}"><path d="${CER_MED}"/></clipPath>${shade(id)}</defs>
-    <path d="M405 322 C440 308 520 310 548 332 C566 356 546 394 496 402 C440 410 402 386 398 354 Z" fill="${C.cerebellum}" stroke="${C.line}" stroke-width="3"/>
-    <path d="M424 350 C440 340 458 346 466 352 M440 372 C460 360 490 364 508 360 M434 392 C460 384 500 384 524 376 M470 352 C488 338 516 338 530 346 M452 360 L470 376 M482 356 L486 382 M508 366 L500 384" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
-    <path d="M296 244 C292 286 300 310 304 346 C308 396 316 442 330 468 L378 468 C372 430 364 390 362 346 C358 306 364 282 354 244 Z" fill="${C.stem}" stroke="${C.line}" stroke-width="3"/>
-    <ellipse cx="337" cy="372" rx="34" ry="24" fill="#dca0b8" stroke="${C.line}" stroke-width="2.5"/>
-    <path d="M356 332 C370 346 380 360 382 380" fill="none" stroke="${C.line}" stroke-width="2.5"/>
-    <g clip-path="url(#c${id})">
-      ${poly('M0 0 L330 0 C325 70 322 150 318 260 L186 302 L0 300 Z', C.frontal)}
-      ${poly('M330 0 L506 0 C494 80 470 150 440 260 L318 260 C322 150 325 70 330 0 Z', C.parietal)}
-      ${poly('M506 0 L600 0 L600 340 L420 340 L440 260 C470 150 494 80 506 0 Z', C.occipital)}
-      ${poly('M186 302 L318 260 L440 260 L420 340 L300 340 L186 340 Z', C.temporal)}
-      <rect width="600" height="400" fill="url(#sh${id})"/>
-      ${stroke('M70 215 C130 150 220 118 320 110 C400 108 470 140 520 190', 3)}${stroke('M505 100 C492 160 470 220 440 262', 3.5)}
-    </g>
-    <path d="M142 214 C140 160 190 118 282 110 C372 104 446 128 474 192 C480 206 478 218 470 230 C456 216 440 186 400 170 C342 148 250 148 206 178 C182 194 174 214 162 234 C148 238 140 228 142 214 Z" fill="${C.white}" stroke="${C.line}" stroke-width="3"/>
-    <path d="M196 212 C214 238 252 244 290 246 C318 244 318 224 300 214 C270 206 222 196 196 212 Z" fill="#ddb0b4" stroke="${C.line}" stroke-width="2.5"/>
-    <path d="M208 200 C240 214 280 224 330 232" fill="none" stroke="${C.line}" stroke-width="3"/>
-    <circle cx="412" cy="244" r="7" fill="#b9857f" stroke="${C.line}" stroke-width="2"/>
-    <path d="${CER_MED}" fill="none" stroke="${C.line}" stroke-width="4" stroke-linejoin="round"/>`;
+  // Uses the supplied midsagittal drawing (brain-midsagittal.js), scaled to fit the 600 x 470 box.
+  const medial = () => {
+    const M = window.WB_BRAIN_MID;
+    if (!M) return '';
+    const [bx, by, bw, bh] = M.bbox, k = Math.min(600 / bw, 470 / bh);
+    return `<g transform="translate(${(600 - bw * k) / 2 - bx * k} ${(470 - bh * k) / 2 - by * k}) scale(${k})">${M.markup}</g>`;
+  };
 
   // ---------------------------------------------------------------- mirror-symmetric views (one half + mirror)
   const mirrored = (id, half, extraHalf, shared = '') => `<defs>${shade(id)}</defs>
