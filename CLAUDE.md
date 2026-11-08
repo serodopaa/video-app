@@ -29,6 +29,15 @@ keyed by the scene id. Users can make quick empty topics with ➕ (saved in loca
 `epsp-ipsp.js`) and can't be deleted from the UI. `app.js` fires `wb-scene` on every topic
 switch, and `recorder.js` reloads the timeline from it.
 
+## Teleprompter
+📜 Prompter (key **G**) turns a scrolling script on or off **per slide** (default off). It sits on
+top of the board on screen only: the recorder draws the board on its own canvas, so it is never
+in the video, and clicks pass through the text. A step's `script` is the slide's default script;
+✎ Edit in the prompter overwrites it for that slide in `localStorage` (`wb-tps-<id>-<n>`; the
+on/off flag is `wb-tp-<id>-<n>`; `n` = slide number, 0 on the blank board). It starts paused at the
+top (key **S** or ▶ to start/pause) and starts by itself when a recording starts (`recorder.js`
+fires a `wb-rec` event with `recording` / `paused` / `idle`). Pace is in words per minute.
+
 ## Scene format
 The board is **1600 × 900** (x right, y down). Scenes register themselves:
 
@@ -42,6 +51,7 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
   steps: [
     {
       say: 'Caption shown (and read aloud if Narrate is on).',
+      script: 'Optional teleprompter script for this slide (see Teleprompter). [stage directions] show in amber.',
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
       clear: false,           // true = start a new slide (hides earlier steps)
       drawn: false,           // optional per-step override of the scene setting

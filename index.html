@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611082030" />
+  <link rel="stylesheet" href="style.css?v=202611082110" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -34,6 +34,7 @@
       <button id="replay" title="Replay my drawing as an animation">🎬<span>Replay ink</span></button>
       <button id="export" title="Save the board as a PNG image">💾<span>PNG</span></button>
       <button id="notesToggle" title="Show or hide your notes for this slide (never in the video)">📝<span>Notes</span></button>
+      <button id="tpToggle" title="Teleprompter for this slide: turn it on or off for each slide (G). Only you see it, never the video.">📜<span>Prompter</span></button>
     </div>
     <div class="group" role="group" aria-label="Zoom">
       <button id="zoomOut" title="Zoom out (−)">−</button>
@@ -50,6 +51,20 @@
     <div id="countdown" class="countdown" hidden></div>
     <div id="recBadge" class="rec-badge" hidden><i></i> REC</div>
     <div id="pausedBadge" class="paused-badge" hidden>⏸ Animations paused</div>
+    <div id="prompter" class="prompter" hidden>
+      <div class="tp-bar">
+        <button id="tpPlay" title="Start / pause the script (S). It also starts by itself when a recording starts.">▶ Start</button>
+        <button id="tpRestart" title="Back to the start of the script">⏮</button>
+        <select id="tpWpm" title="Reading pace, in words per minute"></select>
+        <button id="tpSmaller" title="Smaller text">A−</button>
+        <button id="tpBigger" title="Bigger text">A+</button>
+        <button id="tpEdit" title="Edit this slide's script">✎ Edit</button>
+        <button id="tpClose" title="Turn the teleprompter off for this slide (G)">✕</button>
+        <span class="tp-hint">Only you see this. It is not in the video.</span>
+      </div>
+      <div class="tp-view" id="tpView"><div class="tp-text" id="tpText"></div></div>
+      <textarea id="tpEditor" class="tp-editor" hidden spellcheck="true" placeholder="Type the script for this slide. Put stage directions in [square brackets]."></textarea>
+    </div>
   </main>
   <aside class="notes" id="notesPanel" hidden>
     <div class="notes-head">
@@ -141,10 +156,10 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611082030"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611082030"></script>
-  <script src="app.js?v=202611082030"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611082030"></script>
-  <script src="recorder.js?v=202611082030"></script>
+  <script src="scenes/neuron.js?v=202611082110"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611082110"></script>
+  <script src="app.js?v=202611082110"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611082110"></script>
+  <script src="recorder.js?v=202611082110"></script>
 </body>
 </html>

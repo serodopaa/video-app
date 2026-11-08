@@ -1308,6 +1308,7 @@
     updateLabels();
     renderActionButtons();
     loadNotes();
+    loadPrompter();
     rememberPlace();
   }
 
@@ -1368,6 +1369,144 @@
     applySize();
     if (lsGet('wb-notes-open') === '1') setOpen(true);
     window.addEventListener('beforeunload', flushNotes);
+  }
+
+  // ---------- teleprompter ----------
+  // A script that scrolls on top of the board, only on screen (the recorder draws the board on
+  // its own canvas, so it is never in the video). On/off and the script belong to each slide:
+  //   wb-tp-<scene>-<slide>  '1' = on      wb-tps-<scene>-<slide>  your edited script
+  // The default script comes from the slide's step in the scene file (`script: '...'`).
+  const tp = {
+    box: document.getElementById('prompter'),
+    view: document.getElementById('tpView'),
+    text: document.getElementById('tpText'),
+    play: document.getElementById('tpPlay'),
+    wpm: document.getElementById('tpWpm'),
+    editor: document.getElementById('tpEditor'),
+    toggle: document.getElementById('tpToggle'),
+    on: false, paused: true, editing: false, y: 0, maxY: 0, speed: 0, startOff: 0, last: 0, recState: 'idle',
+    size: parseFloat(lsGet('wb-tp-size')) || 30,
+    pace: parseInt(lsGet('wb-tp-wpm'), 10) || 140,
+  };
+  const tpKeys = () => {
+    const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
+    return { n, on: `wb-tp-${player.scene.id}-${n}`, script: `wb-tps-${player.scene.id}-${n}` };
+  };
+  function tpScript() {
+    const k = tpKeys();
+    const saved = lsGet(k.script);
+    if (saved !== null) return saved;
+    const steps = player.scene.steps;
+    for (let i = 0; i < steps.length; i++) if (slideOf(i) + 1 === k.n && steps[i].script) return steps[i].script;
+    return '';
+  }
+  const tpPlace = () => { tp.text.style.transform = `translateY(${tp.startOff - tp.y}px)`; };
+  function tpButtons() {
+    tp.play.textContent = tp.paused ? (tp.y > 0 && tp.y < tp.maxY ? '▶ Resume' : '▶ Start') : '⏸ Pause';
+  }
+  // Works out how far to scroll and how fast: the whole script takes (words / pace) minutes.
+  function tpMeasure() {
+    const frac = tp.maxY ? tp.y / tp.maxY : 0;
+    const vh = tp.view.clientHeight, th = tp.text.scrollHeight;
+    tp.startOff = vh * 0.2;
+    tp.maxY = Math.max(0, th + tp.startOff - vh * 0.55);
+    const words = Math.max(1, (tpScript().replace(/\[[^\]]*\]/g, ' ').match(/\S+/g) || []).length);
+    tp.speed = tp.maxY / ((words / tp.pace) * 60);
+    tp.y = frac * tp.maxY;
+    tpPlace();
+    tpButtons();
+  }
+  function tpRender() {
+    const raw = tpScript();
+    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    tp.text.innerHTML = raw.trim()
+      ? esc(raw).replace(/\[([^\]]*)\]/g, '<span class="tp-cue">[$1]</span>')
+      : '<span class="tp-cue">No script for this slide yet. Click ✎ Edit to type one.</span>';
+    tp.box.style.setProperty('--tp-size', tp.size + 'px');
+    tpMeasure();
+  }
+  function tpCloseEditor(save = true) {
+    if (!tp.editing) return;
+    if (save) lsSet(tpKeys().script, tp.editor.value);
+    tp.editing = false;
+    tp.editor.hidden = true;
+    tp.view.hidden = false;
+    document.getElementById('tpEdit').textContent = '✎ Edit';
+  }
+  // Applies this slide's saved setting (called whenever the slide changes).
+  function loadPrompter() {
+    if (!tp.box) return;
+    tpCloseEditor(false);
+    tp.on = lsGet(tpKeys().on) === '1';
+    tp.box.hidden = !tp.on;
+    tp.toggle.classList.toggle('active', tp.on);
+    tp.y = 0;
+    tp.maxY = 0;
+    // starts paused at the top, unless a recording is already running
+    tp.paused = tp.recState !== 'recording';
+    if (tp.on) tpRender();
+  }
+  function tpSetOn(on) {
+    lsSet(tpKeys().on, on ? '1' : '0');
+    loadPrompter();
+  }
+  function tpTogglePlay() {
+    if (!tp.on || tp.editing) return;
+    if (tp.paused && tp.y >= tp.maxY) tp.y = 0;
+    tp.paused = !tp.paused;
+    tpButtons();
+  }
+  if (tp.box) {
+    [100, 120, 140, 160, 180, 200].forEach((w) => {
+      const o = document.createElement('option');
+      o.value = w;
+      o.textContent = `${w} wpm`;
+      o.selected = w === tp.pace;
+      tp.wpm.appendChild(o);
+    });
+    tp.wpm.addEventListener('change', () => { tp.pace = parseInt(tp.wpm.value, 10); lsSet('wb-tp-wpm', String(tp.pace)); tpMeasure(); tp.wpm.blur(); });
+    tp.toggle.addEventListener('click', () => tpSetOn(!tp.on));
+    document.getElementById('tpClose').addEventListener('click', () => tpSetOn(false));
+    tp.play.addEventListener('click', tpTogglePlay);
+    document.getElementById('tpRestart').addEventListener('click', () => { tp.y = 0; tp.paused = true; tpPlace(); tpButtons(); });
+    const resize = (d) => { tp.size = Math.max(18, Math.min(56, tp.size + d)); lsSet('wb-tp-size', String(tp.size)); tpRender(); };
+    document.getElementById('tpSmaller').addEventListener('click', () => resize(-4));
+    document.getElementById('tpBigger').addEventListener('click', () => resize(4));
+    document.getElementById('tpEdit').addEventListener('click', () => {
+      if (tp.editing) { tpCloseEditor(true); tpRender(); return; }
+      tp.editing = true;
+      tp.paused = true;
+      tp.editor.value = tpScript();
+      tp.editor.hidden = false;
+      tp.view.hidden = true;
+      document.getElementById('tpEdit').textContent = '✓ Done';
+      tp.editor.focus();
+      tpButtons();
+    });
+    tp.editor.addEventListener('keydown', (e) => e.stopPropagation()); // typing must not trigger board shortcuts
+    window.addEventListener('resize', () => { if (tp.on && !tp.editing) tpMeasure(); });
+    // The recorder says when it starts / pauses / stops: the script scrolls while you record.
+    window.addEventListener('wb-rec', (e) => {
+      const prev = tp.recState;
+      tp.recState = e.detail;
+      if (!tp.on || tp.editing) return;
+      if (e.detail === 'recording' && prev !== 'recording') {
+        if (tp.y >= tp.maxY) tp.y = 0;
+        tp.paused = false;
+      } else if (e.detail !== 'recording' && prev === 'recording') tp.paused = true;
+      tpButtons();
+    });
+    const tick = (ts) => {
+      if (tp.on && !tp.paused && !tp.editing) {
+        const dt = Math.min(0.1, (ts - tp.last) / 1000);
+        tp.y = Math.min(tp.maxY, tp.y + tp.speed * dt);
+        if (tp.y >= tp.maxY) { tp.paused = true; tpButtons(); }
+        tpPlace();
+      }
+      tp.last = ts;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 
   function updateLabels() {
@@ -1435,7 +1574,7 @@
     const idx = scenes.indexOf(sc);
     loadScene(0); // leave first (this saves the topic's ink), then wipe it
     try {
-      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-'];
+      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-', 'wb-tp-' + sc.id + '-', 'wb-tps-' + sc.id + '-'];
       Object.keys(localStorage).filter((k) => prefixes.some((p) => k.startsWith(p))).forEach((k) => localStorage.removeItem(k));
     } catch (_) { /* storage unavailable */ }
     [...historyBySlide.keys()].filter((k) => k.startsWith('wb-ink-' + sc.id)).forEach((k) => historyBySlide.delete(k));
@@ -2039,6 +2178,8 @@
     else if (e.key === 'ArrowLeft') { player.playing = false; goTo(player.step - 1, false); }
     else if (e.key === ' ' && player.scene.drawn === false) { e.preventDefault(); setAnimPaused(!clock.paused); }
     else if (e.key === ' ') { e.preventDefault(); if (player.scene.steps.length) setPlaying(!player.playing); }
+    else if (k === 'g') tpSetOn(!tp.on);
+    else if (k === 's' && tp.on) tpTogglePlay();
     else if (k === 'k' || k === 'q') setAnimPaused(!clock.paused);
     else if (e.key === '[') stepSpeed(-1);
     else if (e.key === ']') stepSpeed(1);

@@ -597,6 +597,17 @@
       // Slide 1: intro - a neuron receives thousands of inputs and has to decide whether to fire.
       ...(slideIntro ? [{
         say: 'A neuron receives thousands of excitatory and inhibitory inputs, and the axon hillock adds them all up to decide whether to fire.',
+        script: `Right now, thousands of tiny signals are landing on this neuron. [point to the terminals around the dendrites]
+
+Some of them are excitatory. They're saying "fire!" [point to an orange terminal]
+
+Others are inhibitory. They're saying "don't fire." [point to a teal terminal]
+
+[click "Inputs arrive"]
+
+All of these signals arrive at once, and the neuron has to make a decision. Down here, at the axon hillock, [point to the circled hillock] it adds them all up. If the total reaches negative 55 millivolts, it fires an action potential. If not, nothing happens.
+
+So how does a neuron add up all those signals? That's what we're going to figure out. We'll start with the two types of signals, EPSPs and IPSPs, and then look at how they combine across space and across time.`,
         actions: slideIntro.actions,
         items: slideIntro.items,
       }] : []),
@@ -639,6 +650,19 @@
       }] : []),
       // Slide 6: recap.
       ...(slideRecap ? [{
+        script: `So let's put it all together.
+
+[click "Excitatory input"] An excitatory input opens sodium channels, and the membrane potential moves up, toward threshold.
+
+[click "Inhibitory input"] An inhibitory input opens chloride channels, and moves it the other way: down, away from threshold.
+
+[click "Spatial summation"] Spatial summation: inputs from different places add up at the axon hillock, and inhibition close to the hillock is the strongest.
+
+[click "Temporal summation"] Temporal summation: inputs that arrive close together in time add up before they fade.
+
+[click "The axon hillock decides"] And in the end, the axon hillock decides. If the total reaches negative 55 millivolts, an action potential fires.
+
+That's how one neuron turns thousands of signals into a single decision. Thanks for watching.`,
         say: 'Click each bullet to see it in action: excitatory inputs push toward threshold, inhibitory inputs push away, and the axon hillock adds them up over space and time.',
         clear: true,
         actions: slideRecap.actions,

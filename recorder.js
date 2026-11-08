@@ -185,7 +185,9 @@
     return rec.elapsed + (rec.state === 'recording' ? (performance.now() - rec.segStart) / 1000 : 0);
   }
 
+  let lastRecState = 'idle';
   function updateRecUI() {
+    if (rec.state !== lastRecState) { lastRecState = rec.state; window.dispatchEvent(new CustomEvent('wb-rec', { detail: rec.state })); }
     const busy = rec.state !== 'idle';
     const replacing = replaceId && clips.find((c) => c.id === replaceId);
     ui.rec.disabled = busy || MIME === null;
