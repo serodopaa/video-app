@@ -317,6 +317,115 @@
     ]),
   ];
 
+  // ---------- slide 2: receiving (simple) ----------
+  // An excitatory and an inhibitory axon terminal above one dendrite. Generic
+  // + / − ions only: more + outside, more − inside. Each terminal has its own
+  // receptor type on the dendrite.
+  const MR = { x0: 60, x1: 1160, top: 470, bot: 540, mid: 505 };
+  const RT = {
+    exc: { x: 330, nt: '#f08c1a', ion: 'pos', ch: CH_STYLE.na, name: 'Excitatory', col: '#b05f00', peak: -60, recId: 'r2e' },
+    inh: { x: 870, nt: '#16a3b8', ion: 'neg', ch: CH_STYLE.cl, name: 'Inhibitory', col: '#0b6f7e', peak: -75, recId: 'r2i' },
+  };
+  const bilayerR = (() => {
+    let out = '';
+    for (let x = MR.x0 + 10; x <= MR.x1 - 8; x += 20) {
+      for (const [hy, t0, t1] of [[MR.top + 8, MR.top + 17, MR.mid - 3], [MR.bot - 8, MR.bot - 17, MR.mid + 3]]) {
+        const d = (t1 - t0) / 2;
+        out += `<path d="M${x - 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d} M${x + 3} ${t0} q4 ${d / 2} 0 ${d} t0 ${d}" stroke="#c99a62" stroke-width="2" fill="none"/>`;
+        out += `<circle cx="${x}" cy="${hy}" r="9" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/>`;
+      }
+    }
+    return out;
+  })();
+  const termD = (cx) => `M${cx - 150} 300 C${cx - 150} 225 ${cx - 85} 195 ${cx} 195 C${cx + 85} 195 ${cx + 150} 225 ${cx + 150} 300 Q${cx + 150} 368 ${cx + 100} 372 L${cx - 100} 372 Q${cx - 150} 368 ${cx - 150} 300 Z`;
+  const recvSvg = svgDoc(`<defs>
+    <linearGradient id="preR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eefb"/><stop offset="1" stop-color="#9cc0ea"/></linearGradient>
+    <filter id="shR" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#13294a" flood-opacity="0.2"/></filter>
+  </defs>
+  <rect x="${MR.x0}" y="112" width="${MR.x1 - MR.x0}" height="${MR.top - 112}" rx="16" fill="#eef6fd"/>
+  <rect x="${MR.x0}" y="${MR.bot}" width="${MR.x1 - MR.x0}" height="${860 - MR.bot}" rx="16" fill="#f7f0fb"/>
+  <rect x="${MR.x0}" y="${MR.top}" width="${MR.x1 - MR.x0}" height="${MR.bot - MR.top}" fill="#fbecd6"/>
+  ${bilayerR}
+  <g filter="url(#shR)">
+    ${Object.values(RT).map((t) => `
+    <path d="M${t.x} 112 L${t.x} 230" stroke="#2c5a92" stroke-width="70"/>
+    <path d="M${t.x} 112 L${t.x} 230" stroke="#bcd5f2" stroke-width="62"/>
+    <path d="${termD(t.x)}" fill="url(#preR)" stroke="#2c5a92" stroke-width="5"/>`).join('')}
+  </g>
+`);
+  const VESR = [[-95, 280], [-35, 250], [30, 255], [95, 285], [-60, 325], [60, 328], [0, 300]];
+  const FUSER = [[4, [-28, 358]], [5, [28, 358]]];        // [vesicle index, fuse point]
+  // Ions. Outside: mostly +. Inside: mostly −.
+  const recvIons = [
+    ['pos', 110, 210], ['pos', 600, 230], ['pos', 640, 330], ['pos', 1100, 230], ['pos', 1110, 330], ['pos', 100, 330],
+    ['pos', 560, 410], ['pos', 1060, 430], ['pos', 1110, 130], ['neg', 580, 300], ['neg', 130, 430], ['neg', 1100, 400],
+    ['neg', 120, 640], ['neg', 220, 730], ['neg', 430, 640], ['neg', 520, 740], ['neg', 640, 650], ['neg', 760, 740],
+    ['neg', 990, 650], ['neg', 1090, 740], ['neg', 330, 800], ['neg', 860, 815], ['pos', 1100, 815], ['pos', 600, 820],
+  ];
+  // Ions each receptor lets in: [from (outside), to (inside)]
+  const RFLOW = {
+    exc: [[[250, 420], [270, 680]], [[415, 425], [400, 720]], [[200, 440], [330, 760]]],
+    inh: [[[790, 420], [800, 690]], [[955, 425], [950, 720]], [[1010, 440], [880, 770]]],
+  };
+  const rPore = (x, from, to) => [from, [x, MR.top - 40], [x, MR.mid], [x, MR.bot + 45], to];
+  const hideFor = (k) => [k === 'exc' ? 'exc2' : 'inh2', 'both2'];
+  const fireR = (k, t0) => {
+    const t = RT[k], x = t.x, site = [x - 28, MR.top - 22];
+    return [
+      { type: 'mover', once: true, vanish: true, r: 9, color: '#ff5a36', path: [[x, 116], [x, 250]], duration: 0.4, at: t0 + 0.05 },
+      { type: 'flash', x, y: 290, r: 110, color: '#ff5a36', duration: 0.6, at: t0 + 0.45 },
+      ...FUSER.map(([vi, [fx, fy]], i) => ({
+        type: 'vesicle', fuse: true, r: 18, color: '#2c5a92', dot: t.nt,
+        path: [[x + VESR[vi][0], VESR[vi][1]], [x + fx, fy]], duration: 1.1, at: t0 + 0.6 + i * 0.15,
+      })),
+      { type: 'mover', once: true, r: 7, color: t.nt, smooth: true, path: [[x - 26, 376], [x - 34, 410], site], duration: 0.6, at: t0 + 1.4, until: 3.2 },
+      { type: 'mover', once: true, vanish: true, r: 7, color: t.nt, smooth: true, path: [site, [x - 80, 420], [x - 130, 395]], duration: 0.7, at: t0 + 4.6 },
+      ...[[-70, 420], [40, 410], [80, 440], [-110, 445]].map(([dx, dy], i) => ({
+        type: 'mover', once: true, vanish: true, r: 6, color: t.nt, smooth: true,
+        path: [[x + (i % 2 ? 26 : -26), 376], [x + dx * 0.5, 400], [x + dx, dy]], duration: 1.4, at: t0 + 1.45 + i * 0.1,
+      })),
+      { type: 'value', id: t.recId, from: 0, to: 1, at: t0 + 2.0, duration: 0.3 },
+      ...RFLOW[k].map(([from, to], i) => ({ type: 'ion', ion: t.ion, smooth: true, path: rPore(x, from, to), duration: 1.3, at: t0 + 2.2 + i * 0.3 })),
+      { type: 'value', id: t.recId, from: 1, to: 0, at: t0 + 4.4, duration: 0.3 },
+    ];
+  };
+  const vmR = (peak, t0) => [
+    { type: 'value', id: 'vm2', from: REST, to: peak, at: t0 + 2.4, duration: 1.7 },
+    { type: 'value', id: 'vm2', from: peak, to: REST, at: t0 + 4.8, duration: 2.0 },
+  ];
+  const recvActions = [
+    { id: 'exc2', label: 'Excitatory signal', items: [...fireR('exc', 0), ...vmR(RT.exc.peak, 0)] },
+    { id: 'inh2', label: 'Inhibitory signal', items: [...fireR('inh', 0), ...vmR(RT.inh.peak, 0)] },
+    { id: 'both2', label: 'Both at once', items: [...fireR('exc', 0), ...fireR('inh', 0), ...vmR(-67, 0)] },
+  ];
+  const recvItems = [
+    title('Receiving signals'),
+    { type: 'svg', svg: recvSvg },
+    { type: 'charges', id: 'vm2', value: REST, x0: MR.x0, x1: MR.x1, top: MR.top, bot: MR.bot, step: 70 },
+    ...Object.entries(RT).flatMap(([k, t]) => VESR.map(([dx, y], vi) => ({
+      type: 'vesicle', x: t.x + dx, y, r: 18, color: '#2c5a92', dot: t.nt,
+      hideDuring: FUSER.some(([fi]) => fi === vi) ? hideFor(k) : undefined,
+    }))),
+    ...recvIons.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
+    ...Object.entries(RFLOW).flatMap(([k, list]) => list.map(([from]) => ({ type: 'ion', ion: RT[k].ion, x: from[0], y: from[1], hideDuring: hideFor(k) }))),
+    ...Object.values(RT).map((t) => ({ type: 'channel', id: t.recId, x: t.x, y: MR.mid, h: 120, ...t.ch, label: `${t.name} receptor` })),
+    ...Object.values(RT).map((t) => ({ type: 'text', x: t.x + 48, y: 140, text: `${t.name}\naxon terminal`, size: 23, font: 'sans', color: t.col })),
+    { type: 'text', x: 80, y: 142, text: 'Outside: more +', size: 24, font: 'sans', color: '#a8281a' },
+    { type: 'text', x: 80, y: 838, text: 'Inside the dendrite: more −', size: 24, font: 'sans', color: '#1d4fb0' },
+    {
+      type: 'meter', id: 'vm2', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 290, min: -90, max: 40,
+      title: 'Membrane potential', upText: 'Depolarized (excitatory)', downText: 'Hyperpolarized (inhibitory)',
+    },
+    { type: 'ion', ion: 'pos', x: 1225, y: 668 },
+    { type: 'text', x: 1252, y: 668, text: 'Positive ion', size: 22, font: 'sans', color: 'ink' },
+    { type: 'ion', ion: 'neg', x: 1225, y: 712 },
+    { type: 'text', x: 1252, y: 712, text: 'Negative ion', size: 22, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1214, y: 744, w: 22, h: 28, color: CH_STYLE.na.edge, fill: CH_STYLE.na.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1252, y: 758, text: 'Excitatory receptor', size: 22, font: 'sans', color: 'ink' },
+    { type: 'rect', x: 1214, y: 788, w: 22, h: 28, color: CH_STYLE.cl.edge, fill: CH_STYLE.cl.fill, fillOpacity: 1, width: 2, rough: false },
+    { type: 'text', x: 1252, y: 802, text: 'Inhibitory receptor', size: 22, font: 'sans', color: 'ink' },
+  ];
+
   // ---------- slide 3: glutamate vs GABA synapse ----------
   // Two synapses on the same receiving dendrite. Same membrane, ions and channel
   // styles as slide 2: the glutamate receptor is a Na+ channel, the GABA receptor
@@ -1175,12 +1284,14 @@
           ...SLIDE1_LABELS(),
         ],
       },
-      // Slide 2: membrane potential and how ion channels change it.
+      // Slide 2: receiving - an excitatory and an inhibitory terminal on one dendrite.
+      // (The older, detailed membrane-potential slide is still defined above as
+      // membraneItems / membraneActions, unused, for a possible deep-dive video.)
       {
-        say: 'At rest, K⁺ leaking out makes the inside negative (−70 mV); opening a channel pulls the potential toward that ion’s equilibrium potential.',
+        say: 'The inside of the dendrite is more negative (−70 mV). Excitatory signals push it up; inhibitory signals push it down.',
         clear: true,
-        actions: membraneActions,
-        items: membraneItems,
+        actions: recvActions,
+        items: recvItems,
       },
       // Slide 3: glutamate vs GABA synapses and their effect on the postsynaptic potential.
       {

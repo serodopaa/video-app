@@ -251,6 +251,8 @@
     cl: { fill: '#39a866', stroke: '#1d6a3c', text: 'Cl⁻', r: 18 },
     a: { fill: '#8f96a3', stroke: '#545b68', text: 'A⁻', r: 24 },
     ca: { fill: '#e0559a', stroke: '#9c1f5c', text: 'Ca²⁺', r: 20 },
+    pos: { fill: '#f26b5b', stroke: '#a8281a', text: '+', r: 15, big: true },
+    neg: { fill: '#5b8def', stroke: '#1d4fb0', text: '−', r: 15, big: true },
   };
 
   // Live values (e.g. a membrane potential or how open a channel is). Slide
@@ -524,7 +526,7 @@
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#ffffff';
-        ctx.font = `700 ${Math.round(rr * (st.text.length > 3 ? 0.68 : 0.82))}px ${SANS}`;
+        ctx.font = `700 ${Math.round(rr * (st.big ? 1.7 : st.text.length > 3 ? 0.68 : 0.82))}px ${SANS}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(st.text, x, y + 1);
