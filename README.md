@@ -41,7 +41,7 @@ often block the microphone on files opened straight from your computer.
 
 1. Press **⏺ Record**. After a 3-2-1 countdown, the board and your microphone are
    recorded. The toolbar and buttons are not in the video, and it's always 1920×1080.
-2. **⏸ Pause** / **⏵ Resume** as often as you like, then **⏹ Stop**. The recording
+2. **⏸ Pause** / **⏵ Resume** (or press **A**) as often as you like, then **⏹ Stop**. The recording
    becomes a clip on the timeline.
 3. Record more sections. Each one becomes another clip.
 4. On each clip: **✂️** watch and trim the start/end, **◀ ▶** move it, **🔁** re-record

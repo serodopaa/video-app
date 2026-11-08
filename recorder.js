@@ -293,6 +293,12 @@
   ui.rec.addEventListener('click', startRecording);
   ui.pause.addEventListener('click', togglePause);
   ui.stop.addEventListener('click', stopRecording);
+  // The A key pauses / resumes while a clip is recording (otherwise A is the arrow tool).
+  WB.recorderKey = () => {
+    if (rec.state !== 'recording' && rec.state !== 'paused') return false;
+    togglePause();
+    return true;
+  };
 
   // Chrome stops redrawing a page you're not looking at (another tab or app in
   // front, minimized or fully covered window), so a recording would freeze.

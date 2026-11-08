@@ -1962,6 +1962,7 @@
     else if (e.key === '0') zoomFit();
     else if (/^[1-9]$/.test(e.key) && slideActions()[+e.key - 1]) runAction(slideActions()[+e.key - 1]);
     else if (e.key === 'R' && e.shiftKey) { actionRuns.clear(); setAnimPaused(false); }
+    else if (k === 'a' && window.WB.recorderKey && window.WB.recorderKey()) { /* A paused/resumed the recording */ }
     else if (KEYS[k]) setTool(KEYS[k]);
   });
   document.getElementById('zoomIn').addEventListener('click', () => zoomAt(1.5, ...viewCenter()));
