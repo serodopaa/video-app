@@ -460,96 +460,95 @@
     return 'M' + L.concat(R.reverse()).map((p) => p.map(f1).join(',')).join(' L') + ' Z';
   }
 
-  // ---------- slide 1: the main neuron as part of a circuit ----------
-  // Left: an axon terminal from another (blue) neuron reaches a dendrite tip.
-  // Right: a dendrite of the next (green) neuron sits just past the axon terminal.
+  // ---------- slide 1 (and 8): three neurons in a chain ----------
+  // Left (blue, small) -> main (purple, big) -> right (green, small), all on one
+  // axis. Each axon terminal sits just before a dendrite tip of the next neuron.
   const GREEN = { outline: '#2f6b2a', fill: '#9bd18f', light: '#eaf7e6', dark: '#6db35f' };
-  const nextMain = { p0: [1640, 470], c: [1520, 472], p1: [1402, 470], w0: 40, w1: 30 };
-  const nextUp = { p0: [1530, 471], c: [1580, 420], p1: [1640, 340], w0: 22, w1: 12 };
-  const nextDown = { p0: [1505, 470], c: [1560, 540], p1: [1640, 610], w0: 20, w1: 11 };
-  const receptorYs = [458, 466, 474, 482];
-  const RECEPTOR_X = 1386;
-  const inTerminal = { x: 478, y: 836, r: 24 };
-  const inAxon = 'M770 915 Q630 852 500 838';
-  const circuitSvg = svgDoc(`<defs>
-    <linearGradient id="nextG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${GREEN.light}"/><stop offset="0.5" stop-color="${GREEN.fill}"/><stop offset="1" stop-color="${GREEN.dark}"/>
-    </linearGradient>
-    <radialGradient id="inG" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="${BLUE.b0}"/><stop offset="1" stop-color="${BLUE.b1}"/></radialGradient>
-    <filter id="shC" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#13294a" flood-opacity="0.2"/>
-    </filter>
-  </defs>
-  <g filter="url(#shC)">
-    <!-- dendrite of the next neuron -->
-    ${[nextUp, nextDown, nextMain].map((b) => `<path d="${taperD(b)}" fill="${GREEN.outline}" stroke="${GREEN.outline}" stroke-width="6" stroke-linejoin="round"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2 + 3}" fill="${GREEN.outline}"/>`).join('')}
-    ${[nextUp, nextDown].map((b) => `<path d="${taperD(b)}" fill="url(#nextG)"/><circle cx="${b.p1[0]}" cy="${b.p1[1]}" r="${b.w1 / 2}" fill="${GREEN.fill}"/>`).join('')}
-    <path d="${taperD(nextMain)}" fill="url(#nextG)"/><circle cx="${nextMain.p1[0]}" cy="${nextMain.p1[1]}" r="${nextMain.w1 / 2}" fill="${GREEN.fill}"/>
-    <!-- axon terminal of another neuron -->
-    <path d="${inAxon}" stroke="${BLUE.outline}" stroke-width="18" fill="none" stroke-linecap="round"/>
-    <path d="${inAxon}" stroke="${BLUE.fill}" stroke-width="12" fill="none" stroke-linecap="round"/>
-    <circle cx="${inTerminal.x}" cy="${inTerminal.y}" r="${inTerminal.r + 3}" fill="${BLUE.outline}"/>
-    <circle cx="${inTerminal.x}" cy="${inTerminal.y}" r="${inTerminal.r}" fill="url(#inG)"/>
-  </g>
-  <!-- receptors on the tip of the next neuron's dendrite -->
-  ${receptorYs.map((y) => `<rect x="${RECEPTOR_X - 3}" y="${y - 3}" width="7" height="6" rx="2" fill="#1d5a2e"/>`).join('')}
-  ${[[-9, -7], [7, -9], [-6, 8], [8, 6]].map(([a, b]) => `<circle cx="${inTerminal.x + a}" cy="${inTerminal.y + b}" r="6" fill="#ffffff" fill-opacity="0.85" stroke="${BLUE.outline}" stroke-width="1.5"/><circle cx="${inTerminal.x + a}" cy="${inTerminal.y + b}" r="2" fill="#f08c1a"/>`).join('')}
-`);
-
-  // Vesicles that the "Release neurotransmitters" button sends to the membrane.
-  const FUSING = [2, 4, 7]; // indexes into vesiclePts
+  const GREENN = {
+    outline: '#2f6b2a', fill: '#a9d99d', s0: '#eef9ea', s1: '#c4e8bb', s2: '#86c477',
+    n0: '#79b86a', n1: '#2f6b2a', nStroke: '#24521f', nl: '#1b3f17', b0: '#eaf7e6', b1: '#86c477',
+    a0: '#d3efcb', a1: '#8fcc80', shine: '#f2fbef', gran: '#2f6b2a', shadow: '#13361a',
+  };
+  const SMALL = 0.28, BIG = 0.6, AXIS = 392, GAP = 24;
+  const TIP = [80, 470];                                   // dendrite tip facing the previous neuron
+  const T_L = { k: SMALL, tx: 2, ty: AXIS - 470 * SMALL };
+  const T_C = { k: BIG, tx: 1348 * SMALL + 2 + GAP - TIP[0] * BIG, ty: AXIS - 470 * BIG };
+  const T_R = { k: SMALL, tx: 1348 * BIG + T_C.tx + GAP - TIP[0] * SMALL, ty: AXIS - 470 * SMALL };
+  const mp = (T, [x, y]) => [x * T.k + T.tx, y * T.k + T.ty];
+  const gT = (T, inner) => `<g transform="translate(${f1(T.tx)} ${f1(T.ty)}) scale(${T.k})">${inner}</g>`;
+  const FUSING = [2, 4, 7];                                // main-neuron vesicles that release
   const fuseTargets = [[1337, 457], [1339, 474], [1335, 491]];
-  // Main terminal releases neurotransmitters onto the next neuron, starting at time t0.
+  const rightTip = mp(T_R, TIP), mainTip = mp(T_C, TIP);
+  const receptorYs = [-7, 0, 7].map((d) => rightTip[1] + d);
+  const chainSvg = svgDoc(
+    gT(T_L, neuronMarkup(BLUE, 'chL', { releasing: false })) +
+    gT(T_C, neuronMarkup(PURPLE, 'chC', { skip: FUSING, releasing: false })) +
+    gT(T_R, neuronMarkup(GREENN, 'chR', { releasing: false })) +
+    receptorYs.map((y) => `<rect x="${f1(rightTip[0] - 5)}" y="${f1(y - 2)}" width="5" height="4" rx="1" fill="#1d5a2e"/>`).join('') +
+    [-6, 0, 6].map((d) => `<rect x="${f1(mainTip[0] - 5)}" y="${f1(mainTip[1] + d - 2)}" width="5" height="4" rx="1" fill="#4a2062"/>`).join(''));
+  const chainVesicles = (hide) => FUSING.map((vi) => {
+    const [x, y] = mp(T_C, vesiclePts[vi]);
+    return { type: 'vesicle', x, y, r: 11 * BIG, hideDuring: hide };
+  });
+
+  // Main neuron releases neurotransmitters onto the right neuron, starting at t0.
   const releaseFrom = (t0) => [
     ...FUSING.map((vi, k) => ({
-      type: 'vesicle', fuse: true, path: [vesiclePts[vi], fuseTargets[k]], r: 11, duration: 1.6, at: t0 + k * 0.25,
+      type: 'vesicle', fuse: true, path: [mp(T_C, vesiclePts[vi]), mp(T_C, fuseTargets[k])], r: 11 * BIG, duration: 1.4, at: t0 + k * 0.2,
     })),
-    // neurotransmitters cross the synaptic cleft and bind to the receptors
-    ...FUSING.flatMap((_, k) => [0, 1, 2].map((n) => {
-      const [fx, fy] = fuseTargets[k];
-      const ry = receptorYs[(k + n) % receptorYs.length] + (n - 1) * 2;
+    ...FUSING.flatMap((_, k) => [0, 1].map((n) => {
+      const [fx, fy] = mp(T_C, fuseTargets[k]);
+      const ry = receptorYs[(k + n) % receptorYs.length];
       return {
-        type: 'mover', once: true, r: 3, color: '#f08c1a', smooth: true,
-        path: [[fx + 9, fy], [fx + 24, (fy + ry) / 2 + (n - 1) * 6], [RECEPTOR_X - 6, ry]],
-        duration: 1.1, at: t0 + 0.9 + k * 0.25 + n * 0.12,
+        type: 'mover', once: true, r: 2.6, color: '#f08c1a', smooth: true,
+        path: [[fx + 5, fy], [(fx + rightTip[0]) / 2, (fy + ry) / 2 + (n ? 3 : -3)], [rightTip[0] - 7, ry]],
+        duration: 0.8, at: t0 + 0.8 + k * 0.2 + n * 0.1,
       };
     })),
-    // the next neuron responds and the signal carries on along its dendrite
-    { type: 'pulse', x: 1418, y: 470, r: 34, color: '#2e9e5b', speed: 1.4, at: t0 + 2.6 },
-    { type: 'mover', once: true, vanish: true, r: 7, color: '#2e9e5b', path: [[1408, 470], [1520, 472], [1640, 470]], duration: 1.6, at: t0 + 2.6 },
+    { type: 'pulse', x: rightTip[0] + 6, y: rightTip[1], r: 22, color: '#2e9e5b', speed: 1.4, at: t0 + 2.0, until: 2 },
   ];
-  const releaseItems = releaseFrom(0);
+  const releaseItems = [
+    ...releaseFrom(0),
+    // ...and the right neuron picks it up: the signal heads for its cell body
+    { type: 'mover', once: true, vanish: true, r: 6, color: '#2e9e5b', smooth: true, path: DEND_ROUTE().map((p) => mp(T_R, p)), duration: 1.2, at: 2.1 },
+  ];
+  function DEND_ROUTE() { return [TIP, [110, 480], [150, 505], [220, 500], [300, 485], [380, 470]]; }
 
-  // The whole chain: another neuron -> main neuron -> next neuron.
+  // The whole chain: left neuron -> main neuron -> right neuron (which fires too).
   const SPARK = '#ffb21e'; // electrical signal
   const AP = '#ff5a36';    // action potential
-  const dendriteTip = [430, 815];
   const nodesAlongAxon = [40, ...sheaths.slice(0, -1).map((sh, i) => (sh.b + sheaths[i + 1].a) / 2), 690];
-  const AP_START = 4.5, AP_TIME = 1.7, AXON_LENGTH = 707;
-  const fullItems = [
-    // 1. an action potential arrives along the other neuron's axon
-    { type: 'mover', once: true, vanish: true, r: 8, color: SPARK, smooth: true, path: [[770, 915], [690, 878], [600, 849], [503, 838]], duration: 1.2, at: 0 },
-    { type: 'flash', x: inTerminal.x, y: inTerminal.y, r: 34, color: SPARK, duration: 0.6, at: 1.15 },
-    // 2. its neurotransmitters cross the gap and bind to the main neuron's dendrite
-    ...[[-8, -6], [-2, 6], [-12, 4], [-6, -12], [-14, -2]].map(([dx, dy], n) => ({
-      type: 'mover', once: true, r: 3, color: '#f08c1a', smooth: true,
-      path: [[inTerminal.x - 22, inTerminal.y + dy * 0.6], [inTerminal.x - 34, inTerminal.y - 8 + dy], [dendriteTip[0] + 6 + dx * 0.3, dendriteTip[1] + 2 + dy * 0.5]],
-      duration: 0.9, at: 1.4 + n * 0.1,
-    })),
-    { type: 'flash', x: dendriteTip[0], y: dendriteTip[1], r: 26, color: '#8a4fd8', duration: 0.6, at: 2.3 },
-    // 3. the signal travels along the dendrite to the cell body, which adds up its inputs
-    { type: 'mover', once: true, vanish: true, r: 8, color: SPARK, smooth: true, path: [dendriteTip, [405, 802], [385, 780], [355, 745], [330, 710], [360, 640], [365, 560], [380, 500]], duration: 1.4, at: 2.4 },
-    { type: 'flash', x: soma.x, y: soma.y, r: 110, color: SPARK, duration: 0.9, at: 3.7 },
-    // 4. the axon hillock fires an action potential, which jumps from node to node
-    { type: 'flash', x: 495, y: 470, r: 46, color: AP, duration: 0.7, at: 4.3 },
-    { type: 'mover', once: true, vanish: true, r: 9, color: AP, path: axonSamples, duration: AP_TIME, at: AP_START },
+  const AXON_LENGTH = 707;
+  const fireAxon = (T, t0, dur, r) => [
+    { type: 'flash', x: mp(T, [495, 470])[0], y: mp(T, [495, 470])[1], r: 70 * T.k, color: AP, duration: 0.6, at: t0 - 0.2 },
+    { type: 'mover', once: true, vanish: true, r, color: AP, path: axonSamples.map((p) => mp(T, p)), duration: dur, at: t0 },
     ...nodesAlongAxon.map((d) => {
-      const [x, y] = axonAt(d);
-      return { type: 'flash', x, y, r: 26, color: AP, duration: 0.45, at: AP_START + (AP_TIME * d) / AXON_LENGTH };
+      const [x, y] = mp(T, axonAt(d));
+      return { type: 'flash', x, y, r: 40 * T.k, color: AP, duration: 0.4, at: t0 + (dur * d) / AXON_LENGTH };
     }),
-    { type: 'flash', x: terminal.x, y: terminal.y, r: 70, color: AP, duration: 0.7, at: AP_START + AP_TIME },
-    // 5. the main neuron releases its neurotransmitters onto the next neuron
-    ...releaseFrom(AP_START + AP_TIME + 0.3),
+    { type: 'flash', x: mp(T, [terminal.x, terminal.y])[0], y: mp(T, [terminal.x, terminal.y])[1], r: 110 * T.k, color: AP, duration: 0.6, at: t0 + dur },
+  ];
+  const leftTerm = mp(T_L, [1336, 470]);
+  const AP_START = 4.2, AP_TIME = 1.6;
+  const fullItems = [
+    // 1. the left neuron fires: its action potential runs down its axon
+    ...fireAxon(T_L, 0.2, 1.0, 5),
+    // 2. its neurotransmitters cross the gap onto the main neuron's dendrite
+    ...[-5, 0, 5].map((dy, n) => ({
+      type: 'mover', once: true, r: 2.6, color: '#f08c1a', smooth: true,
+      path: [[leftTerm[0] + 3, leftTerm[1] + dy], [(leftTerm[0] + mainTip[0]) / 2, mainTip[1] + dy * 1.2], [mainTip[0] - 6, mainTip[1] + dy]],
+      duration: 0.7, at: 1.35 + n * 0.1,
+    })),
+    { type: 'flash', x: mainTip[0] + 4, y: mainTip[1], r: 20, color: '#8a4fd8', duration: 0.5, at: 2.05 },
+    // 3. the signal travels along the dendrite to the cell body
+    { type: 'mover', once: true, vanish: true, r: 7, color: SPARK, smooth: true, path: DEND_ROUTE().map((p) => mp(T_C, p)), duration: 1.3, at: 2.1 },
+    { type: 'flash', x: mp(T_C, [soma.x, soma.y])[0], y: mp(T_C, [soma.x, soma.y])[1], r: 70, color: SPARK, duration: 0.8, at: 3.35 },
+    // 4. the axon hillock fires; the action potential jumps node to node
+    ...fireAxon(T_C, AP_START, AP_TIME, 8),
+    // 5. release onto the right neuron, which picks up the signal and fires too
+    ...releaseFrom(AP_START + AP_TIME + 0.25),
+    { type: 'mover', once: true, vanish: true, r: 5, color: SPARK, smooth: true, path: DEND_ROUTE().map((p) => mp(T_R, p)), duration: 0.9, at: AP_START + AP_TIME + 2.4 },
+    ...fireAxon(T_R, AP_START + AP_TIME + 3.5, 1.0, 5),
   ];
 
   // ---------- slide 4: adding up inputs at the axon hillock ----------
@@ -1031,9 +1030,9 @@
   // The slide-1 circuit with Receive -> Combine -> Send boxes. One button plays
   // the whole chain and highlights each stage as it happens.
   const STAGES8 = [
-    { name: 'Receive', from: 0, to: 2.4, x: 560, col: '#2f6fde', text: 'Neurotransmitters bind\nreceptors on the dendrites' },
-    { name: 'Combine', from: 2.4, to: 4.4, x: 900, col: '#e8890c', text: 'Signals add up at the\naxon hillock: threshold?' },
-    { name: 'Send', from: 4.4, to: 11, x: 1240, col: '#e0453a', text: 'Action potential travels;\ntransmitters are released' },
+    { name: 'Receive', from: 1.3, to: 3.35, x: 290, col: '#2f6fde', text: 'Neurotransmitters bind\nreceptors on the dendrites' },
+    { name: 'Combine', from: 3.35, to: 4.2, x: 650, col: '#e8890c', text: 'Signals add up at the\naxon hillock: threshold?' },
+    { name: 'Send', from: 4.2, to: 8.2, x: 1010, col: '#e0453a', text: 'Action potential travels;\ntransmitters are released' },
   ];
   const BOX8 = { y: 705, w: 300, h: 150 };
   const finalItems = [
@@ -1045,11 +1044,9 @@
   ];
   const finalSlide = [
     title('Putting it all together'),
-    { type: 'svg', svg: circuitSvg },
-    { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'final', { skip: FUSING, releasing: false })) },
-    ...FUSING.map((vi) => ({ type: 'vesicle', x: vesiclePts[vi][0], y: vesiclePts[vi][1], r: 11, hideDuring: 'final' })),
-    { type: 'text', x: 448, y: 878, text: 'From another neuron', size: 22, font: 'sans', color: '#2c5a92', align: 'right' },
-    { type: 'text', x: 1475, y: 600, text: 'To the next\nneuron', size: 22, font: 'sans', color: '#2f6b2a', align: 'center' },
+    { type: 'svg', svg: chainSvg },
+    ...chainVesicles('final'),
+    ...NEURON_NAMES(),
     ...STAGES8.flatMap((st, i) => [
       { type: 'rect', x: st.x, y: BOX8.y, w: BOX8.w, h: BOX8.h, color: '#d9dce3', width: 2, fill: '#ffffff', fillOpacity: 1, rough: false },
       { type: 'circle', x: st.x + 34, y: BOX8.y + 36, r: 17, color: st.col, fill: st.col, fillOpacity: 1, width: 2, rough: false },
@@ -1104,13 +1101,36 @@
     { type: 'text', x: 92, y: 562, text: 'WORKS', size: 126, font: 'sans', bold: true, color: '#1f2430' },
   ];
 
+  // Names under each of the three neurons in the chain.
+  function NEURON_NAMES() {
+    return [
+      { type: 'text', x: mp(T_L, [700, 0])[0], y: 525, text: 'Neuron 1', size: 26, font: 'sans', bold: true, color: '#2c5a92', align: 'center' },
+      { type: 'text', x: 690, y: 650, text: 'Main neuron', size: 30, font: 'sans', bold: true, color: '#5e2f78', align: 'center' },
+      { type: 'text', x: mp(T_R, [700, 0])[0], y: 525, text: 'Neuron 3', size: 26, font: 'sans', bold: true, color: '#2f6b2a', align: 'center' },
+    ];
+  }
+  // Part labels for the main neuron (and the two synapses).
+  function SLIDE1_LABELS() {
+    const c = (p) => mp(T_C, p).map(Math.round);
+    return [
+      ...label('Dendrites', 360, 150, [395, 168], c([205, 236]), 'center', 28),
+      ...label('Cell body', 650, 150, [640, 168], c([420, 425]), 'center', 28),
+      ...label('Axon hillock', 520, 730, [530, 708], c([500, 488]), 'center', 28),
+      ...label('Myelin sheath', 905, 150, [905, 168], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 10][k]), 'center', 28),
+      ...label('Axon', 840, 730, [840, 708], c(axonAt((sheaths[0].b + sheaths[1].a) / 2)), 'center', 28),
+      ...label('Axon terminal', 1150, 150, [1150, 168], c([1300, 425]), 'center', 28),
+      ...label('Synapse', 330, 470, [356, 452], [Math.round((mp(T_L, [1348, 470])[0] + mainTip[0]) / 2), AXIS + 8], 'center', 28),
+      ...label('Synapse', 1110, 470, [1140, 452], [Math.round((mp(T_C, [1348, 470])[0] + rightTip[0]) / 2), AXIS + 8], 'center', 28),
+    ];
+  }
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'neuron',
     title: '🧠 How a neuron works',
     audio: false,
     drawn: false,
     steps: [
-      // Slide 1: the parts of a neuron, labelled, as part of a small circuit.
+      // Slide 1: overview - three neurons in a chain; the main one labelled.
       {
         say: 'A neuron has four main parts: dendrites, a cell body, an axon, and axon terminals.',
         actions: [
@@ -1119,18 +1139,10 @@
         ],
         items: [
           { type: 'text', x: 800, y: 80, text: 'How a neuron works', size: 60, font: 'sans', bold: true, align: 'center', color: 'ink' },
-          { type: 'svg', svg: circuitSvg },
-          { type: 'svg', svg: svgDoc(neuronMarkup(PURPLE, 'main', { skip: FUSING, releasing: false })) },
-          ...FUSING.map((vi) => ({ type: 'vesicle', x: vesiclePts[vi][0], y: vesiclePts[vi][1], r: 11, hideDuring: ['release', 'full'] })),
-          ...label('Dendrites', 70, 120, [150, 140], [205, 236], 'left', 34),
-          ...label('Cell body', 560, 300, [545, 318], [425, 425], 'center', 34),
-          ...label('Axon hillock', 560, 640, [555, 618], [500, 488], 'center', 34),
-          ...label('Myelin sheath', 880, 330, [880, 352], axonAt((sheaths[1].a + sheaths[1].b) / 2).map((v, k) => Math.round(v - [0, 16][k])), 'center', 34),
-          ...label('Axon', 790, 640, [790, 618], axonAt((sheaths[0].b + sheaths[1].a) / 2).map(Math.round), 'center', 34),
-          ...label('Axon terminal', 1420, 300, [1395, 322], [1318, 428], 'center', 34),
-          ...label('Vesicles with\nneurotransmitters', 1190, 700, [1215, 672], [1290, 514], 'center', 30),
-          ...label('Dendrite of the\nnext neuron', 1475, 610, [1475, 586], [1468, 478], 'center', 30),
-          ...label('Axon terminal of\nanother neuron', 600, 790, [592, 800], [496, 826], 'left', 30),
+          { type: 'svg', svg: chainSvg },
+          ...chainVesicles(['release', 'full']),
+          ...NEURON_NAMES(),
+          ...SLIDE1_LABELS(),
         ],
       },
       // Slide 2: membrane potential and how ion channels change it.
