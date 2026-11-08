@@ -136,81 +136,6 @@
     ...(window.WB_LOCATOR ? window.WB_LOCATOR({ x: 1212, y: 728, w: 330, h: 120, spot: [66, 442], terminal: true }) : []),
   ];
 
-  // ---------- slide 3: temporal summation ----------
-  // The same neuron, but only E1 is active: it fires 1, 2 or 3 times in quick succession.
-  // Each EPSP fades on its own, so only when they pile up does the hillock reach -55 mV.
-  const slide3 = (() => {
-    const W = window.WB_SUMMATION;
-    if (!W) return null;
-    const { fire, actionPotential, hillockPt, inputs, EXC, SPARK, label } = W;
-    const e1 = inputs.E1;
-    const GAP = 1.2;              // seconds between firings
-    const ARRIVE = 1.8;           // a firing at t reaches the hillock at t + ARRIVE (fire() travel time)
-    const PEAKS = [-62, -57, -50];   // hillock potential right after the 1st, 2nd, 3rd EPSP arrives
-    const FADED = [-65, -62];        // how far each EPSP has faded by the time the next one arrives
-    const ORD = ['1st', '2nd', '3rd'];
-    const v = (from, to, at, duration) => ({ type: 'value', id: 'axh', from, to, at, duration });
-    const pop = (text, color, at, until, x = e1.c[0] + 46, y = e1.c[1], align = 'left', size = 28) =>
-      ({ type: 'text', x, y, text, size, font: 'sans', bold: true, color, align, anim: 'pop', duration: 0.3, at, until });
-    const SPREAD = 2.6;           // gap when the firings are spread far apart
-    const repeated = (n, spread = false) => {
-      const items = [];
-      let level = REST;
-      const gap = spread ? SPREAD : GAP;
-      for (let k = 0; k < n; k++) {
-        const t = k * gap, a = t + ARRIVE;
-        items.push(...fire('E1', t), pop(`${ORD[k]} firing`, EXC.edge, t, t + gap - 0.05));
-        items.push({ type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 26 + (spread ? 0 : 6 * k), color: SPARK, duration: 0.5, at: a });
-        if (spread) {
-          // each EPSP fades completely before the next one arrives, so nothing adds up
-          items.push(v(REST, PEAKS[0], a - 0.2, 0.4), v(PEAKS[0], REST, a + 0.2, 2.0));
-          continue;
-        }
-        items.push(v(level, PEAKS[k], a - 0.2, 0.4));        // this EPSP arrives and adds on top of what is left
-        if (k < n - 1) { items.push(v(PEAKS[k], FADED[k], a + 0.2, GAP - 0.5)); level = FADED[k]; }
-      }
-      const last = (n - 1) * gap + ARRIVE;
-      if (spread) {
-        items.push(pop('Too slow: each EPSP faded\nbefore the next one arrived', '#5b6270', last + 0.5, last + 3.5, 860, 545, 'center', 24));
-      } else if (n === 3) {
-        items.push(pop('Piled up past −55 mV!', '#e0453a', last + 0.1, last + 3.5, 860, 545, 'center', 26), ...actionPotential(last + 0.25));
-      } else {
-        items.push(v(PEAKS[n - 1], REST, last + 0.4, 2.4),
-          pop(n === 1 ? 'Fades away. Not enough.' : 'Closer, but still below threshold', '#5b6270', last + 0.3, last + 3.2, 860, 545, 'center', 26));
-      }
-      return items;
-    };
-    const actions = [
-      { id: 'r1', label: 'Fire 1 time', items: repeated(1) },
-      { id: 'r2', label: 'Fire 2 times', items: repeated(2) },
-      { id: 'r3', label: 'Fire 3 times', items: repeated(3) },
-      { id: 'r3s', label: 'Fire 3 times, spread apart', items: repeated(3, true) },
-    ];
-    const terminal = `<g filter="url(#sh3)">
-      <path d="M${e1.c.map(f1)} L${e1.axonEnd.map(f1)}" stroke="${EXC.edge}" stroke-width="16" stroke-linecap="round"/>
-      <path d="M${e1.c.map(f1)} L${e1.axonEnd.map(f1)}" stroke="${EXC.fill}" stroke-width="10" stroke-linecap="round"/>
-      <circle cx="${f1(e1.c[0])}" cy="${f1(e1.c[1])}" r="21" fill="${EXC.edge}"/>
-      <circle cx="${f1(e1.c[0])}" cy="${f1(e1.c[1])}" r="18" fill="${EXC.fill}"/>
-      ${[[-6, -5], [6, -4], [0, 6]].map(([a, b]) => `<circle cx="${f1(e1.c[0] + a)}" cy="${f1(e1.c[1] + b)}" r="3.2" fill="${EXC.nt}"/>`).join('')}</g>`;
-    const items = [
-      title('Temporal summation'),
-      { type: 'svg', svg: W.svgDoc(`<defs><filter id="sh3" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#13294a" flood-opacity="0.25"/></filter></defs>
-        <g transform="translate(${W.TX4} ${W.TY4}) scale(${W.K4})">${W.neuronMarkup(W.PURPLE, 'sum3', { releasing: false })}</g>${terminal}`) },
-      { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: W.AP, width: 3, dashed: true, rough: false },
-      ...label('Axon hillock\n(adds up the signals)', 640, 290, [600, 340], [hillockPt[0] + 12, hillockPt[1] - 30], 'center', 28),
-      { type: 'text', x: e1.c[0] - 36, y: e1.c[1], text: 'E1', size: 26, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
-      { type: 'text', x: 520, y: 640, text: 'One excitatory neuron,\nfiring again and again', size: 26, font: 'sans', color: EXC.edge },
-      {
-        type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
-        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
-        fireText: 'Action potential fired!',
-      },
-      { type: 'text', x: 1375, y: 650, text: 'Each EPSP fades fast.\nOne that arrives before the\nlast has faded adds on top.', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
-      { type: 'text', x: 1375, y: 770, text: 'Reach −55 mV and\nthe neuron fires', size: 22, font: 'sans', bold: true, color: '#e0453a', align: 'center' },
-    ];
-    return { actions, items };
-  })();
-
   // ---------- intro slide: a neuron has to decide ----------
   const slideIntro = (() => {
     const W = window.WB_SUMMATION;
@@ -267,17 +192,13 @@
     return { actions, items };
   })();
 
-  // ---------- spatial summation ----------
-  // One dendrite with two excitatory inputs (A far from the axon hillock, B nearer) and an
-  // inhibitory input (I) right next to the hillock. An EPSP/IPSP is a graded potential: it shrinks
-  // as it travels, so what matters is where each input lands. Numbers (mV above/below rest):
-  //   A reaches the hillock as +6, B as +10, I as -5. A + B = +16 (to -54 mV: fires); A + B + I = +11 (-59: blocked).
-  const slideWhy = (() => {
-    const W = window.WB_SUMMATION;
-    if (!W) return null;
-    const { EXC, INH, label, SPARK } = W;
-    const Y = 450, XA = 250, XB = 720, XH = 1070;      // dendrite height; far input, near input, axon hillock
-    const IX = 985, IY = 318;                          // inhibitory terminal, on the cell body next to the hillock
+  // ---------- shared drawing for the spatial and temporal slides ----------
+  // A dendrite leading to the cell body and axon hillock, with excitatory inputs on the dendrite
+  // and one inhibitory input (I) on the cell body right next to the hillock, plus the graph panel.
+  const STRIP = { Y: 450, XH: 1070, IX: 985, IY: 318 };
+  const buildStrip = (W, { title: head, exc, foot, excLegend }) => {
+    const { EXC, INH, label } = W;
+    const { Y, XH, IX, IY } = STRIP;
     const bulb = (x, y, st) => `<path d="M${x} ${y} L${x} 110" stroke="${st.edge}" stroke-width="16" stroke-linecap="round"/>
       <path d="M${x} ${y} L${x} 110" stroke="${st.fill}" stroke-width="10" stroke-linecap="round"/>
       <circle cx="${x}" cy="${y}" r="21" fill="${st.edge}"/><circle cx="${x}" cy="${y}" r="18" fill="${st.fill}"/>
@@ -293,8 +214,42 @@
         <path d="M1085 ${Y} L1172 ${Y}" stroke="#d4afe2" stroke-width="7" stroke-linecap="round"/>
         <circle cx="950" cy="${Y}" r="105" fill="url(#somaW)" stroke="#5e2f78" stroke-width="5"/>
         <circle cx="940" cy="${Y - 10}" r="30" fill="#5a2b75"/><circle cx="950" cy="${Y - 16}" r="9" fill="#3a1650"/>
-        ${bulb(XA, 390, EXC)}${bulb(XB, 390, EXC)}${bulb(IX, IY, INH)}
+        ${exc.map((e) => bulb(e.x, 390, EXC)).join('')}${bulb(IX, IY, INH)}
       </g>`);
+    const items = [
+      title(head),
+      { type: 'svg', svg },
+      ...exc.map((e) => ({ type: 'text', x: e.x - 36, y: 390, text: e.letter, size: 30, font: 'sans', bold: true, color: EXC.edge, align: 'right' })),
+      { type: 'text', x: IX - 36, y: IY, text: 'I', size: 30, font: 'sans', bold: true, color: INH.edge, align: 'right' },
+      ...label('Dendrite', 140, 340, [150, 362], [160, Y - 14], 'center', 26),
+      { type: 'circle', x: XH, y: Y, r: 34, color: W.AP, width: 3, dashed: true, rough: false },
+      ...label('Axon hillock', 1100, 335, [1086, 357], [XH + 6, Y - 32], 'center', 26),
+      { type: 'text', x: 600, y: 800, text: foot, size: 21, font: 'sans', color: '#3b4252', align: 'center' },
+      {
+        type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
+        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
+        fireText: 'Action potential fired!',
+      },
+      { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
+      { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 790, text: excLegend, size: 21, font: 'sans', color: 'ink' },
+      { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
+      { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
+    ];
+    return { items };
+  };
+
+  // ---------- spatial summation ----------
+  // One dendrite with two excitatory inputs (A far from the axon hillock, B nearer) and an
+  // inhibitory input (I) right next to the hillock. An EPSP/IPSP is a graded potential: it shrinks
+  // as it travels, so what matters is where each input lands. Numbers (mV above/below rest):
+  //   A reaches the hillock as +6, B as +10, I as -5. A + B = +16 (to -54 mV: fires); A + B + I = +11 (-59: blocked).
+  const slideWhy = (() => {
+    const W = window.WB_SUMMATION;
+    if (!W) return null;
+    const { EXC, INH, SPARK } = W;
+    const { Y, XH, IX, IY } = STRIP;
+    const XA = 250, XB = 720;                          // far and near excitatory inputs
     // one excitatory input alone: shows how much of its EPSP is left at each point along the way
     const run = ({ xs, dur, vals, peak, verdict }) => {
       const xm = (xs + XH) / 2, xsList = [xs, xm, XH];
@@ -356,27 +311,79 @@
       { id: 'ab', label: 'Fire A + B together', items: together({ withI: false }) },
       { id: 'abi', label: 'Fire A + B + I', items: together({ withI: true }) },
     ];
-    const items = [
-      title('Spatial summation'),
-      { type: 'svg', svg },
-      { type: 'text', x: XA - 36, y: 390, text: 'A', size: 30, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
-      { type: 'text', x: XB - 36, y: 390, text: 'B', size: 30, font: 'sans', bold: true, color: EXC.edge, align: 'right' },
-      { type: 'text', x: IX - 36, y: IY, text: 'I', size: 30, font: 'sans', bold: true, color: INH.edge, align: 'right' },
-      ...label('Dendrite', 140, 340, [150, 362], [160, Y - 14], 'center', 26),
-      { type: 'circle', x: XH, y: Y, r: 34, color: W.AP, width: 3, dashed: true, rough: false },
-      ...label('Axon hillock', 1100, 335, [1086, 357], [XH + 6, Y - 32], 'center', 26),
-      { type: 'text', x: 600, y: 800, text: 'An EPSP or IPSP gets smaller the farther it travels, so inputs close to the hillock count for more.\nInputs from different places add up at the hillock: this is spatial summation.', size: 21, font: 'sans', color: '#3b4252', align: 'center' },
-      {
-        type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
-        title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
-        fireText: 'Action potential fired!',
-      },
-      { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 22, font: 'sans', color: '#3b4252', align: 'center' },
-      { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
-      { type: 'text', x: 1256, y: 790, text: 'A, B: excitatory', size: 21, font: 'sans', color: 'ink' },
-      { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
-      { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
+    const { items } = buildStrip(W, {
+      title: 'Spatial summation',
+      exc: [{ x: XA, letter: 'A' }, { x: XB, letter: 'B' }],
+      excLegend: 'A, B: excitatory',
+      foot: 'An EPSP or IPSP gets smaller the farther it travels, so inputs close to the hillock count for more.\nInputs from different places add up at the hillock: this is spatial summation.',
+    });
+    return { actions, items };
+  })();
+
+  // ---------- temporal summation ----------
+  // Same picture as the spatial slide, but one excitatory input (E) firing again and again, and the
+  // inhibitory input (I) next to the hillock. Each EPSP fades, so only quick repeats pile up;
+  // I takes a bit off every EPSP, and enough extra firing of E overcomes it.
+  const slide3 = (() => {
+    const W = window.WB_SUMMATION;
+    if (!W) return null;
+    const { EXC, INH, SPARK, AP } = W;
+    const { Y, XH, IX, IY } = STRIP;
+    const XE = 720;
+    const GAP = 1.2, SPREAD = 2.6, ARR = 1.3;            // seconds between firings; time for a signal to reach the hillock
+    const ORD = ['1st', '2nd', '3rd', '4th', '5th'];
+    const v = (from, to, at, duration) => ({ type: 'value', id: 'axh', from, to, at, duration });
+    const say = (text, color, at, until) => ({ type: 'text', x: 600, y: 700, text, size: 26, font: 'sans', bold: true, color, align: 'center', anim: 'pop', duration: 0.4, at, until });
+    const sendE = (t) => [
+      { type: 'flash', x: XE, y: 390, r: 28, color: EXC.nt, duration: 0.5, at: t },
+      { type: 'mover', once: true, vanish: true, r: 8, color: SPARK, path: [[XE, 400], [XE, Y], [XH, Y]], duration: 1.0, at: t + 0.3 },
     ];
+    const sendI = (t) => [
+      { type: 'flash', x: IX, y: IY, r: 28, color: INH.nt, duration: 0.5, at: t },
+      { type: 'mover', once: true, vanish: true, r: 7, color: INH.nt, smooth: true, path: [[IX, IY + 22], [1012, 400], [1060, Y - 12]], duration: 0.9, at: t + ARR - 0.9 },
+      { type: 'flash', x: XH, y: Y, r: 40, color: INH.nt, duration: 0.7, at: t + ARR },
+    ];
+    const fireAP = (t0) => [
+      { type: 'flash', x: XH, y: Y, r: 44, color: AP, duration: 0.8, at: t0 },
+      v(-50, 30, t0, 0.25), v(30, -80, t0 + 0.25, 0.55), v(-80, REST, t0 + 0.8, 1.8),
+      { type: 'mover', once: true, vanish: true, r: 8, color: AP, path: [[1085, Y], [1172, Y]], duration: 0.6, at: t0 + 0.1 },
+    ];
+    // n firings of E (paired with an IPSP for the first nI of them). `peaks` is the hillock potential just
+    // after each EPSP lands; `faded` is what is left when the next one arrives. `fires`: the last one reaches threshold.
+    const run = ({ n, nI = 0, peaks, faded = [], fires = false, spread = false, verdict, color }) => {
+      const out = [];
+      const gap = spread ? SPREAD : GAP;
+      let level = REST;
+      for (let k = 0; k < n; k++) {
+        const t = k * gap, a = t + ARR;
+        out.push(...sendE(t),
+          { type: 'text', x: XE + 34, y: 390, text: `${ORD[k]} firing`, size: 20, font: 'sans', bold: true, color: EXC.edge, anim: 'pop', duration: 0.3, at: t, until: gap - 0.05 },
+          { type: 'flash', x: XH, y: Y, r: 26, color: SPARK, duration: 0.5, at: a });
+        if (k < nI) out.push(...sendI(t));
+        if (spread) { out.push(v(REST, peaks[0], a - 0.2, 0.4), v(peaks[0], REST, a + 0.2, 2.0)); continue; }
+        out.push(v(level, peaks[k], a - 0.2, 0.4));
+        if (k < n - 1) { out.push(v(peaks[k], faded[k], a + 0.2, gap - 0.5)); level = faded[k]; }
+      }
+      const last = (n - 1) * gap + ARR;
+      if (fires) out.push(say(verdict, color, last + 0.3, 4), ...fireAP(last + 0.25));
+      else out.push(v(peaks[n - 1], REST, last + 0.4, 2.4), say(verdict, color, last + 0.4, 3.2));
+      return out;
+    };
+    const GREY = '#5b6270';
+    const actions = [
+      { id: 'r1', label: 'Fire 1 time', items: run({ n: 1, peaks: [-62], verdict: 'Fades away. Not enough.', color: GREY }) },
+      { id: 'r2', label: 'Fire 2 times', items: run({ n: 2, peaks: [-62, -57], faded: [-65], verdict: 'Closer, but still below threshold.', color: GREY }) },
+      { id: 'r3', label: 'Fire 3 times', items: run({ n: 3, peaks: [-62, -57, -50], faded: [-65, -62], fires: true, verdict: 'The EPSPs piled up past −55 mV:\nthe neuron fires!', color: '#e0453a' }) },
+      { id: 'r3s', label: 'Fire 3 times, spread apart', items: run({ n: 3, peaks: [-62], spread: true, verdict: 'Too slow: each EPSP faded\nbefore the next one arrived.', color: GREY }) },
+      { id: 'r3i', label: 'Fire 3 times + inhibition', items: run({ n: 3, nI: 3, peaks: [-66, -64, -62], faded: [-68, -66], verdict: 'The inhibitory input cancels each EPSP:\nno action potential.', color: INH.edge }) },
+      { id: 'r5i', label: 'Fire 5 times + inhibition', items: run({ n: 5, nI: 3, peaks: [-66, -64, -62, -56, -50], faded: [-68, -66, -64, -59], fires: true, verdict: 'Five excitatory firings outlast the three\ninhibitory ones: threshold reached!', color: '#e0453a' }) },
+    ];
+    const { items } = buildStrip(W, {
+      title: 'Temporal summation',
+      exc: [{ x: XE, letter: 'E' }],
+      excLegend: 'E: excitatory',
+      foot: 'Each EPSP fades quickly. If the same input fires again before it has faded, the EPSPs add up:\nthis is temporal summation. Inhibition next to the hillock takes a bit off every one.',
+    });
     return { actions, items };
   })();
 
@@ -600,7 +607,7 @@ So how does a neuron add up all those signals? That's what we're going to figure
       }] : []),
       // Slide 4: temporal summation - the same excitatory neuron firing 1, 2, then 3 times in a row.
       ...(slide3 ? [{
-        say: 'Each EPSP fades quickly, but if the same neuron fires again before it has faded, the EPSPs add up: three in a row reach threshold.',
+        say: 'Each EPSP fades quickly, but repeated firing adds up: three in a row reach threshold, inhibition can cancel that, and enough extra firing overcomes the inhibition.',
         clear: true,
         actions: slide3.actions,
         items: slide3.items,
