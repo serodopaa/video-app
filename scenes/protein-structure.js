@@ -503,53 +503,78 @@
     txt('R groups (faded) stick out and are not involved', 420, 740, 20, '#8a7a45', { align: 'center', bold: true }),
     txt('The backbone (faded) is not what bonds here', 1180, 730, 20, '#5b6270', { align: 'center', bold: true }),
   ];
-  // ---- the opening view: one amino acid as a skeletal line structure ----
-  // Corners and line ends are carbon unless a letter is shown; hydrogens on carbon are left out.
-  const AAS = { N: [250, 590], CA: [380, 515], C: [510, 590], O: [510, 725], OH: [640, 515], R: [380, 380] };
-  const gapLine = (a, b, g1, g2, w = 7) => {
-    const d = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / d, uy = (b[1] - a[1]) / d;
-    return ln(a[0] + ux * g1, a[1] + uy * g1, b[0] - ux * g2, b[1] - uy * g2, w, '#2d3340');
-  };
-  const dblLine = (a, b, g1, g2) => {
-    const d = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / d * 5, ny = (b[0] - a[0]) / d * 5;
-    return gapLine([a[0] + nx, a[1] + ny], [b[0] + nx, b[1] + ny], g1, g2, 5) + gapLine([a[0] - nx, a[1] - ny], [b[0] - nx, b[1] - ny], g1, g2, 5);
-  };
-  const aaLabel = (t, x, y, c = '#2d3340', size = 34) => `<text x="${x}" y="${y + size * 0.36}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="${size}" text-anchor="middle" fill="${c}">${t}</text>`;
-  const aaSvg = (() => {
-    const { N, CA, C, O, OH, R } = AAS;
-    return `<ellipse cx="${N[0] - 20}" cy="${N[1] + 6}" rx="78" ry="48" fill="#5b8def" opacity="0.2"/>
-      <ellipse cx="${(C[0] + OH[0]) / 2 + 8}" cy="${(C[1] + OH[1]) / 2 + 20}" rx="150" ry="116" fill="#f26b5b" opacity="0.16"/>
-      <circle cx="${R[0]}" cy="${R[1] - 6}" r="48" fill="#efe2b8" opacity="0.7"/>
-      ${ln(N[0] + 24, N[1] - 14, CA[0], CA[1], 38, '#ffd34d', 0.4)}${ln(CA[0], CA[1], C[0], C[1], 38, '#ffd34d', 0.4)}
-      ${gapLine(N, CA, 52, 0)}${gapLine(CA, C, 0, 0)}${gapLine(CA, R, 0, 34, 7)}${dblLine(C, O, 0, 30)}${gapLine(C, OH, 0, 32)}
-      <circle cx="${CA[0]}" cy="${CA[1]}" r="9" fill="#6b7280"/>
-      ${aaLabel('H₂N', N[0] - 30, N[1] + 6, '#1d4fb0')}${aaLabel('O', O[0], O[1] + 4, '#a8281a')}${aaLabel('OH', OH[0] + 10, OH[1] - 6, '#a8281a')}${aaLabel('R', R[0], R[1] - 6, '#8a7a45', 38)}`;
-  })();
-  const aaPanel = (extra) => ({ ...extra, hideDuring: ['sv-sec', 'sv-ter'] });
-  const aaStatic = [
-    { type: 'rect', x: 60, y: 205, w: 840, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
-    { type: 'rect', x: 940, y: 205, w: 600, h: 560, color: SV[0].color, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
-    txt('One amino acid: line structure', 480, 240, 30, SV[0].color, { align: 'center', bold: true }),
-    svgItem(aaSvg),
-    ...label('Amino group (–NH₂)', 100, 690, [190, 674], [AAS.N[0] - 34, AAS.N[1] + 36], 'left', 20),
-    ...label('Carboxyl group (–COOH)', 600, 742, [720, 726], [AAS.OH[0] + 12, AAS.OH[1] + 70], 'left', 20),
-    ...label('Central carbon (Cα)', 520, 300, [520, 316], [AAS.CA[0] + 10, AAS.CA[1] - 8], 'left', 20),
-    ...label('R group (side chain)', 130, 330, [186, 346], [AAS.R[0] - 30, AAS.R[1] - 6], 'left', 20),
-    txt('BACKBONE', 410, 640, 22, '#8a6d00', { align: 'center', bold: true }),
-    txt('N – Cα – C', 410, 668, 20, '#8a6d00', { align: 'center' }),
-    txt('Line structures: reading the drawing', 1240, 246, 28, SV[0].color, { align: 'center', bold: true }),
-    txt('Each corner or end of a line is a carbon\natom, unless a letter is shown.\n\nHydrogens on carbon are left out.\n\nEvery amino acid has the same\nbackbone: N – Cα – C.\n\nOnly the R group is different.\nThere are 20 different R groups.', 975, 350, 23, '#3b4252'),
-    txt('Backbone = amber   R group = tan', 1240, 726, 21, '#5b6270', { align: 'center', bold: true }),
-  ].map(aaPanel);
-  const svAaAnim = [
-    { type: 'flash', x: AAS.N[0] - 20, y: AAS.N[1], r: 70, color: '#5b8def', duration: 0.9, at: 0.2 },
-    { type: 'flash', x: AAS.CA[0], y: AAS.CA[1], r: 60, color: '#ffd34d', duration: 0.9, at: 1.0 },
-    { type: 'flash', x: AAS.C[0] + 60, y: AAS.C[1] - 10, r: 110, color: '#f26b5b', duration: 0.9, at: 1.8 },
-    { type: 'flash', x: AAS.R[0], y: AAS.R[1], r: 60, color: '#b9a46a', duration: 0.9, at: 2.6 },
+  // ---- the opening view: one amino acid, drawn like on the primary structure slide ----
+  // Buttons choose the R group: a generic R, or three examples (alanine, serine, lysine).
+  const AAX = [
+    { id: 'sv-aa', btn: 'Generic (R)', name: 'Any amino acid', chain: [['R', '#8a7a45']], rText: 'R', kind: 'Any side chain',
+      body: 'R stands for the side chain, the only part\nthat differs between amino acids.\n\nThere are 20 different R groups.\n\nPick an example above to see some.' },
+    { id: 'sv-aa-ala', btn: 'Alanine', name: 'Alanine', chain: [['CH₃', '#a07c00']], rText: 'R = –CH₃', kind: 'Small and nonpolar',
+      body: 'A tiny hydrocarbon group.\n\nIt does not mix with water\n(hydrophobic), so it tends to be\nburied in the core of a protein.' },
+    { id: 'sv-aa-ser', btn: 'Serine', name: 'Serine', chain: [['CH₂', '#2e7d32'], ['OH', '#2e7d32']], rText: 'R = –CH₂OH', kind: 'Polar',
+      body: 'Has an –OH group that is polar,\nso it can form hydrogen bonds\nwith water and with other R groups.\n\nIt tends to sit on the outside.' },
+    { id: 'sv-aa-lys', btn: 'Lysine', name: 'Lysine', chain: [['CH₂', '#1d4fb0'], ['CH₂', '#1d4fb0'], ['CH₂', '#1d4fb0'], ['CH₂', '#1d4fb0'], ['NH₃⁺', '#1d4fb0']], rText: 'R = –(CH₂)₄NH₃⁺', kind: 'Positively charged',
+      body: 'A long chain ending in a + charge.\n\nIt can form an ionic bond with a\nnegatively charged R group\n(e.g. glutamate).' },
   ];
+  const AA_IDS = AAX.map((e) => e.id);
+  const AF = { x: 450, y: 372 };
+  // one amino acid as letters and lines, centred on AF, with the given R chain hanging below the Cα
+  const aaForm = (chain) => {
+    const { x, y } = AF;
+    const out = [
+      { type: 'highlight', x: x - 138, y: y - 24, w: 332, h: 48, color: '#ffd34d', opacity: 0.5 },
+      atom('H₂N', x - 100, y), ...bond(x - 62, y, x - 22, y), atom('C', x, y),
+      ...bond(x, y - 20, x, y - 46), atom('H', x, y - 64),
+      ...bond(x + 20, y, x + 58, y), atom('C', x + 78, y), ...bond(x + 78, y - 20, x + 78, y - 46, true), atom('O', x + 78, y - 64),
+      ...bond(x + 98, y, x + 126, y), atom('OH', x + 152, y),
+      ...bond(x, y + 20, x, y + 46),
+    ];
+    chain.forEach(([t, c], i) => {
+      const cy = y + 66 + i * 50;
+      out.push(atom(t, x, cy, c, t.length > 2 ? 28 : 30));
+      if (i < chain.length - 1) out.push(...bond(x, cy + 20, x, cy + 30));
+    });
+    const my = y + 66 + ((chain.length - 1) * 50) / 2;
+    return { items: out, rMid: my };
+  };
+  const aaView = (e, active, extra = []) => {
+    const f = aaForm(e.chain), { x, y } = AF, chainEnd = y + 66 + (e.chain.length - 1) * 50;
+    return [
+      ...svTabOn(SV[0], 0),
+      { type: 'rect', x: 60, y: 205, w: 840, h: 560, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+      { type: 'rect', x: 940, y: 205, w: 600, h: 560, color: SV[0].color, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+      ...AAX.flatMap((q, i) => {
+        const bx = 84 + i * 198;
+        return [
+          { type: 'rect', x: bx, y: 220, w: 186, h: 40, color: SV[0].color, fill: q.id === e.id ? SV[0].color : '#ffffff', fillOpacity: 1, width: 3, rough: false },
+          txt(q.btn, bx + 93, 240, 21, q.id === e.id ? '#ffffff' : SV[0].color, { align: 'center', bold: true }),
+          { type: 'hotspot', x: bx, y: 220, w: 186, h: 40, action: q.id },
+        ];
+      }),
+      ...f.items,
+      ...label('Amino group', 110, 470, [196, 456], [x - 108, y + 16], 'left', 20),
+      ...label('Carboxyl group', 690, 300, [686, 308], [x + 132, y - 20], 'left', 20),
+      ...label('Central carbon (Cα)', 100, 322, [262, 330], [x - 10, y - 12], 'left', 20),
+      ...label('R group (side chain)', 640, f.rMid + 50, [636, f.rMid + 42], [x + 40, f.rMid], 'left', 20),
+      txt('Amber highlight = the backbone (N, C, C), the same in every amino acid', 480, 740, 20, '#8a6d00', { align: 'center', bold: true }),
+      txt(e.name, 1240, 262, 34, SV[0].color, { align: 'center', bold: true }),
+      txt(e.rText, 1240, 308, 26, '#8a7a45', { align: 'center', bold: true }),
+      txt(e.kind, 1240, 350, 24, '#3b4252', { align: 'center', bold: true }),
+      txt(e.body, 975, 470, 23, '#3b4252'),
+      txt('The R group is what makes each amino acid\ndifferent. In tertiary structure, R groups\ninteract with each other.', 1240, 690, 20, '#5b6270', { align: 'center', bold: true }),
+      ...extra,
+    ];
+  };
+  const svAaAnim = [
+    { type: 'flash', x: AF.x - 100, y: AF.y, r: 60, color: '#5b8def', duration: 0.9, at: 0.2 },
+    { type: 'flash', x: AF.x, y: AF.y, r: 50, color: '#ffd34d', duration: 0.9, at: 1.0 },
+    { type: 'flash', x: AF.x + 115, y: AF.y, r: 80, color: '#f26b5b', duration: 0.9, at: 1.8 },
+    { type: 'flash', x: AF.x, y: AF.y + 66, r: 50, color: '#b9a46a', duration: 0.9, at: 2.6 },
+  ];
+  const aaStatic = aaView(AAX[0]).map((it) => ({ ...it, hideDuring: [...AA_IDS, 'sv-sec', 'sv-ter'] }));
+  const aaActions = AAX.map((e, i) => ({ id: e.id, label: i ? e.btn : 'Amino acid', group: 'sv', stay: true, drawn: false, items: [...aaView(e), ...(i ? [] : svAaAnim)] }));
 
   const svActions = [
-    { id: 'sv-aa', label: 'Amino acid', group: 'sv', stay: true, drawn: false, items: svAaAnim },
+    ...aaActions,
     {
       id: 'sv-sec', label: 'Secondary', group: 'sv', stay: true, drawn: false,
       items: [
@@ -574,7 +599,6 @@
   const secVsTerItems = [
     title('Secondary vs tertiary'),
     ...svTabsStatic,
-    ...svTabOn(SV[0], 0).map((it) => ({ ...it, hideDuring: ['sv-sec', 'sv-ter'] })),
     ...aaStatic,
     { type: 'rect', x: 60, y: 780, w: 1480, h: 100, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
     txt('Secondary = interactions between the BACKBONES of the amino acids', 800, 812, 27, SV[1].color, { align: 'center', bold: true }),
