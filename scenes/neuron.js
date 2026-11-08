@@ -734,8 +734,7 @@
   const inputs = {
     E1: { at: [228, 145], dir: norm([-0.35, -1]), st: EXC },
     E2: { at: [332, 125], dir: norm([0.25, -1]), st: EXC },
-    E3: { at: [248, 828], dir: norm([-0.45, 1]), st: EXC },
-    I: { at: [362, 640], dir: norm([0.75, 1]), st: INH },
+    I: { at: [403, 352], dir: norm([0.3, -1]), st: INH },   // base of an upper dendrite, next to the hillock
   };
   for (const s of Object.values(inputs)) {
     const p = S4(s.at);
@@ -759,10 +758,8 @@
   const routes = {
     E1: [[228, 145], [230, 190], [250, 225], [255, 280], [300, 330], [340, 400], [380, 470], HILLOCK],
     E2: [[332, 125], [345, 175], [360, 210], [390, 250], [410, 310], [400, 380], [380, 470], HILLOCK],
-    E3: [[248, 828], [268, 815], [285, 790], [300, 750], [330, 710], [360, 640], [365, 560], [380, 470], HILLOCK],
-    I: [[362, 640], [365, 560], [380, 470], HILLOCK],
+    I: [[403, 352], [400, 390], [420, 440], HILLOCK],
   };
-  const BLOCK_AT = 5; // index in E3's route where the inhibitory synapse sits
   const hillockPt = S4(HILLOCK);
 
   // A synapse firing at t0: the terminal flashes and an EPSP/IPSP heads to the hillock.
@@ -794,72 +791,46 @@
     { type: 'value', id: 'axh', from: to, to: REST, at: t0 + 0.9, duration: back },
   ];
   const sumActions = [
-    { id: 'e1', label: 'E1 alone', items: [...fire('E1', 0), ...bump(-62, 1.6), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 34, color: SPARK, duration: 0.6, at: 1.75 }] },
     {
-      id: 'e1e2', label: 'E1 + E2 together',
+      id: 'exc', label: 'Excitatory inputs (E1 + E2)',
       items: [...fire('E1', 0), ...fire('E2', 0),
         { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 40, color: SPARK, duration: 0.5, at: 1.75 },
         { type: 'value', id: 'axh', from: REST, to: -50, at: 1.6, duration: 0.45 }, ...actionPotential(2.05)],
     },
     {
-      id: 'e3', label: 'E3 alone',
-      items: [...fire('E3', 0, { travel: 1.9 }),
-        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 40, color: SPARK, duration: 0.5, at: 2.25 },
-        { type: 'value', id: 'axh', from: REST, to: -50, at: 2.1, duration: 0.45 }, ...actionPotential(2.55)],
-    },
-    {
-      id: 'e3i', label: 'E3 + I together',
-      items: [...fire('I', 0, { travel: 0.8 }), ...fire('E3', 0, { travel: 0.95, stopAt: BLOCK_AT }),
-        { type: 'pulse', x: inputs.I.p[0], y: inputs.I.p[1], r: 30, color: INH.nt, speed: 1.2, at: 0.3 },
-        { type: 'flash', x: inputs.I.p[0], y: inputs.I.p[1], r: 40, color: INH.nt, duration: 0.7, at: 1.3 },
-        { type: 'text', x: inputs.I.p[0] + 64, y: inputs.I.p[1] - 46, text: 'blocked!', size: 26, font: 'sans', bold: true, color: INH.edge, anim: 'pop', duration: 0.4, at: 1.35, until: 2.6 },
-        ...bump(-72, 1.2, 2.0)],
-    },
-    // Temporal summation: the same synapse firing repeatedly.
-    {
-      id: 'e1slow', label: 'E1 ×3, slow',
-      items: [0, 3, 6].flatMap((t0) => [
-        ...fire('E1', t0), ...bump(-62, t0 + 1.6),
-        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 34, color: SPARK, duration: 0.6, at: t0 + 1.75 },
-      ]),
-    },
-    {
-      id: 'e1fast', label: 'E1 ×3, fast',
-      items: [
-        ...[0, 0.5, 1.0].flatMap((t0) => [...fire('E1', t0), { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 36, color: SPARK, duration: 0.5, at: t0 + 1.75 }]),
-        { type: 'value', id: 'axh', from: REST, to: -62, at: 1.6, duration: 0.3 },
-        { type: 'value', id: 'axh', from: -62, to: -64, at: 1.9, duration: 0.2 },
-        { type: 'value', id: 'axh', from: -64, to: -57, at: 2.1, duration: 0.3 },
-        { type: 'value', id: 'axh', from: -57, to: -59, at: 2.4, duration: 0.2 },
-        { type: 'value', id: 'axh', from: -59, to: -50, at: 2.6, duration: 0.3 },
-        ...actionPotential(2.9),
-      ],
+      id: 'excinh', label: 'Excitatory + inhibitory',
+      items: [...fire('E1', 0), ...fire('E2', 0), ...fire('I', 0.75, { travel: 0.6 }),
+        { type: 'pulse', x: inputs.I.p[0], y: inputs.I.p[1], r: 26, color: INH.nt, speed: 1.2, at: 1.0, until: 2.4 },
+        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 40, color: SPARK, duration: 0.5, at: 1.75 },
+        { type: 'flash', x: hillockPt[0], y: hillockPt[1], r: 52, color: INH.nt, duration: 0.8, at: 1.9 },
+        { type: 'value', id: 'axh', from: REST, to: -58, at: 1.6, duration: 0.35 },
+        { type: 'value', id: 'axh', from: -58, to: -66, at: 1.95, duration: 0.5 },
+        { type: 'value', id: 'axh', from: -66, to: REST, at: 2.45, duration: 1.8 },
+        { type: 'text', x: 560, y: 400, text: 'Blocked: no action potential', size: 26, font: 'sans', bold: true, color: INH.edge, anim: 'pop', duration: 0.4, at: 2.0, until: 2.4 }],
     },
   ];
   const sumItems = [
-    title('Adding up signals'),
+    title('Combining signals'),
     { type: 'svg', svg: svgDoc(`<g transform="translate(${TX4} ${TY4}) scale(${K4})">${neuronMarkup(PURPLE, 'sum', { releasing: false })}</g>`) },
     { type: 'svg', svg: terminalsSvg },
     // the trigger zone
     { type: 'circle', x: hillockPt[0], y: hillockPt[1], r: 42, color: AP, width: 3, dashed: true, rough: false },
-    ...label('Axon hillock\n(adds up all the inputs)', 620, 320, [560, 382], [hillockPt[0] + 22, hillockPt[1] - 30], 'center', 28),
+    ...label('Axon hillock\n(adds up all the inputs)', 640, 640, [600, 612], [hillockPt[0] + 20, hillockPt[1] + 30], 'center', 28),
     ...Object.entries(inputs).map(([name, s]) => ({
-      type: 'text', x: s.c[0] + (name === 'I' ? 30 : s.dir[0] < 0 ? -36 : 36), y: s.c[1] - (name === 'I' ? 26 : 0), text: name,
+      type: 'text', x: s.c[0] + (s.dir[0] < 0 ? -36 : 36), y: s.c[1], text: name,
       size: 26, font: 'sans', bold: true, color: s.st.edge, align: s.dir[0] < 0 ? 'right' : 'left',
     })),
-    { type: 'text', x: 385, y: 152, text: 'Excitatory synapses (E1, E2)', size: 24, font: 'sans', color: EXC.edge },
-    { type: 'text', x: 238, y: 822, text: 'Excitatory\nsynapse (E3)', size: 24, font: 'sans', color: EXC.edge },
-    { type: 'text', x: 470, y: 760, text: 'Inhibitory synapse (I),\ncloser to the cell body', size: 24, font: 'sans', color: INH.edge },
+    { type: 'text', x: 450, y: 250, text: 'Inhibitory synapse,\nright next to the\naxon hillock', size: 24, font: 'sans', color: INH.edge },
     {
       type: 'meter', id: 'axh', value: REST, x: 1190, y: 112, w: 370, h: 748, graphH: 250,
-      title: 'Axon hillock potential', upText: 'EPSP: closer to threshold', downText: 'Pushed away from threshold',
+      title: 'Axon hillock potential', upText: 'Closer to threshold', downText: 'Pushed away from threshold',
       fireText: 'Action potential fired!',
     },
     { type: 'text', x: 1375, y: 650, text: 'Reach −55 mV at the\naxon hillock and the\nneuron fires', size: 24, font: 'sans', color: '#3b4252', align: 'center' },
     { type: 'circle', x: 1232, y: 790, r: 13, color: EXC.edge, fill: EXC.fill, fillOpacity: 1, width: 3, rough: false },
-    { type: 'text', x: 1256, y: 790, text: 'Excitatory (glutamate)', size: 21, font: 'sans', color: 'ink' },
+    { type: 'text', x: 1256, y: 790, text: 'E1, E2: excitatory', size: 21, font: 'sans', color: 'ink' },
     { type: 'circle', x: 1232, y: 828, r: 13, color: INH.edge, fill: INH.fill, fillOpacity: 1, width: 3, rough: false },
-    { type: 'text', x: 1256, y: 828, text: 'Inhibitory (GABA)', size: 21, font: 'sans', color: 'ink' },
+    { type: 'text', x: 1256, y: 828, text: 'I: inhibitory', size: 21, font: 'sans', color: 'ink' },
   ];
 
   // ---------- slide 5: the action potential at the axon hillock ----------
@@ -1315,16 +1286,9 @@
         actions: recvActions,
         items: recvItems,
       },
-      // Slide 3: glutamate vs GABA synapses and their effect on the postsynaptic potential.
+      // Slide 3: combining - inputs add up at the axon hillock, which decides whether to fire.
       {
-        say: 'Glutamate opens Na⁺ channels and excites (EPSP); GABA opens Cl⁻ channels and inhibits (IPSP).',
-        clear: true,
-        actions: synActions,
-        items: synItems,
-      },
-      // Slide 4: adding up inputs - the axon hillock decides whether to fire.
-      {
-        say: 'Inputs add up at the axon hillock; if it reaches threshold, the neuron fires an action potential.',
+        say: 'Signals add up at the axon hillock: enough excitation fires an action potential; nearby inhibition can block it.',
         clear: true,
         actions: sumActions,
         items: sumItems,
