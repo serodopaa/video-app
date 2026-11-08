@@ -482,7 +482,31 @@
   const fuseTargets = [[1337, 457], [1339, 474], [1335, 491]];
   const rightTip = mp(T_R, TIP), mainTip = mp(T_C, TIP);
   const receptorYs = [-7, 0, 7].map((d) => rightTip[1] + d);
+  // Two more neurons synapse onto the main neuron: one on an upper dendrite tip,
+  // one on a lower one. Each: [dendrite tip, direction it comes from, colours, route to soma, where its axon goes off-board].
+  const EXTRA_IN = [
+    { tip: [228, 145], dir: [-0.05, -1], col: ['#1f6f6b', '#7cc7c0', '#e0f4f2'], off: [205, -40],
+      route: [[228, 145], [230, 190], [250, 235], [255, 280], [300, 330], [340, 400], [380, 470]] },
+    { tip: [248, 828], dir: [-0.7, 0.72], col: ['#9c2a5c', '#ef9cc0', '#fde8f1'], off: [150, 960],
+      route: [[248, 828], [285, 790], [300, 750], [330, 710], [360, 640], [365, 560], [380, 470]] },
+  ].map((e) => {
+    const t = mp(T_C, e.tip);
+    const l = Math.hypot(e.dir[0], e.dir[1]);
+    const d = [e.dir[0] / l, e.dir[1] / l];
+    const bulb = [t[0] + d[0] * 36, t[1] + d[1] * 36];
+    const mid = [bulb[0] + d[0] * 80, bulb[1] + d[1] * 80];
+    return { ...e, t, d, bulb, axon: [bulb, mid, e.off] };
+  });
+  const extraSvg = EXTRA_IN.map((e) => {
+    const path = `M${e.off.map(f1).join(' ')} Q${e.axon[1].map(f1).join(' ')} ${e.bulb.map(f1).join(' ')}`;
+    return `<path d="${path}" stroke="${e.col[0]}" stroke-width="16" fill="none" stroke-linecap="round"/>` +
+      `<path d="${path}" stroke="${e.col[1]}" stroke-width="10" fill="none" stroke-linecap="round"/>` +
+      `<circle cx="${f1(e.bulb[0])}" cy="${f1(e.bulb[1])}" r="27" fill="${e.col[0]}"/>` +
+      `<circle cx="${f1(e.bulb[0])}" cy="${f1(e.bulb[1])}" r="24" fill="${e.col[2]}"/>` +
+      [[-8, -7], [8, -6], [0, 8], [-10, 7], [10, 7], [0, -1]].map(([a, b]) => `<circle cx="${f1(e.bulb[0] + a)}" cy="${f1(e.bulb[1] + b)}" r="4.4" fill="#ffffff" stroke="${e.col[0]}" stroke-width="1.2"/><circle cx="${f1(e.bulb[0] + a)}" cy="${f1(e.bulb[1] + b)}" r="1.8" fill="#f08c1a"/>`).join('');
+  }).join('');
   const chainSvg = svgDoc(
+    extraSvg +
     gT(T_L, neuronMarkup(BLUE, 'chL', { releasing: false })) +
     gT(T_C, neuronMarkup(PURPLE, 'chC', { skip: FUSING, releasing: false })) +
     gT(T_R, neuronMarkup(GREENN, 'chR', { releasing: false })) +
@@ -543,6 +567,18 @@
       duration: 0.7, at: 1.35 + n * 0.1,
     })),
     { type: 'flash', x: mainTip[0] + 4, y: mainTip[1], r: 20, color: '#8a4fd8', duration: 0.5, at: 2.05 },
+    // ...and at the same time the two other input neurons fire onto their dendrite tips
+    ...EXTRA_IN.flatMap((e) => [
+      { type: 'mover', once: true, vanish: true, r: 7, color: AP, smooth: true, path: [e.off, e.axon[1], e.bulb], duration: 0.65, at: 0.5 },
+      { type: 'flash', x: e.bulb[0], y: e.bulb[1], r: 32, color: AP, duration: 0.6, at: 1.15 },
+      ...[-5, 0, 5].map((o, n) => ({
+        type: 'mover', once: true, r: 2.6, color: '#f08c1a', smooth: true,
+        path: [[e.bulb[0] - e.d[0] * 24 - e.d[1] * o, e.bulb[1] - e.d[1] * 24 + e.d[0] * o], [e.t[0] + e.d[0] * 4 - e.d[1] * o, e.t[1] + e.d[1] * 4 + e.d[0] * o]],
+        duration: 0.6, at: 1.4 + n * 0.1,
+      })),
+      { type: 'flash', x: e.t[0], y: e.t[1], r: 20, color: '#8a4fd8', duration: 0.5, at: 2.05 },
+      { type: 'mover', once: true, vanish: true, r: 7, color: SPARK, smooth: true, path: e.route.map((p) => mp(T_C, p)), duration: 1.3, at: 2.1 },
+    ]),
     // 3. the signal travels along the dendrite to the cell body
     { type: 'mover', once: true, vanish: true, r: 7, color: SPARK, smooth: true, path: DEND_ROUTE().map((p) => mp(T_C, p)), duration: 1.3, at: 2.1 },
     { type: 'flash', x: mp(T_C, [soma.x, soma.y])[0], y: mp(T_C, [soma.x, soma.y])[1], r: 70, color: SPARK, duration: 0.8, at: 3.35 },
@@ -1108,7 +1144,7 @@
     const syn1 = [Math.round((LEFT_END + mainTip[0]) / 2), AXIS + 10];
     const syn2 = [Math.round((mp(T_C, [1348, 470])[0] + rightTip[0]) / 2), AXIS + 10];
     return [
-      ...label('Dendrites', 150, 190, [180, 210], c([205, 236]), 'center', 28),
+      ...label('Dendrites', 18, 262, [88, 282], c([170, 240]), 'left', 28),
       ...label('Cell body', 640, 190, [620, 210], c([420, 420]), 'center', 28),
       ...label('Axon hillock', 590, 700, [585, 678], c([500, 490]), 'center', 28),
       ...label('Myelin sheath', 930, 370, [930, 390], c(axonAt((sheaths[1].a + sheaths[1].b) / 2)).map((v, k) => v - [0, 14][k]), 'center', 28),
