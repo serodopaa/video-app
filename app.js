@@ -1132,14 +1132,27 @@
     label: document.getElementById('stepLabel'),
     caption: document.getElementById('caption'),
     narrate: document.getElementById('narrate'),
+    newTopic: document.getElementById('newTopic'),
+    deleteTopic: document.getElementById('deleteTopic'),
   };
 
-  scenes.forEach((s, i) => {
+  // Custom topics: user-made, start as an empty board. Saved in localStorage.
+  // Each topic is isolated: its own drawings, notes and recorded clips (keyed by scene id).
+  const TOPICS_KEY = 'wb-topics';
+  const readTopics = () => {
+    try { const t = JSON.parse(localStorage.getItem(TOPICS_KEY)); return Array.isArray(t) ? t : []; } catch (_) { return []; }
+  };
+  const writeTopics = (list) => { try { localStorage.setItem(TOPICS_KEY, JSON.stringify(list)); } catch (_) { /* storage unavailable */ } };
+  const topicTitle = (name) => '📝 ' + name;
+  readTopics().forEach((t) => scenes.push({ id: t.id, title: topicTitle(t.name), steps: [], custom: true }));
+
+  function addOption(s, i) {
     const o = document.createElement('option');
     o.value = i;
     o.textContent = s.title;
     els.select.appendChild(o);
-  });
+  }
+  scenes.forEach(addOption);
 
   function speak(text) {
     if (player.scene.audio === false || !els.narrate.checked || !('speechSynthesis' in window) || !text) return;
@@ -1369,9 +1382,41 @@
     loadInk();
     // Slide-based explainers (drawn: false) open straight on slide 1.
     goTo(player.scene.drawn === false && player.scene.steps.length ? 0 : -1, false);
+    els.deleteTopic.hidden = !player.scene.custom;
+    window.dispatchEvent(new Event('wb-scene'));
   }
 
   els.select.addEventListener('change', () => loadScene(+els.select.value));
+
+  els.newTopic.addEventListener('click', () => {
+    const name = (prompt('Name for the new topic:') || '').trim().slice(0, 60);
+    if (!name) return;
+    const id = 'topic-' + Date.now().toString(36);
+    writeTopics([...readTopics(), { id, name }]);
+    scenes.push({ id, title: topicTitle(name), steps: [], custom: true });
+    addOption(scenes[scenes.length - 1], scenes.length - 1);
+    els.select.value = scenes.length - 1;
+    loadScene(scenes.length - 1);
+  });
+
+  els.deleteTopic.addEventListener('click', () => {
+    const sc = player.scene;
+    if (!sc.custom) return;
+    if (!confirm(`Delete the topic "${sc.title.replace(/^📝 /, '')}" with all its drawings, notes and recorded clips? This cannot be undone.`)) return;
+    const idx = scenes.indexOf(sc);
+    loadScene(0); // leave first (this saves the topic's ink), then wipe it
+    try {
+      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-'];
+      Object.keys(localStorage).filter((k) => prefixes.some((p) => k.startsWith(p))).forEach((k) => localStorage.removeItem(k));
+    } catch (_) { /* storage unavailable */ }
+    [...historyBySlide.keys()].filter((k) => k.startsWith('wb-ink-' + sc.id)).forEach((k) => historyBySlide.delete(k));
+    writeTopics(readTopics().filter((t) => t.id !== sc.id));
+    scenes.splice(idx, 1);
+    els.select.innerHTML = '';
+    scenes.forEach(addOption);
+    els.select.value = 0;
+    window.dispatchEvent(new CustomEvent('wb-topic-deleted', { detail: sc.id }));
+  });
   els.prev.addEventListener('click', () => { player.playing = false; goTo(player.step - 1, false); });
   els.next.addEventListener('click', () => { player.playing = false; goTo(player.step + 1); });
   els.play.addEventListener('click', () => setPlaying(!player.playing));

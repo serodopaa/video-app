@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611080543" />
+  <link rel="stylesheet" href="style.css?v=202611081200" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -66,7 +66,11 @@
 </div>
 
   <footer class="player">
-    <select id="sceneSelect" aria-label="Choose an explainer"></select>
+    <div class="topic-pick">
+      <select id="sceneSelect" aria-label="Choose a topic"></select>
+      <button id="newTopic" title="New topic: starts with an empty slide and has its own drawings, notes and videos">➕</button>
+      <button id="deleteTopic" title="Delete this topic and everything saved in it" hidden>🗑️</button>
+    </div>
     <div class="controls">
       <button id="prev" title="Previous step (←)">⏮</button>
       <button id="play" class="primary" title="Play / pause (Space)">▶ Play</button>
@@ -137,9 +141,9 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611080543"></script>
-  <script src="app.js?v=202611080543"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611080543"></script>
-  <script src="recorder.js?v=202611080543"></script>
+  <script src="scenes/neuron.js?v=202611081200"></script>
+  <script src="app.js?v=202611081200"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611081200"></script>
+  <script src="recorder.js?v=202611081200"></script>
 </body>
 </html>

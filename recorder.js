@@ -81,8 +81,9 @@
       }
     });
   }
-  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created }));
+  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created }));
   const unpersist = (id) => dbDo('readwrite', (s) => s.delete(id));
+  const curScene = () => WB.sceneId();
   const saveOrder = () => clips.forEach((c, i) => { c.order = i; persist(c); });
 
   // ---------- state ----------
@@ -196,6 +197,8 @@
     ui.badge.hidden = !(rec.state === 'recording' || rec.state === 'paused');
     ui.badge.classList.toggle('paused', rec.state === 'paused');
     ui.badge.lastChild.textContent = rec.state === 'paused' ? ' PAUSED' : ' REC';
+    // Switching topics mid-recording/export would mix clips up, so lock the picker.
+    ['sceneSelect', 'newTopic', 'deleteTopic'].forEach((id) => { $(id).disabled = busy || exporting; });
     $('exportBtn').disabled = busy || !clips.length || exporting;
     $('previewAll').disabled = busy || !clips.length || exporting;
   }
@@ -273,6 +276,7 @@
       out: duration,
       thumb: rec.thumb,
       created: Date.now(),
+      scene: curScene(),
       order: clips.length,
     };
     const idx = clips.findIndex((c) => c.id === replaceId);
@@ -792,10 +796,35 @@
   (async () => {
     db = await openDb();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) { /* optional */ }
-    const saved = (await dbDo('readonly', (s) => s.getAll())) || [];
-    clips = saved.sort((a, b) => a.order - b.order);
-    renderTimeline();
+    await migrateLegacyClips();
+    await loadSceneClips();
     window.dispatchEvent(new Event('resize'));
   })();
+
+  // ---------- topics: every topic (scene) has its own clips ----------
+  // Clips made before topics existed have no scene; they belong to the first
+  // explainer (or the blank board if there is none).
+  async function migrateLegacyClips() {
+    const all = (await dbDo('readonly', (s) => s.getAll())) || [];
+    const first = (window.WB_SCENES && window.WB_SCENES[0] && window.WB_SCENES[0].id) || 'blank';
+    for (const c of all) if (!c.scene) { c.scene = first; await dbDo('readwrite', (s) => s.put(c)); }
+  }
+  let loadToken = 0;
+  async function loadSceneClips() {
+    const token = ++loadToken;
+    const id = curScene();
+    const all = (await dbDo('readonly', (s) => s.getAll())) || [];
+    if (token !== loadToken) return;
+    clips.forEach((c) => c._url && URL.revokeObjectURL(c._url));
+    clips = all.filter((c) => c.scene === id).sort((a, b) => a.order - b.order);
+    replaceId = null;
+    renderTimeline();
+    updateRecUI();
+  }
+  window.addEventListener('wb-scene', () => { if (db) loadSceneClips(); });
+  window.addEventListener('wb-topic-deleted', async (e) => {
+    const all = (await dbDo('readonly', (s) => s.getAll())) || [];
+    for (const c of all) if (c.scene === e.detail) await unpersist(c.id);
+  });
   updateRecUI();
 })();

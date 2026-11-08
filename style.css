@@ -416,3 +416,8 @@ button, select {
 .notes-saved { font-size: 12px; color: var(--muted); margin-left: auto; }
 .toolbar button#notesToggle.active { background: #fff4e5; border-color: #f0b46a; }
 @media (max-width: 900px) { .notes { width: 220px; flex-basis: 220px; } }
+
+/* Topic picker: select + new/delete buttons */
+.topic-pick { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.topic-pick select { flex: 1; min-width: 0; }
+.topic-pick button[hidden] { display: none; }
