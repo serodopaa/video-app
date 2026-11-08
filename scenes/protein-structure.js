@@ -317,15 +317,32 @@
     shBonds.push([p, q]);
   }));
 
-  // ---- random coil: an irregular backbone with no repeating pattern of bonds ----
-  const coilPts = [[140, 636], [200, 604], [260, 636], [320, 604], [380, 636], [440, 604], [492, 590], [500, 530], [466, 484], [406, 456], [346, 484], [288, 456], [228, 484], [168, 456], [110, 484], [96, 424], [130, 372], [190, 356], [250, 376], [300, 350], [360, 330], [420, 346]];
-  const coilOff = { o: [[0, 38], [8, 38], [30, 24], [-26, 30], [0, 38], [0, -38], [30, 20], [-34, -14], [0, -38], [26, -30]], h: [[-8, 36], [10, 34], [-30, 24], [26, 30], [-8, 36], [-6, 34], [30, 20], [-30, 20], [26, -30], [0, 34]], r: [[10, -42], [-14, 42], [-38, -20], [36, 22], [0, 44], [-30, 30], [28, -36], [30, 34], [14, 42], [-26, -34]] };
-  const coilAtoms = coilPts.map(([x, y], i) => ({
-    x, y, k: ['N', 'CA', 'C'][i % 3],
-    o: coilOff.o[Math.floor(i / 3)], h: coilOff.h[Math.floor(i / 3)], r: coilOff.r[Math.floor(i / 3)],
+  // ---- random coil: a loosely tangled backbone that heads off in all directions (no repeating pattern) ----
+  const coilAngles = [88, 49, 8, -58, -93, -15, 19, 64, 27, -45, 11, -37, -100, -132, -65, -149, 176, 131, -169, 152, -133, -169, 109];
+  const coilPts = [[120, 520]];
+  coilAngles.forEach((deg) => { const [x, y] = coilPts[coilPts.length - 1], r = (deg * Math.PI) / 180; coilPts.push([x + 78 * Math.cos(r), y + 78 * Math.sin(r)]); });
+  const coilAtoms = coilPts.map(([x, y], i) => ({ x, y, k: ['N', 'CA', 'C'][i % 3] }));
+  // The groups on each atom point to whichever side of the chain has more room.
+  coilAtoms.forEach((a, i) => {
+    const p0 = coilAtoms[Math.max(0, i - 1)], p1 = coilAtoms[Math.min(coilAtoms.length - 1, i + 1)];
+    let dx = p1.x - p0.x, dy = p1.y - p0.y; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+    const len = a.k === 'CA' ? 44 : a.k === 'C' ? 38 : 34;
+    const room = (sgn) => Math.min(...coilAtoms.filter((b) => b !== a).map((b) => Math.hypot(b.x - (a.x - dy * sgn * len), b.y - (a.y + dx * sgn * len))));
+    const sgn = room(1) >= room(-1) ? 1 : -1, v = [-dy * sgn * len, dx * sgn * len];
+    if (a.k === 'C') a.o = v; else if (a.k === 'N') a.h = v; else a.r = v;
+  });
+  // one place where the chain loops back close to itself forms a single hydrogen bond
+  let cb = null;
+  coilAtoms.forEach((c, i) => coilAtoms.forEach((n, j) => {
+    if (c.k !== 'C' || n.k !== 'N' || Math.abs(i - j) < 7) return;
+    const d = Math.hypot(c.x - n.x, c.y - n.y);
+    if (d > 95 && d < 150 && (!cb || d < cb.d)) cb = { c, n, d };
   }));
-  // one tight turn does form a single hydrogen bond: C=O of one residue to the N–H facing it
-  const coilBond = [[coilAtoms[5].x + coilAtoms[5].o[0], coilAtoms[5].y + coilAtoms[5].o[1]], [coilAtoms[9].x + coilAtoms[9].h[0], coilAtoms[9].y + coilAtoms[9].h[1]]];
+  if (cb) {
+    const u = [(cb.n.x - cb.c.x) / cb.d, (cb.n.y - cb.c.y) / cb.d];
+    cb.c.o = [u[0] * 38, u[1] * 38]; cb.n.h = [-u[0] * 34, -u[1] * 34];
+  }
+  const coilBond = cb ? [[cb.c.x + cb.c.o[0], cb.c.y + cb.c.o[1]], [cb.n.x + cb.n.h[0], cb.n.y + cb.n.h[1]]] : [[0, 0], [0, 0]];
 
   const ssLegend = svgItem(
     `<rect x="84" y="780" width="296" height="42" rx="21" fill="#ffd34d" opacity="0.4"/>`
@@ -411,7 +428,7 @@
     }
     return [svgItem(backbone(coilAtoms)), hbLine(coilBond[0], coilBond[1], g(0.2)),
       txt('Irregular backbone: no repeating pattern', 480, 228, 22, '#5f6b7a', { align: 'center', bold: true }),
-      txt('Only an occasional\nhydrogen bond', 560, 548, 20, HB, { bold: true, at: stagger ? 1.2 : 0, anim: 'fade', duration: 0.4 })];
+      txt('Dashed blue line: the only hydrogen bond\nhere. Nothing repeats, unlike a helix or sheet.', 80, 722, 19, HB, { bold: true, at: stagger ? 1.2 : 0, anim: 'fade', duration: 0.4 })];
   };
   const ssActions = SS.flatMap((t, i) => ['text', 'aa', 'pic'].map((mode) => ({
     id: mode === 'text' ? t.id : `${t.id}-${mode}`, label: t.name, hidden: mode !== 'text', group: 'ss', stay: true, drawn: false,
