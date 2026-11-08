@@ -314,7 +314,7 @@
       item._cum = measure(item._pts);
     }
     if (item.type === 'text') item._lines = String(item.text).split('\n');
-    if (item.type === 'svg' && !item._img) {
+    if ((item.type === 'svg' || item.type === 'inset') && !item._img) {
       item._img = new Image();
       item._img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.svg);
     }
@@ -429,6 +429,14 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(item.char, 0, 0);
+        break;
+      }
+      case 'inset': {
+        // A small picture that blows up to fill the slide when hovered for 1 s
+        // (see updateInsets). Its svg's viewBox is the rect x, y, w, h.
+        frameInsets.push(item);
+        const img = item._img;
+        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, item.x, item.y, item.w, item.h);
         break;
       }
       case 'svg': {
@@ -1241,6 +1249,7 @@
     const slide = slideOf(player.step);
     if (slide !== player.slide) {
       zoomFit();
+      insetState.item = null; insetState.k = 0; insetState.hoverItem = null;
       actionRuns.clear();
       setAnimPaused(false);
       stashHistory();
@@ -1456,6 +1465,7 @@
     const t = animNow();
     return slideActions().some((a) => actionRuns.has(a.id) && t - actionRuns.get(a.id) < a._len);
   }
+  canvas.addEventListener('pointerdown', () => closeInset());
   canvas.addEventListener('pointerdown', () => {
     if (!clock.paused && actionPlaying()) {
       setAnimPaused(true);
@@ -1673,8 +1683,70 @@
     for (let x = 40; x < W; x += 40) for (let y = 40; y < H; y += 40) ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
   }
 
+  // ---------- hover-to-enlarge insets ----------
+  let frameInsets = [];            // inset items drawn in the last frame
+  const insetState = { item: null, k: 0, hoverItem: null, hoverStart: 0, lastT: 0 };
+  function updateInsets() {
+    const p = window.WB.pointer;
+    const tReal = now();
+    const dt = Math.min(0.1, tReal - (insetState.lastT || tReal));
+    insetState.lastT = tReal;
+    if (!p) {
+      insetState.hoverItem = null;
+      insetState.item && (insetState.closing = true);
+    } else if (!insetState.item || insetState.closing) {
+      const over = frameInsets.find((it) => p.x >= it.x - 10 && p.x <= it.x + it.w + 10 && p.y >= it.y - (it.hoverTop || 10) && p.y <= it.y + it.h + 10);
+      if (over !== insetState.hoverItem) { insetState.hoverItem = over || null; insetState.hoverStart = tReal; }
+      if (over && tReal - insetState.hoverStart >= 1) { insetState.item = over; insetState.closing = false; }
+    }
+    // grow / shrink (about a third of a second)
+    const target = insetState.item && !insetState.closing ? 1 : 0;
+    insetState.k += Math.sign(target - insetState.k) * Math.min(Math.abs(target - insetState.k), dt / 0.35);
+    if (insetState.k === 0 && insetState.closing) { insetState.item = null; insetState.closing = false; insetState.hoverItem = null; }
+    frameInsets = [];
+  }
+  function closeInset() {
+    if (insetState.item) insetState.closing = true;
+    insetState.hoverItem = null;
+  }
+  function drawInsetOverlay() {
+    const it = insetState.item;
+    if (!it || insetState.k <= 0 || !it._img || !it._img.complete) return;
+    const e = easeInOut(insetState.k);
+    const maxW = 1440, maxH = 720;
+    const s = Math.min(maxW / it.w, maxH / it.h);
+    const bw = it.w * s, bh = it.h * s, bx = (W - bw) / 2, by = 120 + (maxH - bh) / 2 + 20;
+    const x = it.x + (bx - it.x) * e, y = it.y + (by - it.y) * e, w = it.w + (bw - it.w) * e, h = it.h + (bh - it.h) * e;
+    ctx.save();
+    ctx.globalAlpha = 0.97 * e;
+    ctx.fillStyle = '#fdfdfb';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#d9dce3';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(20,24,40,0.18)';
+    ctx.shadowBlur = 24 * e;
+    ctx.beginPath();
+    ctx.roundRect(x - 16 * e, y - 16 * e, w + 32 * e, h + 32 * e, 18 * e);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    ctx.drawImage(it._img, x, y, w, h);
+    if (it.title) {
+      ctx.globalAlpha = e;
+      ctx.fillStyle = '#1f2430';
+      ctx.font = `700 40px ${SANS}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(it.title, W / 2, 70);
+    }
+    ctx.restore();
+  }
+
   function frame() {
     const t = animNow();
+    updateInsets();
     tickPlayer(t);
     stepView(now());
     ctx.setTransform(...viewMatrix(scale));
@@ -1743,6 +1815,7 @@
     if (current && !['eraser', 'pan', 'drag'].includes(current.kind)) drawStroke(current);
 
     tips.forEach((tip) => drawPenTip(tip, tip.color));
+    drawInsetOverlay();
   }
 
   // ---------- toolbar ----------

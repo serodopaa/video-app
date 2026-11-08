@@ -321,17 +321,19 @@
   // A tiny whole neuron with a magnifier around the spot a zoomed-in slide shows.
   // spot: point on the neuron (neuron coords); terminal: true draws an incoming
   // axon terminal touching that spot (a synapse onto a dendrite).
-  function locatorInset({ x, y, w, spot, terminal = false, title: head = 'Where we are' }) {
+  function locatorInset({ x, y, w, h = 128, spot, terminal = false, title: head = 'Where we are' }) {
     const k = Math.min(w / 1500, 0.175), tx = x + 46 - 50 * k, ty = y + 6 - 120 * k;
     const sp = [spot[0] * k + tx, spot[1] * k + ty];
-    const svg = svgDoc(`<g transform="translate(${f1(tx)} ${f1(ty)}) scale(${k.toFixed(4)})">${neuronMarkup(PURPLE, 'loc' + Math.round(x + y), { releasing: false })}</g>` +
+    const bx = x - 8, by = y + 12, bw = w + 6, bh = h;            // the picture's own rect
+    const inner = `<g transform="translate(${f1(tx)} ${f1(ty)}) scale(${k.toFixed(4)})">${neuronMarkup(PURPLE, 'loc' + Math.round(x + y), { releasing: false })}</g>` +
       (terminal ? `<path d="M${f1(sp[0] - 40)} ${f1(sp[1] - 22)} Q${f1(sp[0] - 22)} ${f1(sp[1] - 4)} ${f1(sp[0] - 9)} ${f1(sp[1])}" stroke="#2c5a92" stroke-width="5" fill="none" stroke-linecap="round"/>
         <circle cx="${f1(sp[0] - 8)}" cy="${f1(sp[1])}" r="5.5" fill="#9cc0ea" stroke="#2c5a92" stroke-width="2"/>` : '') +
       `<circle cx="${f1(sp[0])}" cy="${f1(sp[1])}" r="20" fill="#ffd34d" fill-opacity="0.18" stroke="#e0453a" stroke-width="3.5"/>
-       <path d="M${f1(sp[0] + 14)} ${f1(sp[1] + 14)} L${f1(sp[0] + 30)} ${f1(sp[1] + 30)}" stroke="#e0453a" stroke-width="6" stroke-linecap="round"/>`);
+       <path d="M${f1(sp[0] + 14)} ${f1(sp[1] + 14)} L${f1(sp[0] + 30)} ${f1(sp[1] + 30)}" stroke="#e0453a" stroke-width="6" stroke-linecap="round"/>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(bw * 6)}" height="${Math.round(bh * 6)}" viewBox="${bx} ${by} ${bw} ${bh}">${inner}</svg>`;
     return [
       { type: 'text', x, y, text: head, size: 20, font: 'sans', bold: true, color: '#5b6270' },
-      { type: 'svg', svg },
+      { type: 'inset', x: bx, y: by, w: bw, h: bh, svg, title: head, hoverTop: 34 },
     ];
   }
 
