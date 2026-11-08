@@ -272,20 +272,25 @@
   };
   const hbLine = (p, q, at) => ({ type: 'line', from: p, to: q, color: HB, width: 4.5, dashed: true, rough: false, at, duration: 0.35 });
 
-  // ---- α-helix, drawn flattened like a serpentine: five rows, five atoms per row, so that the
-  // C=O of residue n sits directly above the N–H of residue n+4, two rows down (n+4 is one turn on) ----
-  const HEL = { x0: 240, S: 100, y0: 292, dy: 106, rows: 5 };
-  const hxAtoms = [];
-  for (let a = 0; a < HEL.rows * 5; a++) {
-    const row = Math.floor(a / 5), pos = a % 5, res = Math.floor(a / 3);
-    hxAtoms.push({
-      x: row % 2 === 0 ? HEL.x0 + HEL.S * pos : HEL.x0 + HEL.S * (4 - pos) + HEL.S / 2, y: HEL.y0 + HEL.dy * row, k: ['N', 'CA', 'C'][a % 3],
-      o: [0, 36], h: [0, -32], r: [0, res % 2 ? 42 : -42],       // all C=O point down the chain, all N–H up
-    });
-  }
-  const hxO = (r) => { const a = hxAtoms[3 * r + 2]; return [a.x + a.o[0], a.y + a.o[1]]; };
-  const hxH = (r) => { const a = hxAtoms[3 * r]; return [a.x + a.h[0], a.y + a.h[1]]; };
-  const hxBonds = [0, 1, 2, 3, 4].map((r) => [hxO(r), hxH(r + 4)]);
+  // ---- α-helix: a coiled backbone ribbon. Only the groups that make hydrogen bonds are drawn: each C=O
+  // sits directly above the N–H one turn further down (4 residues on). Atoms are placed on the ribbon. ----
+  const HC = { cx: 470, y0: 310, y1: 735, R: 135, turns: 3.2 };
+  const HT = HC.turns * Math.PI * 2;
+  const hP = (t) => [HC.cx + HC.R * Math.sin(t), HC.y0 + ((HC.y1 - HC.y0) * t) / HT - HC.R * 0.28 * Math.cos(t)];
+  // [turn k, angle]: bonds from turn k to turn k+1. Alternating angle sets keep the C=O and N–H atoms apart.
+  const hxBondDefs = [[0, -0.5], [1, 0.5], [2, -0.5]];
+  const hxPairs = hxBondDefs.map(([k, phi]) => {
+    const ta = Math.PI * 2 * k + phi, c = hP(ta), n = hP(ta + Math.PI * 2);
+    return { c, o: [c[0], c[1] + 28], n, h: [n[0], n[1] - 26] };
+  });
+  const helixPicture = () => {
+    const rib = helix(HC.cx, HC.y0, HC.y1, HC.R, HC.turns, { front: '#f2c14e', back: '#b9882a' }).svg;
+    const dbl = (x, y1, y2) => ln(x - 3.5, y1, x - 3.5, y2, 3.5, '#3b4252') + ln(x + 3.5, y1, x + 3.5, y2, 3.5, '#3b4252');
+    return rib + hxPairs.map((q) => dbl(q.c[0], q.c[1], q.o[1]) + ln(q.n[0], q.n[1], q.h[0], q.h[1], 4, '#3b4252')
+      + atomSvg(q.c[0], q.c[1], 'C') + atomSvg(q.o[0], q.o[1], 'O') + atomSvg(q.n[0], q.n[1], 'N') + atomSvg(q.h[0], q.h[1], 'H')).join('');
+  };
+  const hxBonds = hxPairs.map((q) => [q.o, q.h]);
+  const hxMid = hxPairs[1];  // the bond that gets the labels
 
   // ---- β-sheet: three antiparallel strands, residues alternate which side their C=O / N–H face ----
   const BS = { x0: 200, dx: 54, ys: [295, 465, 635], nres: 4 };
@@ -385,12 +390,16 @@
   const leftItems = (id, stagger) => {
     const g = (n) => (stagger ? 0.8 + n : 0);
     if (id === 'ss-helix') {
-      return [svgItem(backbone(hxAtoms)),
-        ...hxBonds.map(([p, q], i) => hbLine(p, q, g(i * 0.5))),
-        txt('N-terminus', 70, 292, 18, '#5b6270', { bold: true }), txt('chain continues ↓', 70, 760, 18, '#5b6270', { bold: true }),
-        ...label('Backbone (N – Cα – C, repeating)', 560, 226, [600, 240], [hxAtoms[1].x + 10, hxAtoms[1].y - 10], 'left', 20),
-        ...label('R group:\nnot involved', 730, 650, [726, 652], [hxAtoms[16].x + 16, hxAtoms[16].y + 42], 'left', 19),
-        txt('Hydrogen bond:\nC=O of residue n to\nN–H of residue n+4', 726, 520, 19, HB, { bold: true, at: stagger ? 3.4 : 0, anim: 'fade', duration: 0.4 })];
+      const lp = hP(4.71);
+      return [svgItem(helixPicture()),
+        ...hxBonds.map(([p, q], i) => hbLine(p, q, g(i * 0.35))),
+        txt('N-terminus', HC.cx, 232, 18, '#5b6270', { align: 'center', bold: true }),
+        ...label('Backbone: the chain\ncoils into a spiral', 70, 392, [280, 404], [lp[0] + 6, lp[1]], 'left', 20),
+        ...label('C=O group', 730, hxMid.o[1] - 56, [726, hxMid.o[1] - 46], [hxMid.o[0] + 16, hxMid.o[1] - 2], 'left', 20),
+        ...label('N–H group\n(one turn on)', 730, hxMid.h[1] + 40, [726, hxMid.h[1] + 36], [hxMid.h[0] + 11, hxMid.h[1] + 4], 'left', 20),
+        txt('Hydrogen bond', 730, (hxMid.o[1] + hxMid.h[1]) / 2, 21, HB, { bold: true, at: stagger ? 3.2 : 0, anim: 'fade', duration: 0.4 }),
+        { type: 'line', from: [722, (hxMid.o[1] + hxMid.h[1]) / 2], to: [hxMid.o[0] + 8, (hxMid.o[1] + hxMid.h[1]) / 2], color: HB, width: 2.5, rough: false, at: stagger ? 3.2 : 0 },
+        txt('Every C=O bonds to the N–H four residues\nalong. R groups point outward (not drawn).', 80, 730, 19, '#5b6270', { bold: true })];
     }
     if (id === 'ss-sheet') {
       return [svgItem(shAtoms.map((a) => backbone(a)).join('')),
