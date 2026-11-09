@@ -132,8 +132,8 @@
 
   // ====================================================================== slide 2: primary structure
   const P_PTS = [...Array(10)].map((_, i) => [190 + i * 130, 270 + (i % 2 ? -34 : 34)]);
-  const P_NAMES = ['Met', 'Gly', 'Lys', 'Leu', 'Glu', 'Ser', 'Val', 'Arg', 'Thr', 'Asp'];
-  const P_KINDS = ['np', 'np', 'pos', 'np', 'neg', 'p', 'np', 'pos', 'p', 'neg'];
+  const P_NAMES = ['Ala', 'Ser', 'Gly', 'Asp', 'Glu', 'Ser', 'Val', 'Arg', 'Thr', 'Asp'];
+  const P_KINDS = ['np', 'p', 'np', 'neg', 'neg', 'p', 'np', 'pos', 'p', 'neg'];
   const primaryChain = svgItem(chain(P_PTS, 42, P_KINDS, P_NAMES));
   // a structural formula on one line, as text items; bonds as short lines
   const atom = (t, x, y, color = 'ink', size = 30) => txt(t, x, y, size, color, { align: 'center', bold: true });
@@ -150,8 +150,9 @@
   ];
   // ---- peptide bond animation: four amino acids join one at a time (displayed formulas) ----
   // A "piece" is a run of residues already joined. Stage s = pieces [[0..s], [s+1], ..., [3]].
-  const PK = 0.82, PFS = 25, PY = 668;
-  const R_COL = ['#a07c00', '#2e7d32', '#1d4fb0', '#a8281a'];
+  const PK = 0.82, PFS = 25, PY = 664;
+  // the first four amino acids of the chain above, with their real (small) R groups
+  const P_RES = [['CH₃'], ['CH₂', 'OH'], ['H'], ['CH₂', 'COO⁻']];
   const pAtom = (t, x, y, c = 'ink') => atom(t, x, y, c, PFS);
   const pBond = (x1, y1, x2, y2, dbl) => bond(x1, y1, x2, y2, dbl);
   const pieceSpan = (n) => (335 + 250 * (n - 1)) * PK;
@@ -174,7 +175,8 @@
         const N = N1 + 250 * PK * r, Ca = N + 80 * PK, C = Ca + 80 * PK;
         items.push(pAtom('N', N, y), ...pBond(N, y + 17, N, y + 36), pAtom('H', N, y + 54));
         items.push(...pBond(N + 14, y, Ca - 14, y), pAtom('C', Ca, y), ...pBond(Ca, y - 17, Ca, y - 36), pAtom('H', Ca, y - 54),
-          ...pBond(Ca, y + 17, Ca, y + 36), pAtom(`R${'₁₂₃₄'[ri]}`, Ca, y + 54, R_COL[ri]));
+          svgItem(bead(Ca, y - 94, 21, P_KINDS[ri], P_NAMES[ri])));
+        P_RES[ri].forEach((t, j) => items.push(...pBond(Ca, y + 17 + 50 * j, Ca, y + 34 + 50 * j), pAtom(t, Ca, y + 52 + 50 * j, AA_EDGE[P_KINDS[ri]])));
         items.push(...pBond(Ca + 14, y, C - 14, y), pAtom('C', C, y), ...pBond(C, y - 17, C, y - 36, true), pAtom('O', C, y - 54));
         if (r < pc.res.length - 1) {
           const Nn = C + 90 * PK, mid = (C + Nn) / 2;
@@ -202,7 +204,7 @@
   const P_T = [0, 1.7, 3.4, 5.1];
   const pepStages = [0, 1, 2, 3].flatMap((st) => {
     const d = stageDraw(st), at = P_T[st], o = st < 3 ? { until: P_T[st + 1] - at } : {};
-    const out = [...d.items, txt(P_CAPS[st], 800, 808, 21, st === 3 ? '#1d4fb0' : '#5b6270', { align: 'center', bold: st === 3 })].map((it) => ({ ...it, at, duration: 0.01, ...o }));
+    const out = [...d.items, txt(P_CAPS[st], 800, 822, 21, st === 3 ? '#1d4fb0' : '#5b6270', { align: 'center', bold: st === 3 })].map((it) => ({ ...it, at, duration: 0.01, ...o }));
     if (st < 3) {
       const jx = d.plus[0], lastO = jx - 50 * PK;
       out.push({ type: 'flash', x: lastO - 30, y: PY, r: 40, color: RED, duration: 0.7, at: P_T[st + 1] - 0.75 },
@@ -232,11 +234,13 @@
     { type: 'line', from: [1404, 236], to: [1444, 236], color: '#5f6b7a', width: 5, rough: false },
     ...label('Amino acid', 255, 170, [255, 190], [P_PTS[0][0] + 34, P_PTS[0][1] - 28], 'center', 24),
     ...label('Peptide bond', 470, 166, [460, 186], [(P_PTS[1][0] + P_PTS[2][0]) / 2, (P_PTS[1][1] + P_PTS[2][1]) / 2], 'center', 24),
+    { type: 'path', points: [[160, 352], [160, 366], [610, 366], [610, 352]], smooth: false, color: '#8a8f98', width: 3, rough: false },
+    txt('These first 4 are joined step by step below', 385, 392, 20, '#5b6270', { align: 'center', bold: true }),
     txt('The primary structure is the exact order (sequence) of amino acids, joined by peptide bonds.', 800, 460, 26, 'ink', { align: 'center', bold: true }),
-    { type: 'rect', x: 80, y: 500, w: 1440, h: 340, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    { type: 'rect', x: 80, y: 500, w: 1440, h: 352, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
     txt('How amino acids join: a peptide bond', 110, 530, 24, '#5b6270', { bold: true }),
     ...beforeItems.map((it) => ({ ...it, hideDuring: 'pep' })),
-    txt('The carboxyl group of one amino acid joins the amino group of the next, releasing water.', 800, 808, 21, '#5b6270', { align: 'center', hideDuring: 'pep' }),
+    txt('The carboxyl group of one amino acid joins the amino group of the next, releasing water.', 800, 822, 21, '#5b6270', { align: 'center', hideDuring: 'pep' }),
     // key
     ...[['np', 'Nonpolar'], ['p', 'Polar'], ['pos', 'Positive (+)'], ['neg', 'Negative (−)']].flatMap(([k, n], i) => [
       svgItem(bead(1120 + (i % 2) * 190, 140 + Math.floor(i / 2) * 0, 12, k)),
