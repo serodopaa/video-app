@@ -605,53 +605,96 @@
     txt('Tertiary = interactions between the R GROUPS', 800, 856, 27, SV[2].color, { align: 'center', bold: true }),
   ];
 
-  // ====================================================================== slide 4: tertiary structure
-  // A single chain folded into a compact shape: two helices, a three-strand sheet and loops,
-  // with the R-group interactions that hold the fold together marked on it.
-  const T1 = helix(250, 700, 330, 40, 4), T2 = helix(700, 300, 690, 40, 4);
-  const foldSvg = tube('M150 780 C170 760 200 740 236 712') + T1.svg
-    + tube('M250 316 C260 240 340 220 380 260 C400 280 396 300 380 316')
-    + strand(380, 600, 330, 34, 4) + tube('M600 330 C640 336 646 400 600 410') + strand(600, 380, 410, 34, -4) + tube('M380 410 C340 416 336 484 380 490') + strand(380, 600, 490, 34, 4)
-    + tube('M600 490 C640 470 660 380 676 300 C680 286 690 284 700 290') + T2.svg + tube('M712 698 C720 740 750 770 790 780');
-  const core = [[430, 610], [470, 640], [510, 606], [452, 572], [500, 668], [540, 640]].map(([x, y]) => bead(x, y, 20, 'np')).join('');
-  const interactions = `${core}
-    <ellipse cx="486" cy="622" rx="96" ry="76" fill="none" stroke="#a07c00" stroke-width="3" stroke-dasharray="9 7"/>
-    ${bead(300, 420, 16, 'np', 'S')}${bead(368, 400, 16, 'np', 'S')}<line x1="316" y1="416" x2="352" y2="404" stroke="#d4a300" stroke-width="7" stroke-linecap="round"/>
-    ${bead(646, 560, 18, 'pos', '+')}${bead(612, 520, 18, 'neg', '−')}
-    ${bead(296, 560, 16, 'p')}${bead(376, 540, 16, 'p')}<line x1="312" y1="556" x2="360" y2="544" stroke="${HB}" stroke-width="3.5" stroke-dasharray="5 4"/>`;
-  const unfolded = chain([...Array(16)].map((_, i) => [150 + i * 44, 520 + Math.sin(i * 0.9) * 40]), 18, ['np', 'p', 'pos', 'np', 'neg', 'p', 'np', 'np', 'p', 'neg', 'pos', 'np', 'p', 'np', 'neg', 'p']);
-  const CARDS = [
-    { y: 230, icon: bead(910, 230, 16, 'np') + bead(936, 244, 16, 'np') + bead(912, 256, 16, 'np'), head: 'Hydrophobic interactions', body: 'Nonpolar R groups cluster in the\ncore, away from water' },
-    { y: 380, icon: `${bead(904, 380, 15, 'np', 'S')}${bead(950, 380, 15, 'np', 'S')}<line x1="919" y1="380" x2="935" y2="380" stroke="#d4a300" stroke-width="7"/>`, head: 'Disulfide bridges', body: 'Strong covalent S–S bonds\nbetween two cysteines' },
-    { y: 530, icon: `${bead(906, 530, 16, 'pos', '+')}${bead(946, 530, 16, 'neg', '−')}`, head: 'Ionic bonds', body: 'Attraction between + and −\ncharged R groups' },
-    { y: 680, icon: `${bead(904, 680, 14, 'p')}${bead(952, 680, 14, 'p')}<line x1="918" y1="680" x2="938" y2="680" stroke="${HB}" stroke-width="3.5" stroke-dasharray="4 3"/>`, head: 'Hydrogen bonds', body: 'Between polar R groups' },
+  // ====================================================================== tertiary structure
+  // Takeaway: tertiary structure = R groups interacting (secondary was backbone-backbone).
+  // The fold is two helices joined by loops; every interaction is two R groups on stalks
+  // sticking out of the backbone and meeting in the middle. Numbered pairs match the cards.
+  const T1 = helix(300, 720, 270, 40, 4), T2 = helix(620, 270, 720, 40, 4);
+  const foldSvg = tube('M170 830 C220 800 290 760 300 712') + T1.svg
+    + tube('M300 258 C300 170 620 170 620 258') + T2.svg
+    + tube('M620 712 C620 790 540 800 460 800 C400 800 360 820 340 850');
+  const TI = [
+    { name: 'Disulfide bridge', color: '#b38600', y: 330, k: ['np', 'np'], n: ['S', 'S'], body: 'Two cysteine R groups form a\nstrong covalent S–S bond' },
+    { name: 'Ionic bond', color: '#7b3fd0', y: 420, k: ['pos', 'neg'], n: ['+', '−'], body: 'A + charged R group attracts\na − charged R group' },
+    { name: 'Hydrogen bond', color: HB, y: 510, k: ['p', 'p'], n: ['', ''], body: 'Between polar R groups\n(for example –OH groups)' },
+    { name: 'Hydrophobic interactions', color: '#a07c00', y: 612, k: ['np', 'np', 'np'], n: ['', '', ''], body: 'Nonpolar R groups cluster in\nthe core, away from water' },
   ];
-  const tertiaryActions = [{
-    id: 'denature', label: 'Denature it (heat)', stay: true, drawn: false,
-    items: [
-      { type: 'rect', x: 20, y: 150, w: 840, h: 700, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 1, width: 1, rough: false },
-      svgItem(unfolded),
-      txt('Heat or acid breaks the R-group interactions:\nthe chain unfolds and the protein stops working.', 460, 700, 24, '#a8281a', { align: 'center', bold: true }),
-      txt('The sequence (primary structure) is still the same.', 460, 780, 22, '#5b6270', { align: 'center' }),
-    ],
-  }];
+  const TI_L = 410, TI_R = 510, TI_RB = 22, STALK = '#7d8796';
+  const stalk = (x1, y1, x2, y2) => ln(x1, y1, x2, y2, 7, STALK);
+  const badge = (x, y, i, c) => `<circle cx="${x}" cy="${y}" r="15" fill="${c}" stroke="#ffffff" stroke-width="3"/><text x="${x}" y="${y + 6}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="17" text-anchor="middle" fill="#ffffff">${i + 1}</text>`;
+  // one interacting pair: stalks from the two helices, R-group beads, the bond between them, number badge
+  const tiPair = (i) => {
+    const q = TI[i], y = q.y;
+    let out = stalk(338, y, TI_L - TI_RB, y) + stalk(582, y, TI_R + TI_RB, y);
+    if (i === 3) out += stalk(460, 792, 460, 690 + TI_RB);
+    out += bead(TI_L, y, TI_RB, q.k[0], q.n[0]) + bead(TI_R, y, TI_RB, q.k[1], q.n[1]);
+    if (i === 3) out += bead(460, 690, TI_RB, 'np');
+    const a = TI_L + TI_RB + 2, b = TI_R - TI_RB - 2;
+    if (i === 0) out += ln(a, y, b, y, 9, '#d4a300');
+    if (i === 1) out += ln(a, y, b, y, 4.5, q.color, 1, 'stroke-dasharray="7 5"');
+    if (i === 2) out += ln(a, y, b, y, 4.5, HB, 1, 'stroke-dasharray="6 5"');
+    if (i === 3) out += `<ellipse cx="460" cy="646" rx="104" ry="78" fill="none" stroke="${q.color}" stroke-width="3.5" stroke-dasharray="9 7"/>`;
+    return out + badge(460, i === 3 ? 612 : y - 34, i, q.color);
+  };
+  const tiAll = TI.map((_, i) => tiPair(i)).join('');
+  // right column: takeaway box + one card per interaction
+  const TC = (i) => 300 + i * 138;
+  const tiCardIcon = (i) => {
+    const q = TI[i], top = TC(i), cy = top + 63, l = 966, r = 1014;
+    let out = tube(`M938 ${top + 24} L938 ${top + 102}`, 10) + tube(`M1042 ${top + 24} L1042 ${top + 102}`, 10)
+      + stalk(944, cy, l - 14, cy) + stalk(1036, cy, r + 14, cy) + bead(l, cy, 15, q.k[0], q.n[0]) + bead(r, cy, 15, q.k[1], q.n[1]);
+    if (i === 0) out += ln(l + 15, cy, r - 15, cy, 7, '#d4a300');
+    if (i === 1 || i === 2) out += ln(l + 15, cy, r - 15, cy, 3.5, q.color, 1, 'stroke-dasharray="4 3"');
+    if (i === 3) out += `<ellipse cx="990" cy="${cy}" rx="44" ry="26" fill="none" stroke="${q.color}" stroke-width="3" stroke-dasharray="6 5"/>`;
+    return out;
+  };
+  const tiCards = TI.flatMap((q, i) => [
+    { type: 'rect', x: 880, y: TC(i), w: 660, h: 126, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    svgItem(tiCardIcon(i) + badge(906, TC(i) + 24, i, q.color)),
+    txt(q.name, 1066, TC(i) + 36, 25, q.color, { bold: true }),
+    txt(q.body, 1066, TC(i) + 76, 20, '#3b4252'),
+    { type: 'hotspot', x: 880, y: TC(i), w: 660, h: 126, action: `ti${i}` },
+  ]);
+  const tiDim = { type: 'rect', x: 100, y: 120, w: 760, h: 750, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 0.8, width: 0, rough: false };
+  const tiCardOn = (i) => ({ type: 'rect', x: 876, y: TC(i) - 4, w: 668, h: 134, color: TI[i].color, fill: TI[i].color, fillOpacity: 0.08, width: 5, rough: false });
+  const unfolded = chain([...Array(16)].map((_, i) => [150 + i * 44, 520 + Math.sin(i * 0.9) * 40]), 18, ['np', 'p', 'pos', 'np', 'neg', 'p', 'np', 'np', 'p', 'neg', 'pos', 'np', 'p', 'np', 'neg', 'p']);
+  const tertiaryActions = [
+    {
+      id: 'spot', label: 'Spotlight the R groups', group: 'ter', stay: true, drawn: false,
+      items: [
+        tiDim,
+        ...TI.map((q, i) => ({ ...svgItem(tiPair(i)), at: 0.3 + i * 0.6, duration: 0.3 })),
+        ...TI.map((q, i) => ({ type: 'flash', x: 460, y: q.y + (i === 3 ? 34 : 0), r: 90, color: q.color, duration: 0.8, at: 0.3 + i * 0.6 })),
+        txt('Only R groups are bonding: this is what holds the 3-D shape', 460, 136, 22, '#2f6fde', { align: 'center', bold: true, anim: 'fade', duration: 0.4, at: 2.8 }),
+      ],
+    },
+    ...TI.map((q, i) => ({
+      id: `ti${i}`, label: q.name, group: 'ter', stay: true, drawn: false,
+      items: [
+        tiDim, svgItem(tiPair(i)), tiCardOn(i),
+        { type: 'pulse', x: 460, y: q.y + (i === 3 ? 34 : 0), r: i === 3 ? 110 : 80, color: q.color, speed: 1.4 },
+      ],
+    })),
+    {
+      id: 'denature', label: 'Denature it (heat)', group: 'ter', stay: true, drawn: false,
+      items: [
+        { type: 'rect', x: 20, y: 110, w: 845, h: 780, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 1, width: 0, rough: false },
+        svgItem(unfolded),
+        txt('Heat or acid breaks the R-group interactions:\nthe chain unfolds and the protein stops working.', 460, 700, 24, '#a8281a', { align: 'center', bold: true }),
+        txt('The sequence (primary structure) is still the same.', 460, 780, 22, '#5b6270', { align: 'center' }),
+      ],
+    },
+  ];
   const tertiaryItems = [
     title('Tertiary structure'),
-    svgItem(foldSvg + interactions),
-    ...label('Hydrophobic core', 300, 820, [340, 804], [430, 680], 'center', 22),
-    ...label('Disulfide bridge', 130, 296, [160, 312], [298, 412], 'center', 22),
-    ...label('Ionic bond', 756, 436, [770, 450], [652, 548], 'left', 22),
-    ...label('Hydrogen bond', 112, 612, [150, 596], [290, 562], 'center', 22),
-    txt('One polypeptide chain folds into a unique 3-D shape,\nheld together by interactions between R groups.', 1210, 118, 23, 'ink', { align: 'center', bold: true }),
-    ...CARDS.flatMap((cd, i) => {
-      const y = 260 + i * 142, dy = y - cd.y;
-      return [
-        { type: 'rect', x: 880, y: y - 62, w: 660, h: 124, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
-        svgItem(`<g transform="translate(0 ${dy})">${cd.icon}</g>`),
-        txt(cd.head, 990, y - 22, 26, 'ink', { bold: true }),
-        txt(cd.body, 990, y + 16, 21, '#5b6270'),
-      ];
-    }),
+    svgItem(foldSvg + tiAll),
+    ...label('Backbone', 160, 470, [208, 470], [262, 470], 'center', 24),
+    ...label('R group', 740, 190, [730, 206], [TI_R + 8, TI[0].y - 20], 'center', 24),
+    { type: 'rect', x: 880, y: 110, w: 660, h: 172, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('Tertiary = R groups interacting', 1210, 150, 34, '#2f6fde', { align: 'center', bold: true }),
+    txt('R groups from far-apart parts of the chain\nbond to each other and lock in the 3-D shape.', 1210, 200, 21, '#3b4252', { align: 'center' }),
+    txt('(Secondary was backbone ↔ backbone.)', 1210, 258, 20, '#d6336c', { align: 'center', bold: true }),
+    ...tiCards,
   ];
 
   // ====================================================================== slide 5: quaternary structure
@@ -767,7 +810,7 @@ Let's start at the very beginning, with primary structure.`,
       },
       // Slide 5: tertiary structure.
       {
-        say: 'Tertiary structure: the whole chain folds into one 3-D shape, held by R-group interactions.',
+        say: 'Tertiary structure: the whole chain folds into one 3-D shape, held together by interactions between R groups, not the backbone.',
         clear: true,
         actions: tertiaryActions,
         items: tertiaryItems,
