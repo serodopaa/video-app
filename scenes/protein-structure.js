@@ -568,96 +568,156 @@
     ...secView().filter((it) => it.type !== 'flash').map((it) => ({ ...it, at: undefined, anim: undefined, hideDuring: SV_IDS })),
   ];
 
-  // ====================================================================== tertiary structure
-  // Takeaway: tertiary structure = R groups interacting (secondary was backbone-backbone).
-  // The fold is two helices joined by loops; every interaction is two R groups on stalks
-  // sticking out of the backbone and meeting in the middle. Numbered pairs match the cards.
-  const T1 = helix(300, 720, 270, 40, 4), T2 = helix(620, 270, 720, 40, 4);
-  const foldSvg = tube('M170 830 C220 800 290 760 300 712') + T1.svg
-    + tube('M300 258 C300 170 620 170 620 258') + T2.svg
-    + tube('M620 712 C620 790 540 800 460 800 C400 800 360 820 340 850');
-  const TI = [
-    { name: 'Disulfide bridge', color: '#b38600', y: 330, k: ['np', 'np'], n: ['S', 'S'], body: 'Two cysteine R groups form a\nstrong covalent S–S bond' },
-    { name: 'Ionic bond', color: '#7b3fd0', y: 420, k: ['pos', 'neg'], n: ['+', '−'], body: 'A + charged R group attracts\na − charged R group' },
-    { name: 'Hydrogen bond', color: HB, y: 510, k: ['p', 'p'], n: ['', ''], body: 'Between polar R groups\n(for example –OH groups)' },
-    { name: 'Hydrophobic interactions', color: '#a07c00', y: 612, k: ['np', 'np', 'np'], n: ['', '', ''], body: 'Nonpolar R groups cluster in\nthe core, away from water' },
+  // ====================================================================== tertiary structure (slide 5)
+  // Focus: tertiary structure IS the final 3-D shape of the whole chain, and the shape gives the job.
+  // The chain is three rigid secondary pieces (helix H1, helix H2, a 3-strand sheet) joined by loops.
+  // Each piece has a pose (centre, angle) in two stages: U = stretched out, F = folded. Frames in
+  // between are drawn by interpolating the poses, so "Fold" / "Denature" animate the real fold.
+  const rot = (p, a) => { const c = Math.cos(a), sn = Math.sin(a); return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c]; };
+  const DEG = Math.PI / 180;
+  const catmull = (pts) => {
+    let d = `M${f1(pts[0][0])} ${f1(pts[0][1])}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C${f1(c1[0])} ${f1(c1[1])} ${f1(c2[0])} ${f1(c2[1])} ${f1(p2[0])} ${f1(p2[1])}`;
+    }
+    return d;
+  };
+  const HL = (L) => { const h = helix(0, -L / 2, L / 2, 36, 4); return { svg: h.svg, a: [0, -L / 2 - 8], b: [0, L / 2 - 8], dir: [0, 1] }; };
+  const SHEET_LOCAL = {
+    svg: strand(-115, 115, -46, 32, 4) + tube('M115 -46 C155 -42 155 -4 115 0', 11) + strand(115, -115, 0, 32, -4)
+      + tube('M-115 0 C-155 4 -155 42 -115 46', 11) + strand(-115, 115, 46, 32, 4),
+    a: [-115, -46], b: [115, 46], dir: [1, 0],
+  };
+  const TP = [SHEET_LOCAL, HL(250), HL(230)];
+  // poses [cx, cy, angleDeg] for U (unfolded) and F (folded)
+  const POSE = {
+    U: [[230, 330, 0], [470, 560, 270], [720, 330, -40]],
+    F: [[500, 650, 180], [290, 490, 180], [500, 330, -90]],
+  };
+  const TAIL = { U: { n: [80, 190], c: [860, 540] }, F: { n: [760, 790], c: [730, 240] } };
+  // folded loops: extra waypoints
+  const VIA_F = [[[300, 700]], []];
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const lerpP = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  const foldSvgAt = (t) => {
+    const pose = POSE.U.map((u, i) => { const f = POSE.F[i]; return [lerp(u[0], f[0], t), lerp(u[1], f[1], t), lerp(u[2], f[2], t)]; });
+    const poseU = POSE.U;
+    const world = (i, ps) => {
+      const [cx, cy, ad] = ps[i], el = TP[i], A = ad * DEG, w = (p) => { const r = rot(p, A); return [cx + r[0], cy + r[1]]; };
+      return { a: w(el.a), b: w(el.b), dir: rot(el.dir, A), g: `<g transform="translate(${f1(cx)} ${f1(cy)}) rotate(${f1(ad)})">${el.svg}</g>` };
+    };
+    const E = TP.map((_, i) => world(i, pose)), EU = TP.map((_, i) => world(i, poseU));
+    const off = (p, d, k) => [p[0] + d[0] * k, p[1] + d[1] * k];
+    let loops = '';
+    for (let i = 0; i < 2; i++) {
+      const p = off(E[i].b, E[i].dir, 45), q = off(E[i + 1].a, E[i + 1].dir, -45);
+      const vf = VIA_F[i];
+      const pu = off(EU[i].b, EU[i].dir, 45), qu = off(EU[i + 1].a, EU[i + 1].dir, -45);
+      const via = vf.map((v, k) => lerpP(lerpP(pu, qu, (k + 1) / (vf.length + 1)), v, t));
+      loops += tube(catmull([E[i].b, p, ...via, q, E[i + 1].a]), 12);
+    }
+    const n = lerpP(TAIL.U.n, TAIL.F.n, t), c = lerpP(TAIL.U.c, TAIL.F.c, t);
+    loops += tube(catmull([n, off(E[0].a, E[0].dir, -45), E[0].a]), 12) + tube(catmull([E[2].b, off(E[2].b, E[2].dir, 45), c]), 12);
+    const ends = `<text x="${f1(n[0] - 10)}" y="${f1(n[1] + 34)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="22" fill="#5f6b7a" text-anchor="middle">N</text>`
+      + `<text x="${f1(c[0] + 14)}" y="${f1(c[1] + 34)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="22" fill="#5f6b7a" text-anchor="middle">C</text>`;
+    return loops + E.map((e) => e.g).join('') + ends;
+  };
+  const FOLDED = foldSvgAt(1);
+  const foldFrames = (from, to, t0, dur, n = 14) => [...Array(n + 1)].map((_, k) => {
+    const u = ease(k / n), t = lerp(from, to, u);
+    return { ...svgItem(foldSvgAt(t)), at: t0 + (dur * k) / n, ...(k < n ? { until: dur / n + 0.02 } : {}), duration: 0.01 };
+  });
+  // the overall shape: a smooth surface around the fold with a pocket (active site) opening to the right
+  const SURF = catmull([[250, 300], [400, 250], [600, 250], [700, 300], [690, 390], [560, 400], [470, 440], [462, 530], [560, 572], [690, 580],
+    [720, 680], [640, 760], [420, 765], [250, 730], [215, 560], [220, 400], [250, 300]]);
+  const surface = (op = 1) => `<path d="${SURF} Z" fill="#7aa2e6" fill-opacity="${0.16 * op}" stroke="#2f6fde" stroke-width="4" stroke-dasharray="12 8" opacity="${op}"/>`;
+  const SUB = { x: 522, y: 486 };
+  const substrate = (x, y) => `<g transform="translate(${f1(x)} ${f1(y)})"><polygon points="-30,-52 30,-52 58,0 30,52 -30,52 -58,0" fill="#5cc27a" stroke="#1f7a3e" stroke-width="4"/>
+    <rect x="52" y="-12" width="70" height="24" rx="12" fill="#5cc27a" stroke="#1f7a3e" stroke-width="4"/><circle cx="-8" cy="-14" r="10" fill="#ffffff" opacity="0.5"/></g>`;
+  const subFrames = (x0, x1, t0, dur, n = 10, y0 = SUB.y, y1 = SUB.y) => [...Array(n + 1)].map((_, k) => ({ ...svgItem(substrate(lerp(x0, x1, ease(k / n)), lerp(y0, y1, ease(k / n)))), at: t0 + (dur * k) / n, ...(k < n ? { until: dur / n + 0.02 } : {}), duration: 0.01 }));
+  const tLabels = [
+    ...label('α-helix', 110, 400, [140, 414], [262, 470], 'center', 22),
+    ...label('α-helix', 420, 190, [430, 206], [470, 300], 'center', 22),
+    ...label('β-pleated sheet', 470, 840, [470, 822], [470, 712], 'center', 22),
+    ...label('loop', 120, 720, [150, 712], [292, 690], 'center', 22),
   ];
-  const TI_L = 410, TI_R = 510, TI_RB = 22, STALK = '#7d8796';
-  const stalk = (x1, y1, x2, y2) => ln(x1, y1, x2, y2, 7, STALK);
-  const badge = (x, y, i, c) => `<circle cx="${x}" cy="${y}" r="15" fill="${c}" stroke="#ffffff" stroke-width="3"/><text x="${x}" y="${y + 6}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="17" text-anchor="middle" fill="#ffffff">${i + 1}</text>`;
-  // one interacting pair: stalks from the two helices, R-group beads, the bond between them, number badge
-  const tiPair = (i) => {
-    const q = TI[i], y = q.y;
-    let out = stalk(338, y, TI_L - TI_RB, y) + stalk(582, y, TI_R + TI_RB, y);
-    if (i === 3) out += stalk(460, 792, 460, 690 + TI_RB);
-    out += bead(TI_L, y, TI_RB, q.k[0], q.n[0]) + bead(TI_R, y, TI_RB, q.k[1], q.n[1]);
-    if (i === 3) out += bead(460, 690, TI_RB, 'np');
-    const a = TI_L + TI_RB + 2, b = TI_R - TI_RB - 2;
-    if (i === 0) out += ln(a, y, b, y, 9, '#d4a300');
-    if (i === 1) out += ln(a, y, b, y, 4.5, q.color, 1, 'stroke-dasharray="7 5"');
-    if (i === 2) out += ln(a, y, b, y, 4.5, HB, 1, 'stroke-dasharray="6 5"');
-    if (i === 3) out += `<ellipse cx="460" cy="646" rx="104" ry="78" fill="none" stroke="${q.color}" stroke-width="3.5" stroke-dasharray="9 7"/>`;
-    return out + badge(460, i === 3 ? 612 : y - 34, i, q.color);
-  };
-  const tiAll = TI.map((_, i) => tiPair(i)).join('');
-  // right column: takeaway box + one card per interaction
-  const TC = (i) => 300 + i * 138;
-  const tiCardIcon = (i) => {
-    const q = TI[i], top = TC(i), cy = top + 63, l = 966, r = 1014;
-    let out = tube(`M938 ${top + 24} L938 ${top + 102}`, 10) + tube(`M1042 ${top + 24} L1042 ${top + 102}`, 10)
-      + stalk(944, cy, l - 14, cy) + stalk(1036, cy, r + 14, cy) + bead(l, cy, 15, q.k[0], q.n[0]) + bead(r, cy, 15, q.k[1], q.n[1]);
-    if (i === 0) out += ln(l + 15, cy, r - 15, cy, 7, '#d4a300');
-    if (i === 1 || i === 2) out += ln(l + 15, cy, r - 15, cy, 3.5, q.color, 1, 'stroke-dasharray="4 3"');
-    if (i === 3) out += `<ellipse cx="990" cy="${cy}" rx="44" ry="26" fill="none" stroke="${q.color}" stroke-width="3" stroke-dasharray="6 5"/>`;
-    return out;
-  };
-  const tiCards = TI.flatMap((q, i) => [
-    { type: 'rect', x: 880, y: TC(i), w: 660, h: 126, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
-    svgItem(tiCardIcon(i) + badge(906, TC(i) + 24, i, q.color)),
-    txt(q.name, 1066, TC(i) + 36, 25, q.color, { bold: true }),
-    txt(q.body, 1066, TC(i) + 76, 20, '#3b4252'),
-    { type: 'hotspot', x: 880, y: TC(i), w: 660, h: 126, action: `ti${i}` },
-  ]);
-  const tiDim = { type: 'rect', x: 100, y: 120, w: 760, h: 750, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 0.8, width: 0, rough: false };
-  const tiCardOn = (i) => ({ type: 'rect', x: 876, y: TC(i) - 4, w: 668, h: 134, color: TI[i].color, fill: TI[i].color, fillOpacity: 0.08, width: 5, rough: false });
-  const unfolded = chain([...Array(16)].map((_, i) => [150 + i * 44, 520 + Math.sin(i * 0.9) * 40]), 18, ['np', 'p', 'pos', 'np', 'neg', 'p', 'np', 'np', 'p', 'neg', 'pos', 'np', 'p', 'np', 'neg', 'p']);
+  const T_HIDE = ['tfold', 'tdenature'];
+  // right column: takeaway + three steps
+  const TSTEP = [
+    { c: '#d6336c', h: 'Secondary pieces form', b: 'Helices and sheets (backbone\nH-bonds, slide 3).' },
+    { c: '#2f6fde', h: 'The whole chain folds up', b: 'R-group interactions (slide 4) pull\nfar-apart pieces together.' },
+    { c: '#1f7a3e', h: 'Its shape gives it its job', b: 'The final shape has a pocket that\nfits only the right molecule.' },
+  ];
+  const tRight = [
+    { type: 'rect', x: 920, y: 110, w: 620, h: 160, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('Tertiary structure =', 1230, 150, 30, '#2f6fde', { align: 'center', bold: true }),
+    txt('the final 3-D shape of\none whole polypeptide chain', 1230, 205, 27, 'ink', { align: 'center', bold: true }),
+    ...TSTEP.flatMap((q, i) => {
+      const y = 300 + i * 150;
+      return [
+        { type: 'rect', x: 920, y, w: 620, h: 134, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+        svgItem(`<circle cx="960" cy="${y + 40}" r="20" fill="${q.c}"/><text x="960" y="${y + 48}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="22" text-anchor="middle" fill="#ffffff">${i + 1}</text>`),
+        txt(q.h, 996, y + 40, 26, q.c, { bold: true }),
+        txt(q.b, 996, y + 88, 21, '#3b4252'),
+      ];
+    }),
+    txt('Lose the shape → lose the job', 1230, 790, 26, '#a8281a', { align: 'center', bold: true }),
+    txt('(heat or the wrong pH can unfold it)', 1230, 828, 21, '#5b6270', { align: 'center' }),
+  ];
+  const stepOn = (i) => ({ type: 'rect', x: 916, y: 296 + i * 150, w: 628, h: 142, color: TSTEP[i].c, fill: TSTEP[i].c, fillOpacity: 0.07, width: 5, rough: false });
   const tertiaryActions = [
     {
-      id: 'spot', label: 'Spotlight the R groups', group: 'ter', stay: true, drawn: false,
+      id: 'tfold', label: 'Fold the chain', group: 'tf', stay: true, drawn: false,
       items: [
-        tiDim,
-        ...TI.map((q, i) => ({ ...svgItem(tiPair(i)), at: 0.3 + i * 0.6, duration: 0.3 })),
-        ...TI.map((q, i) => ({ type: 'flash', x: 460, y: q.y + (i === 3 ? 34 : 0), r: 90, color: q.color, duration: 0.8, at: 0.3 + i * 0.6 })),
-        txt('Only R groups are bonding: this is what holds the 3-D shape', 460, 136, 22, '#2f6fde', { align: 'center', bold: true, anim: 'fade', duration: 0.4, at: 2.8 }),
+        stepOn(0), { ...stepOn(1), at: 1.0 },
+        { ...svgItem(foldSvgAt(0)), until: 1.0, duration: 0.01 },
+        txt('Secondary structure only: helices and a sheet, loosely strung out', 470, 860, 22, '#d6336c', { align: 'center', bold: true, until: 1.0 }),
+        ...foldFrames(0, 1, 1.0, 2.6),
+        txt('Folded: one compact 3-D shape', 470, 850, 24, '#2f6fde', { align: 'center', bold: true, at: 3.7, anim: 'fade', duration: 0.4 }),
+        { type: 'flash', x: 470, y: 500, r: 260, color: '#2f6fde', duration: 0.9, at: 3.6 },
       ],
     },
-    ...TI.map((q, i) => ({
-      id: `ti${i}`, label: q.name, group: 'ter', stay: true, drawn: false,
-      items: [
-        tiDim, svgItem(tiPair(i)), tiCardOn(i),
-        { type: 'pulse', x: 460, y: q.y + (i === 3 ? 34 : 0), r: i === 3 ? 110 : 80, color: q.color, speed: 1.4 },
-      ],
-    })),
     {
-      id: 'denature', label: 'Denature it (heat)', group: 'ter', stay: true, drawn: false,
+      id: 'tshape', label: 'Show its 3-D shape', group: 'tf', stay: true, drawn: false,
       items: [
-        { type: 'rect', x: 20, y: 110, w: 845, h: 780, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 1, width: 0, rough: false },
-        svgItem(unfolded),
-        txt('Heat or acid breaks the R-group interactions:\nthe chain unfolds and the protein stops working.', 460, 700, 24, '#a8281a', { align: 'center', bold: true }),
-        txt('The sequence (primary structure) is still the same.', 460, 780, 22, '#5b6270', { align: 'center' }),
+        svgItem(surface()),
+        ...label('Overall shape\n(surface)', 820, 680, [790, 668], [718, 660], 'center', 22).map((it) => ({ ...it, color: it.type === 'text' ? '#2f6fde' : it.color })),
+        txt('Active site:\na pocket in\nthe shape', 810, 462, 23, '#1f7a3e', { align: 'center', bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
+        { type: 'pulse', x: 580, y: 486, r: 70, color: '#1f7a3e', speed: 1.4, at: 0.6 },
+        stepOn(2),
+      ],
+    },
+    {
+      id: 'tbind', label: 'Fit a molecule in', group: 'tf', stay: true, drawn: false,
+      items: [
+        svgItem(surface()),
+        ...subFrames(870, SUB.x, 0.2, 1.6),
+        txt('It fits!', 790, 400, 30, '#1f7a3e', { align: 'center', bold: true, at: 1.9, anim: 'pop', duration: 0.4 }),
+        txt('Only a molecule with\nthe matching shape\nfits the pocket', 790, 456, 19, '#3b4252', { align: 'center', bold: true, at: 2.1, anim: 'fade', duration: 0.4 }),
+        { type: 'flash', x: SUB.x, y: SUB.y, r: 80, color: '#5cc27a', duration: 0.8, at: 1.8 },
+        stepOn(2),
+      ],
+    },
+    {
+      id: 'tdenature', label: 'Denature it (heat)', group: 'tf', stay: true, drawn: false,
+      items: [
+        { ...svgItem(surface()), until: 0.6 },
+        ...foldFrames(1, 0, 0.6, 2.2),
+        ...subFrames(SUB.x, 700, 0.6, 1.8, 10, SUB.y, 720),
+        txt('🔥', 470, 170, 60, 'ink', { align: 'center', anim: 'pop', duration: 0.3 }),
+        txt('Unfolded: the pocket is gone, so the\nmolecule no longer fits. The protein stops working.', 470, 846, 21, '#a8281a', { align: 'center', bold: true, at: 2.9, anim: 'fade', duration: 0.4 }),
+        { type: 'rect', x: 916, y: 766, w: 628, h: 84, color: '#a8281a', fill: '#a8281a', fillOpacity: 0.06, width: 4, rough: false },
       ],
     },
   ];
   const tertiaryItems = [
     title('Tertiary structure'),
-    svgItem(foldSvg + tiAll),
-    ...label('Backbone', 160, 470, [208, 470], [262, 470], 'center', 24),
-    ...label('R group', 740, 190, [730, 206], [TI_R + 8, TI[0].y - 20], 'center', 24),
-    { type: 'rect', x: 880, y: 110, w: 660, h: 172, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
-    txt('Tertiary = R groups interacting', 1210, 150, 34, '#2f6fde', { align: 'center', bold: true }),
-    txt('R groups from far-apart parts of the chain\nbond to each other and lock in the 3-D shape.', 1210, 200, 21, '#3b4252', { align: 'center' }),
-    txt('(Secondary was backbone ↔ backbone.)', 1210, 258, 20, '#d6336c', { align: 'center', bold: true }),
-    ...tiCards,
+    { ...svgItem(FOLDED), hideDuring: T_HIDE },
+    ...tLabels.map((it) => ({ ...it, hideDuring: T_HIDE })),
+    ...tRight,
   ];
 
   // ====================================================================== slide 5: quaternary structure
@@ -773,7 +833,7 @@ Let's start at the very beginning, with primary structure.`,
       },
       // Slide 5: tertiary structure.
       {
-        say: 'Tertiary structure: the whole chain folds into one 3-D shape, held together by interactions between R groups, not the backbone.',
+        say: 'Tertiary structure is the final 3-D shape of the whole chain, and that shape decides what the protein can do.',
         clear: true,
         actions: tertiaryActions,
         items: tertiaryItems,
