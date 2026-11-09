@@ -748,6 +748,43 @@
     return loops + E.map((e) => e.g).join('') + ends;
   };
   const FOLDED = foldSvgAt(1);
+  // ---- primary → secondary: a chain of amino-acid beads gathers onto the helix / sheet path ----
+  const uPath = () => {
+    const W = (i, p) => { const [cx, cy, ad] = POSE.U[i], q = rot(p, ad * DEG); return [cx + q[0], cy + q[1]]; };
+    const D = (i, d) => rot(d, POSE.U[i][2] * DEG);
+    const off = (p, d, k) => [p[0] + d[0] * k, p[1] + d[1] * k];
+    const sheetL = [[-115, -46], [115, -46], [140, -40], [150, -23], [140, -6], [115, 0], [-115, 0], [-140, 6], [-150, 23], [-140, 40], [-115, 46], [115, 46]];
+    const helixL = (L) => { const T = 8 * Math.PI; return [...Array(81)].map((_, k) => { const t = (k / 80) * T; return [36 * Math.sin(t), -L / 2 + (L * t) / T - 36 * 0.28 * Math.cos(t)]; }); };
+    const els = [sheetL, helixL(250), helixL(230)].map((pts, i) => pts.map((q) => W(i, q)));
+    const ends = TP.map((el, i) => ({ a: W(i, el.a), b: W(i, el.b), dir: D(i, el.dir) }));
+    const pts = [TAIL.U.n, off(ends[0].a, ends[0].dir, -45), ...els[0]];
+    for (let i = 0; i < 2; i++) {
+      const p1 = off(ends[i].b, ends[i].dir, 45), q1 = off(ends[i + 1].a, ends[i + 1].dir, -45), nv = VIA_F[i].length;
+      pts.push(p1, ...[...Array(nv)].map((_, k) => lerpP(p1, q1, (k + 1) / (nv + 1))), q1, ...els[i + 1]);
+    }
+    pts.push(off(ends[2].b, ends[2].dir, 45), TAIL.U.c);
+    return pts;
+  };
+  const NB = 46;
+  const beadsOnPath = (pts) => {
+    const seg = pts.slice(1).map((q, i) => Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1])), tot = seg.reduce((a, b) => a + b, 0);
+    return [...Array(NB)].map((_, k) => {
+      let d = (tot * k) / (NB - 1), i = 0;
+      while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; }
+      return lerpP(pts[i], pts[i + 1], seg[i] ? Math.min(1, d / seg[i]) : 0);
+    });
+  };
+  const B_SEC = beadsOnPath(uPath());
+  const B_PRI = [...Array(NB)].map((_, k) => [92 + (k * 760) / (NB - 1), 480 + (k % 2 ? -14 : 14)]);
+  const B_KIND = ['np', 'p', 'np', 'pos', 'np', 'neg', 'p', 'np', 'p', 'np', 'neg', 'pos'];
+  const beadChainSvg = (t) => {
+    const P = B_PRI.map((p, k) => lerpP(p, B_SEC[k], t));
+    return `<polyline points="${P.map((p) => p.map(f1).join(',')).join(' ')}" fill="none" stroke="#5f6b7a" stroke-width="4" stroke-linejoin="round"/>`
+      + P.map(([x, y], k) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="9" fill="${AA[B_KIND[k % B_KIND.length]]}" stroke="${AA_EDGE[B_KIND[k % B_KIND.length]]}" stroke-width="2.5"/>`).join('')
+      + `<text x="${f1(P[0][0])}" y="${f1(P[0][1] - 22)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="22" fill="#5f6b7a" text-anchor="middle">N</text>`
+      + `<text x="${f1(P[NB - 1][0])}" y="${f1(P[NB - 1][1] - 22)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="22" fill="#5f6b7a" text-anchor="middle">C</text>`;
+  };
+  const beadFrames = (t0, dur, n = 14) => [...Array(n + 1)].map((_, k) => ({ ...svgItem(beadChainSvg(ease(k / n))), at: t0 + (dur * k) / n, until: k < n ? dur / n + 0.02 : 0.5, duration: 0.01 }));
   const foldFrames = (from, to, t0, dur, n = 14) => [...Array(n + 1)].map((_, k) => {
     const u = ease(k / n), t = lerp(from, to, u);
     return { ...svgItem(foldSvgAt(t)), at: t0 + (dur * k) / n, ...(k < n ? { until: dur / n + 0.02 } : {}), duration: 0.01 };
@@ -766,12 +803,12 @@
     ...label('β-pleated sheet', 470, 840, [470, 822], [470, 712], 'center', 22),
     ...label('loop', 120, 720, [150, 712], [292, 690], 'center', 22),
   ];
-  const T_HIDE = ['tfold', 'tdenature'];
+  const T_HIDE = ['tfold', 'tshape', 'tbind', 'tdenature'];
   // right column: takeaway + three steps
   const TSTEP = [
-    { c: '#d6336c', h: 'Secondary pieces form', b: 'Helices and sheets (backbone\nH-bonds, slide 4).' },
-    { c: '#2f6fde', h: 'The whole chain folds up', b: 'R-group interactions (slide 5) pull\nfar-apart pieces together.' },
-    { c: '#1f7a3e', h: 'Its shape gives it its job', b: 'The final shape has a pocket that\nfits only the right molecule.' },
+    { c: '#c58a00', h: 'Primary: the chain', b: 'Amino acids join in a set order\n(slide 3).' },
+    { c: '#d6336c', h: 'Secondary: helices and sheets', b: 'Parts of the chain coil and pleat\n(backbone H-bonds, slide 4).' },
+    { c: '#2f6fde', h: 'Tertiary: the 3-D shape', b: 'R-group interactions (slide 5) fold\nthe whole chain into one shape.' },
   ];
   const tRight = [
     { type: 'rect', x: 920, y: 110, w: 620, h: 160, color: '#2f6fde', fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
@@ -792,20 +829,28 @@
   const stepOn = (i) => ({ type: 'rect', x: 916, y: 296 + i * 150, w: 628, h: 142, color: TSTEP[i].c, fill: TSTEP[i].c, fillOpacity: 0.07, width: 5, rough: false });
   const tertiaryActions = [
     {
-      id: 'tfold', label: 'Fold the chain', group: 'tf', stay: true, drawn: false,
+      id: 'tfold', label: 'Fold it: primary → secondary → tertiary', group: 'tf', stay: true, drawn: false,
       items: [
-        stepOn(0), { ...stepOn(1), at: 1.0 },
-        { ...svgItem(foldSvgAt(0)), until: 1.0, duration: 0.01 },
-        txt('Secondary structure only: helices and a sheet, loosely strung out', 470, 860, 22, '#d6336c', { align: 'center', bold: true, until: 1.0 }),
-        ...foldFrames(0, 1, 1.0, 2.6),
-        txt('Folded: one compact 3-D shape', 470, 850, 24, '#2f6fde', { align: 'center', bold: true, at: 3.7, anim: 'fade', duration: 0.4 }),
-        { type: 'flash', x: 470, y: 500, r: 260, color: '#2f6fde', duration: 0.9, at: 3.6 },
+        // 1. primary: the bead chain
+        stepOn(0), { ...svgItem(beadChainSvg(0)), until: 1.0 },
+        txt('1. Primary structure: a chain of amino acids in a set order', 470, 130, 23, '#c58a00', { align: 'center', bold: true, until: 2.8 }),
+        // 2. secondary: beads gather into helices and a sheet, then the ribbon appears
+        ...beadFrames(1.0, 1.8).map((it) => ({ ...it, at: it.at })),
+        { ...stepOn(1), at: 2.8 },
+        { ...svgItem(foldSvgAt(0)), at: 2.8, until: 2.0, duration: 0.3, anim: 'fade' },
+        txt('2. Secondary structure: parts of the chain form helices and a sheet', 470, 130, 23, '#d6336c', { align: 'center', bold: true, at: 2.8, until: 2.0 }),
+        // 3. tertiary: the whole chain folds up
+        { ...stepOn(2), at: 4.8 },
+        ...foldFrames(0, 1, 4.8, 2.6),
+        { type: 'flash', x: 470, y: 500, r: 260, color: '#2f6fde', duration: 0.9, at: 7.4 },
+        txt('3. Tertiary structure: the whole chain folds into one 3-D shape', 470, 130, 23, '#2f6fde', { align: 'center', bold: true, at: 7.4, anim: 'fade', duration: 0.4 }),
+        ...tLabels.map((it) => ({ ...it, at: 7.8 })),
       ],
     },
     {
       id: 'tshape', label: 'Show its 3-D shape', group: 'tf', stay: true, drawn: false,
       items: [
-        svgItem(surface()),
+        svgItem(FOLDED), ...tLabels, svgItem(surface()),
         ...label('Overall shape\n(surface)', 820, 680, [790, 668], [718, 660], 'center', 22).map((it) => ({ ...it, color: it.type === 'text' ? '#2f6fde' : it.color })),
         txt('Active site:\na pocket in\nthe shape', 810, 462, 23, '#1f7a3e', { align: 'center', bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
         { type: 'pulse', x: 580, y: 486, r: 70, color: '#1f7a3e', speed: 1.4, at: 0.6 },
@@ -815,7 +860,7 @@
     {
       id: 'tbind', label: 'Fit a molecule in', group: 'tf', stay: true, drawn: false,
       items: [
-        svgItem(surface()),
+        svgItem(FOLDED), ...tLabels, svgItem(surface()),
         ...subFrames(870, SUB.x, 0.2, 1.6),
         txt('It fits!', 790, 400, 30, '#1f7a3e', { align: 'center', bold: true, at: 1.9, anim: 'pop', duration: 0.4 }),
         txt('Only a molecule with\nthe matching shape\nfits the pocket', 790, 456, 19, '#3b4252', { align: 'center', bold: true, at: 2.1, anim: 'fade', duration: 0.4 }),
@@ -836,9 +881,9 @@
     },
   ];
   const tertiaryItems = [
-    title('Tertiary structure'),
-    { ...svgItem(FOLDED), hideDuring: T_HIDE },
-    ...tLabels.map((it) => ({ ...it, hideDuring: T_HIDE })),
+    title('How a protein folds into shape'),
+    { ...svgItem(beadChainSvg(0)), hideDuring: T_HIDE },
+    txt('A newly made chain of amino acids. Press ▶ to fold it.', 470, 850, 23, '#5b6270', { align: 'center', bold: true, hideDuring: T_HIDE }),
     ...tRight,
   ];
 
@@ -950,7 +995,7 @@ Let's start with primary structure.`,
       },
       // Slide 6: tertiary structure.
       {
-        say: 'Tertiary structure is the final 3-D shape of the whole chain, and that shape decides what the protein can do.',
+        say: 'A protein folds step by step: the chain (primary) forms helices and sheets (secondary), then folds into one 3-D shape (tertiary).',
         clear: true,
         actions: tertiaryActions,
         items: tertiaryItems,
