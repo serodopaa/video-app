@@ -247,6 +247,92 @@
     ]).slice(0, 0),
   ];
 
+  // ====================================================================== amino acid structure (slide 2)
+  // One amino acid, displayed formula, every part boxed and labelled. Buttons swap the R group
+  // between the generic "R" and real examples (side chains of different size and type).
+  const AQ = { y: 330, xH: 170, xN: 280, xCa: 420, xC: 560, xO: 680, xOH: 780, fs: 36, row: 60 };
+  const aqAtom = (t, x, y, c = 'ink') => txt(t, x, y, AQ.fs, c, { align: 'center', bold: true });
+  const aqBond = (x1, y1, x2, y2, c = DARK, dbl = false) => (dbl
+    ? [{ type: 'line', from: [x1 - 5, y1], to: [x2 - 5, y2], color: c, width: 3.5, rough: false }, { type: 'line', from: [x1 + 5, y1], to: [x2 + 5, y2], color: c, width: 3.5, rough: false }]
+    : [{ type: 'line', from: [x1, y1], to: [x2, y2], color: c, width: 3.5, rough: false }]);
+  const AQ_VIEWS = [
+    { id: 'aq-r', btn: 'Any amino acid (R)', name: 'General amino acid', rows: ['R'], type: 'R = any side chain',
+      note: 'R stands for the side chain.\nThere are 20 different R groups,\nand each one gives its amino acid\nits own size, shape and charge.' },
+    { id: 'aq-gly', btn: 'Glycine (Gly)', name: 'Glycine', rows: ['H'], kind: 'np', type: 'Nonpolar',
+      note: 'The smallest amino acid:\nits R group is just one H atom.' },
+    { id: 'aq-ala', btn: 'Alanine (Ala)', name: 'Alanine', rows: ['CH₃'], kind: 'np', type: 'Nonpolar',
+      note: 'A small hydrocarbon group.\nIt avoids water (hydrophobic).' },
+    { id: 'aq-ser', btn: 'Serine (Ser)', name: 'Serine', rows: ['CH₂', 'OH'], kind: 'p', type: 'Polar',
+      note: 'Its –OH group is polar, so it can\nform hydrogen bonds with water\nand with other R groups.' },
+    { id: 'aq-asp', btn: 'Aspartate (Asp)', name: 'Aspartate', rows: ['CH₂', 'COO⁻'], kind: 'neg', type: 'Negatively charged',
+      note: 'Carries a − charge, so it is\nattracted to + charged R groups.' },
+    { id: 'aq-lys', btn: 'Lysine (Lys)', name: 'Lysine', rows: ['CH₂', 'CH₂', 'CH₂', 'CH₂', 'NH₃⁺'], kind: 'pos', type: 'Positively charged',
+      note: 'A long chain ending in a\n+ charge.' },
+    { id: 'aq-phe', btn: 'Phenylalanine (Phe)', name: 'Phenylalanine', rows: ['CH₂', { ring: true }], kind: 'np', type: 'Nonpolar (has a ring)',
+      note: 'A big, bulky ring of carbon atoms.\nVery hydrophobic.' },
+  ];
+  const AQ_IDS = AQ_VIEWS.map((v) => v.id);
+  const AQ_RCOL = '#2e7d32';
+  const aqView = (v) => {
+    const { y, xH, xN, xCa, xC, xO, xOH, row } = AQ, up = y - 76, rc = v.kind ? AA_EDGE[v.kind] : AQ_RCOL;
+    const out = [];
+    // group boxes (behind the atoms)
+    out.push({ type: 'rect', x: xH - 34, y: up - 34, w: xN - xH + 76, h: y - up + 68, color: '#2f6fde', fill: '#2f6fde', fillOpacity: 0.07, width: 3, dashed: true, rough: false });
+    out.push({ type: 'rect', x: xC - 38, y: up - 34, w: xOH - xC + 76, h: y - up + 68, color: '#d6336c', fill: '#d6336c', fillOpacity: 0.07, width: 3, dashed: true, rough: false });
+    // R group rows
+    let ry = y, rItems = [], rEnd = y;
+    v.rows.forEach((t, i) => {
+      const ny = y + 82 + i * row;
+      if (t.ring) {
+        const cy = ny + 46, R = 44, pts = [...Array(6)].map((_, k) => [xCa + R * Math.sin((k * Math.PI) / 3), cy - R * Math.cos((k * Math.PI) / 3)]);
+        rItems.push(...aqBond(xCa, ry + 20, xCa, cy - R, rc));
+        rItems.push({ type: 'path', points: [...pts, pts[0]], smooth: false, color: rc, width: 3.5, rough: false });
+        [0, 2, 4].forEach((k) => { const a = pts[k], b = pts[k + 1], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], ix = (p) => [p[0] + (xCa - m[0]) * 0.22, p[1] + (cy - m[1]) * 0.22];
+          rItems.push({ type: 'line', from: ix(a), to: ix(b), color: rc, width: 3.5, rough: false }); });
+        rEnd = cy + R;
+      } else {
+        rItems.push(...aqBond(xCa, ry + 20, xCa, ny - 20, rc), aqAtom(t, xCa, ny, rc));
+        rEnd = ny + 20;
+      }
+      ry = ny;
+    });
+    const rW = Math.max(...v.rows.map((t) => (t.ring ? 110 : 40 + 24 * String(t).length))), rTop = y + 44;
+    out.push({ type: 'rect', x: xCa - rW / 2 - 14, y: rTop, w: rW + 28, h: rEnd - rTop + 16, color: AQ_RCOL, fill: AQ_RCOL, fillOpacity: 0.08, width: 3, dashed: true, rough: false });
+    // backbone atoms
+    out.push(aqAtom('H', xH, y), ...aqBond(xH + 16, y, xN - 20, y), aqAtom('N', xN, y), ...aqBond(xN, y - 22, xN, up + 22), aqAtom('H', xN, up));
+    out.push(...aqBond(xN + 22, y, xCa - 22, y), { type: 'circle', x: xCa, y, r: 30, color: '#5b6270', fill: '#e9ebef', fillOpacity: 1, width: 3, rough: false }, aqAtom('C', xCa, y),
+      ...aqBond(xCa, y - 30, xCa, up + 22), aqAtom('H', xCa, up));
+    out.push(...aqBond(xCa + 30, y, xC - 22, y), aqAtom('C', xC, y), ...aqBond(xC, y - 22, xC, up + 22, DARK, true), aqAtom('O', xC, up),
+      ...aqBond(xC + 22, y, xO - 20, y), aqAtom('O', xO, y), ...aqBond(xO + 20, y, xOH - 16, y), aqAtom('H', xOH, y));
+    out.push(...rItems);
+    // labels
+    out.push(txt('Amino group', (xH + xN) / 2, 170, 26, '#2f6fde', { align: 'center', bold: true }),
+      txt('Carboxyl group', (xC + xOH) / 2, 170, 26, '#d6336c', { align: 'center', bold: true }),
+      ...label('Hydrogen', xCa, 150, [xCa, 166], [xCa, up - 22], 'center', 22),
+      ...label('Central (α) carbon', 140, 412, [236, 400], [xCa - 24, y + 14], 'center', 22),
+      txt('R group (side chain)', xCa + rW / 2 + 34, y + 84, 26, AQ_RCOL, { bold: true }),
+      txt('the only part that is\ndifferent in each amino acid', xCa + rW / 2 + 34, y + 126, 20, '#5b6270', { bold: true }));
+    // right panel
+    out.push({ type: 'rect', x: 920, y: 116, w: 620, h: 744, color: '#c9cfda', fill: '#ffffff', fillOpacity: 1, width: 3, rough: false });
+    AQ_VIEWS.forEach((q, i) => {
+      const by = 136 + i * 54, on = q.id === v.id;
+      out.push({ type: 'rect', x: 944, y: by, w: 572, h: 46, color: AQ_RCOL, fill: on ? AQ_RCOL : '#ffffff', fillOpacity: 1, width: 2.5, rough: false },
+        txt(q.btn, 1230, by + 23, 22, on ? '#ffffff' : AQ_RCOL, { align: 'center', bold: true }),
+        { type: 'hotspot', x: 944, y: by, w: 572, h: 46, action: q.id });
+    });
+    out.push(txt(v.name, 1230, 556, 32, 'ink', { align: 'center', bold: true }));
+    if (v.kind) out.push(svgItem(bead(1230 - 14 * v.type.length / 2 - 30, 604, 16, v.kind)));
+    out.push(txt(v.type, 1230, 604, 24, rc, { align: 'center', bold: true }),
+      txt(v.note, 960, 676, 23, '#3b4252'));
+    return out;
+  };
+  const aminoActions = AQ_VIEWS.map((v, i) => ({ id: v.id, label: i ? v.btn : 'General (R)', group: 'aq', stay: true, drawn: false, items: aqView(v) }));
+  const aminoItems = [
+    title('What is an amino acid?'),
+    ...aqView(AQ_VIEWS[0]).map((it) => ({ ...it, hideDuring: AQ_IDS })),
+    txt('Every amino acid has the same backbone. Only the R group changes.', 470, 820, 24, 'ink', { align: 'center', bold: true }),
+  ];
+
   // ====================================================================== slide 3: secondary structure
   // Three tabs (α-helix, β-sheet, random coil). Each one draws the BACKBONE atom by atom
   // (N, Cα, C with C=O and N–H groups): secondary structure is hydrogen bonds between backbone
@@ -683,8 +769,8 @@
   const T_HIDE = ['tfold', 'tdenature'];
   // right column: takeaway + three steps
   const TSTEP = [
-    { c: '#d6336c', h: 'Secondary pieces form', b: 'Helices and sheets (backbone\nH-bonds, slide 3).' },
-    { c: '#2f6fde', h: 'The whole chain folds up', b: 'R-group interactions (slide 4) pull\nfar-apart pieces together.' },
+    { c: '#d6336c', h: 'Secondary pieces form', b: 'Helices and sheets (backbone\nH-bonds, slide 4).' },
+    { c: '#2f6fde', h: 'The whole chain folds up', b: 'R-group interactions (slide 5) pull\nfar-apart pieces together.' },
     { c: '#1f7a3e', h: 'Its shape gives it its job', b: 'The final shape has a pocket that\nfits only the right molecule.' },
   ];
   const tRight = [
@@ -834,42 +920,49 @@ Let's start with primary structure.`,
         actions: hookActions,
         items: hookItems,
       },
-      // Slide 2: primary structure.
+      // Slide 2: the structure of an amino acid.
+      {
+        say: 'Every amino acid has the same parts: an amino group, a central carbon with a hydrogen, a carboxyl group, and an R group (side chain).',
+        clear: true,
+        actions: aminoActions,
+        items: aminoItems,
+      },
+      // Slide 3: primary structure.
       {
         say: 'Primary structure is the sequence of amino acids, joined by peptide bonds.',
         clear: true,
         actions: pepActions,
         items: primaryItems,
       },
-      // Slide 3: secondary structure.
+      // Slide 4: secondary structure.
       {
         say: 'Secondary structure comes from hydrogen bonds between backbone atoms: α-helices, β-sheets and random coils. The R groups are not involved.',
         clear: true,
         actions: ssActions,
         items: secondaryItems,
       },
-      // Slide 4: secondary vs tertiary (compares the two, between their dedicated slides).
+      // Slide 5: secondary vs tertiary (compares the two, between their dedicated slides).
       {
         say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
         clear: true,
         actions: svActions,
         items: secVsTerItems,
       },
-      // Slide 5: tertiary structure.
+      // Slide 6: tertiary structure.
       {
         say: 'Tertiary structure is the final 3-D shape of the whole chain, and that shape decides what the protein can do.',
         clear: true,
         actions: tertiaryActions,
         items: tertiaryItems,
       },
-      // Slide 6: quaternary structure.
+      // Slide 7: quaternary structure.
       {
         say: 'Quaternary structure: two or more folded chains fit together, like the four subunits of hemoglobin.',
         clear: true,
         actions: quaternaryActions,
         items: quaternaryItems,
       },
-      // Slide 7: review.
+      // Slide 8: review.
       {
         say: 'Primary, secondary, tertiary, quaternary: each level builds on the one before.',
         clear: true,
