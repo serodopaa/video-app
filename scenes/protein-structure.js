@@ -822,27 +822,15 @@
       // Slide 1: the hook.
       {
         say: 'A protein starts as a simple chain of amino acids and folds, level by level, into a working machine.',
-        script: `Every protein in your body starts out like this. [point to the chain on the left]
+        script: `Every protein starts as a simple chain of amino acids. [point to the chain]
 
-A simple chain of building blocks called amino acids.
+To do its job, that chain has to fold into one precise shape. [point to the protein on the right]
 
-But a chain on its own can't do anything. To carry oxygen, fight off an infection, or speed up a chemical reaction, it has to fold into one very precise shape. [point along the arrows to the protein on the right]
+We describe that folding in four levels. [click "Reveal the four levels"]
 
-So how does a floppy chain become a working machine?
+Primary, secondary, tertiary and quaternary. Each one builds on the last.
 
-Biologists describe it in four levels. [click "Reveal the four levels"]
-
-Primary structure: the order of the amino acids in the chain.
-
-Secondary structure: small, repeating folds, like coils and pleated sheets.
-
-Tertiary structure: the whole chain folding up into one 3-D shape.
-
-And quaternary structure: several folded chains fitting together, like the four parts of hemoglobin. [point to the last picture]
-
-Here's the big idea to keep in mind: each level builds on the one before it. Change the sequence at the start, and you can change everything that follows.
-
-Let's start at the very beginning, with primary structure.`,
+Let's start with primary structure.`,
         actions: hookActions,
         items: hookItems,
       },
