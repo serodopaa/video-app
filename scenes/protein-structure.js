@@ -148,41 +148,73 @@
     ...bond(x + 20, y, x + 58, y), atom('C', x + 78, y), ...bond(x + 78, y - 20, x + 78, y - 46, true), atom('O', x + 78, y - 64),
     ...bond(x + 98, y, x + 126, y), atom('OH', x + 152, y, hl.oh || 'ink'),
   ];
-  // two amino acids side by side (before) and the dipeptide (after)
-  const PB = { x: 630, y: 640 };
-  const beforeItems = [
-    ...aminoAcid(PB.x - 60, PB.y, 'R₁', '#a07c00', { oh: '#e0453a' }),
-    atom('+', PB.x + 170, PB.y, '#5b6270', 34),
-    ...aminoAcid(PB.x + 340, PB.y, 'R₂', '#2e7d32', { h: '#e0453a' }),
-  ];
-  // in the second amino acid the H2N is drawn as "H–N(H)–": split so its H can leave
-  const afterItems = (t0) => {
-    const x = PB.x - 160, y = PB.y, o = { at: t0 };
-    const A = (t, dx, c = 'ink', s = 30) => ({ ...atom(t, x + dx, y, c, s), ...o });
-    const B = (x1, y1, x2, y2, d) => bond(x + x1, y1, x + x2, y2, d).map((b) => ({ ...b, ...o }));
-    return [
-      { type: 'highlight', x: x + 250, y: y - 26, w: 70, h: 52, color: '#ffd34d', opacity: 0.7, ...o },
-      A('H₂N', 0), ...B(38, y, 76, y), A('C', 96), ...B(96, y - 20, 96, y - 46), { ...atom('H', x + 96, y - 64), ...o },
-      ...B(96, y + 20, 96, y + 46), { ...atom('R₁', x + 96, y + 66, '#a07c00'), ...o },
-      ...B(116, y, 154, y), A('C', 174), ...B(174, y - 20, 174, y - 46, true), { ...atom('O', x + 174, y - 64), ...o },
-      ...B(194, y, 264, y), A('N', 284), ...B(284, y + 20, 284, y + 46), { ...atom('H', x + 284, y + 66), ...o },
-      ...B(304, y, 342, y), A('C', 362), ...B(362, y - 20, 362, y - 46), { ...atom('H', x + 362, y - 64), ...o },
-      ...B(362, y + 20, 362, y + 46), { ...atom('R₂', x + 362, y + 66, '#2e7d32'), ...o },
-      ...B(382, y, 420, y), A('COOH', 470),
-      { ...txt('peptide bond', x + 229, y - 110, 24, '#9a6a00', { align: 'center', bold: true }), ...o },
-      { type: 'arrow', from: [x + 229, y - 92], to: [x + 229, y - 34], color: '#9a6a00', width: 3, rough: false, ...o },
-      { ...txt('+ H₂O', x + 620, y, 34, '#2f6fde', { align: 'center', bold: true, anim: 'pop' }), ...o, at: t0 + 0.4, duration: 0.4 },
-      { ...txt('water is released', x + 620, y + 44, 20, '#2f6fde', { align: 'center' }), ...o, at: t0 + 0.6 },
-    ];
+  // ---- peptide bond animation: four amino acids join one at a time (displayed formulas) ----
+  // A "piece" is a run of residues already joined. Stage s = pieces [[0..s], [s+1], ..., [3]].
+  const PK = 0.82, PFS = 25, PY = 668;
+  const R_COL = ['#a07c00', '#2e7d32', '#1d4fb0', '#a8281a'];
+  const pAtom = (t, x, y, c = 'ink') => atom(t, x, y, c, PFS);
+  const pBond = (x1, y1, x2, y2, dbl) => bond(x1, y1, x2, y2, dbl);
+  const pieceSpan = (n) => (335 + 250 * (n - 1)) * PK;
+  const stagePieces = (s) => [[...Array(s + 1)].map((_, i) => i), ...[...Array(3 - s)].map((_, i) => [s + 1 + i])];
+  const stageLayout = (s) => {
+    const pcs = stagePieces(s), gap = 100 * PK;
+    const total = pcs.reduce((w, pc) => w + pieceSpan(pc.length), 0) + gap * (pcs.length - 1);
+    let x = 800 - total / 2;
+    return pcs.map((pc) => { const o = { res: pc, x }; x += pieceSpan(pc.length) + gap; return o; });
   };
+  const RED = '#e0453a';
+  // items for one stage; returns { items, joins: x of each "+", bonds: x of each peptide bond }
+  const stageDraw = (s) => {
+    const L = stageLayout(s), y = PY, items = [], plus = [], pb = [];
+    L.forEach((pc, k) => {
+      const leftJoin = k === 1, rightJoin = k === 0 && L.length > 1;
+      const x0 = pc.x, N1 = x0 + 50 * PK;
+      items.push(pAtom('H', x0, y, leftJoin ? RED : 'ink'), ...pBond(x0 + 12, y, N1 - 14, y));
+      pc.res.forEach((ri, r) => {
+        const N = N1 + 250 * PK * r, Ca = N + 80 * PK, C = Ca + 80 * PK;
+        items.push(pAtom('N', N, y), ...pBond(N, y + 17, N, y + 36), pAtom('H', N, y + 54));
+        items.push(...pBond(N + 14, y, Ca - 14, y), pAtom('C', Ca, y), ...pBond(Ca, y - 17, Ca, y - 36), pAtom('H', Ca, y - 54),
+          ...pBond(Ca, y + 17, Ca, y + 36), pAtom(`R${'₁₂₃₄'[ri]}`, Ca, y + 54, R_COL[ri]));
+        items.push(...pBond(Ca + 14, y, C - 14, y), pAtom('C', C, y), ...pBond(C, y - 17, C, y - 36, true), pAtom('O', C, y - 54));
+        if (r < pc.res.length - 1) {
+          const Nn = C + 90 * PK, mid = (C + Nn) / 2;
+          items.push({ type: 'highlight', x: C - 16, y: y - 20, w: Nn - C + 32, h: 40, color: '#ffd34d', opacity: 0.6 }, ...pBond(C + 14, y, Nn - 14, y));
+          pb.push(mid);
+        } else {
+          const O = C + 70 * PK, H = O + 55 * PK, c = rightJoin ? RED : 'ink';
+          items.push(...pBond(C + 14, y, O - 13, y), pAtom('O', O, y, c), ...pBond(O + 13, y, H - 11, y), pAtom('H', H, y, c));
+          if (k < L.length - 1) { const px = H + 50 * PK; plus.push(px); items.push(atom('+', px, y, '#5b6270', 30)); }
+        }
+      });
+    });
+    pb.forEach((mx) => items.push(
+      txt('peptide bond', mx, y - 104, 19, '#9a6a00', { align: 'center', bold: true }),
+      { type: 'arrow', from: [mx, y - 92], to: [mx, y - 26], color: '#9a6a00', width: 2.5, rough: false },
+      txt('H₂O out', mx, y + 104, 19, '#2f6fde', { align: 'center', bold: true })));
+    return { items, plus, pb };
+  };
+  const P_CAPS = [
+    'Four separate amino acids. The –OH and H in red will leave as water.',
+    '1 peptide bond: a dipeptide (1 water released)',
+    '2 peptide bonds: a tripeptide (2 waters released)',
+    '4 amino acids joined by 3 peptide bonds, 3 waters released. Keep adding and you get a polypeptide chain.',
+  ];
+  const P_T = [0, 1.7, 3.4, 5.1];
+  const pepStages = [0, 1, 2, 3].flatMap((st) => {
+    const d = stageDraw(st), at = P_T[st], o = st < 3 ? { until: P_T[st + 1] - at } : {};
+    const out = [...d.items, txt(P_CAPS[st], 800, 808, 21, st === 3 ? '#1d4fb0' : '#5b6270', { align: 'center', bold: st === 3 })].map((it) => ({ ...it, at, duration: 0.01, ...o }));
+    if (st < 3) {
+      const jx = d.plus[0], lastO = jx - 50 * PK;
+      out.push({ type: 'flash', x: lastO - 30, y: PY, r: 40, color: RED, duration: 0.7, at: P_T[st + 1] - 0.75 },
+        { type: 'flash', x: jx + 50 * PK, y: PY, r: 28, color: RED, duration: 0.7, at: P_T[st + 1] - 0.75 });
+    }
+    if (st > 0) { const mx = d.pb[st - 1]; out.push({ type: 'flash', x: mx, y: PY, r: 46, color: '#ffd34d', duration: 0.8, at: at + 0.05 }); }
+    return out;
+  });
+  const beforeItems = stageDraw(0).items;
   const pepActions = [{
-    id: 'pep', label: 'Form a peptide bond', stay: true, drawn: false,
-    items: [
-      ...beforeItems.map((it) => ({ ...it, at: 0, until: 1.6 })),
-      { type: 'flash', x: PB.x + 92, y: PB.y, r: 34, color: '#e0453a', duration: 0.8, at: 0.6 },
-      { type: 'flash', x: PB.x + 208, y: PB.y, r: 26, color: '#e0453a', duration: 0.8, at: 0.6 },
-      ...afterItems(1.7),
-    ],
+    id: 'pep', label: 'Join 4 amino acids', stay: true, drawn: false,
+    items: pepStages,
   }, {
     id: 'swap', label: 'Change one amino acid', stay: true, drawn: false,
     items: [
@@ -204,7 +236,7 @@
     { type: 'rect', x: 80, y: 500, w: 1440, h: 340, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
     txt('How amino acids join: a peptide bond', 110, 530, 24, '#5b6270', { bold: true }),
     ...beforeItems.map((it) => ({ ...it, hideDuring: 'pep' })),
-    txt('The carboxyl group of one amino acid joins the amino group of the next, releasing water.', 800, 808, 21, '#5b6270', { align: 'center' }),
+    txt('The carboxyl group of one amino acid joins the amino group of the next, releasing water.', 800, 808, 21, '#5b6270', { align: 'center', hideDuring: 'pep' }),
     // key
     ...[['np', 'Nonpolar'], ['p', 'Polar'], ['pos', 'Positive (+)'], ['neg', 'Negative (−)']].flatMap(([k, n], i) => [
       svgItem(bead(1120 + (i % 2) * 190, 140 + Math.floor(i / 2) * 0, 12, k)),
