@@ -751,19 +751,19 @@ Let's start at the very beginning, with primary structure.`,
         actions: pepActions,
         items: primaryItems,
       },
-      // Slide 3: secondary vs tertiary (preview of the idea that trips people up).
-      {
-        say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
-        clear: true,
-        actions: svActions,
-        items: secVsTerItems,
-      },
-      // Slide 4: secondary structure.
+      // Slide 3: secondary structure.
       {
         say: 'Secondary structure comes from hydrogen bonds between backbone atoms: α-helices, β-sheets and random coils. The R groups are not involved.',
         clear: true,
         actions: ssActions,
         items: secondaryItems,
+      },
+      // Slide 4: secondary vs tertiary (compares the two, between their dedicated slides).
+      {
+        say: 'Secondary structure is interactions between the backbones of the amino acids; tertiary structure is interactions between the R groups.',
+        clear: true,
+        actions: svActions,
+        items: secVsTerItems,
       },
       // Slide 5: tertiary structure.
       {
