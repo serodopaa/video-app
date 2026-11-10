@@ -380,7 +380,8 @@
       }
       const last = (n - 1) * gap + ARR;
       if (fires) out.push(say(verdict, color, last + 0.3, 4), ...fireAP(last + 0.25));
-      else out.push(v(peaks[n - 1], REST, last + 0.4, 2.4), say(verdict, color, last + 0.4, 3.2));
+      // spread-out EPSPs already fade back to rest on their own (and only have one peak value)
+      else out.push(...(spread ? [] : [v(peaks[n - 1], REST, last + 0.4, 2.4)]), say(verdict, color, last + 0.4, 3.2));
       return out;
     };
     const GREY = '#5b6270';
