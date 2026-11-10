@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611100559" />
+  <link rel="stylesheet" href="style.css?v=202611100651" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -116,6 +116,7 @@
       <button id="previewAll" title="Watch all clips in order, with trims applied">▶ Preview all</button>
       <label class="opt loud" title="How loud your voice is in the exported video (previews play at this loudness too). A limiter stops loud bits from distorting.">🔊 Volume <input type="range" id="loudness" min="1" max="4" step="0.25" value="1" /> <b id="loudVal">100%</b></label>
       <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export video</button>
+      <button id="deleteAllClips" title="Delete every clip in this topic (asks first)">🗑️ All clips</button>
       <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
     </div>
     <div id="timeline" class="timeline"></div>
@@ -164,14 +165,14 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611100559"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611100559"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611100559"></script>
-  <script src="scenes/brain-art.js?v=202611100559"></script>
-  <script src="scenes/brain-views.js?v=202611100559"></script>
-  <script src="scenes/protein-structure.js?v=202611100559"></script>
-  <script src="app.js?v=202611100559"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611100559"></script>
-  <script src="recorder.js?v=202611100559"></script>
+  <script src="scenes/neuron.js?v=202611100651"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611100651"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611100651"></script>
+  <script src="scenes/brain-art.js?v=202611100651"></script>
+  <script src="scenes/brain-views.js?v=202611100651"></script>
+  <script src="scenes/protein-structure.js?v=202611100651"></script>
+  <script src="app.js?v=202611100651"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611100651"></script>
+  <script src="recorder.js?v=202611100651"></script>
 </body>
 </html>

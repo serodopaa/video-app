@@ -222,6 +222,7 @@
     ['sceneSelect', 'newTopic', 'deleteTopic'].forEach((id) => { $(id).disabled = busy || exporting; });
     $('exportBtn').disabled = busy || !clips.length || exporting;
     $('previewAll').disabled = busy || !clips.length || exporting;
+    $('deleteAllClips').disabled = busy || !clips.length || exporting;
   }
 
   setInterval(() => {
@@ -433,6 +434,26 @@
     saveOrder();
     renderTimeline();
   }
+
+  // Delete every clip of the current topic (other topics are not touched).
+  $('deleteAllClips').addEventListener('click', async () => {
+    if (rec.state !== 'idle' || exporting || !clips.length) return;
+    const sel = $('sceneSelect');
+    const topic = (sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || 'this topic';
+    const total = clips.reduce((sum, c) => sum + clipLen(c), 0);
+    const n = clips.length;
+    if (!confirm(`Delete ALL ${n} clip${n > 1 ? 's' : ''} (${fmt(total)}) in "${topic}"?\n\nClips in other topics are not affected.\nThis cannot be undone.`)) return;
+    const scene = curScene();
+    const gone = clips.slice();
+    clips = [];
+    replaceId = null;
+    for (const c of gone) {
+      if (c.scene === scene) await unpersist(c.id);
+      if (c._url) URL.revokeObjectURL(c._url);
+    }
+    renderTimeline();
+    updateRecUI();
+  });
 
   $('tlToggle').addEventListener('click', () => {
     const hidden = tl.classList.toggle('hidden');
