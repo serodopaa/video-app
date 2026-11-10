@@ -435,7 +435,11 @@
       // Slide 1: the hook.
       {
         say: 'Every cell runs a pump that pushes sodium out and potassium in, nonstop.',
-        script: `Every one of your cells is running a tiny pump, nonstop. [point to the pumps]
+        script: `[QUESTIONS THIS SLIDE ANSWERS]
+[• What is the sodium–potassium pump, and why should I care about it?]
+[• Why is it worth a whole video?]
+
+Every one of your cells is running a tiny pump, nonstop. [point to the pumps]
 
 It pushes sodium out and pulls potassium in, against the flow. [click "Pumps at work"]
 
@@ -446,17 +450,17 @@ So what is it, how does it work, and what happens if it stops? Let's find out.`,
         items: hookItems,
       },
       // Slide 2: the problem it solves (leaks run the gradients down).
-      { say: 'Na⁺ and K⁺ keep leaking across the membrane, so their gradients would run down without a pump.', clear: true, actions: leakActions, items: leakItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Where are Na⁺ and K⁺ concentrated: inside or outside the cell?]\n[• Why would those differences disappear on their own?]\n[• Why does a cell need a pump at all?]', say: 'Na⁺ and K⁺ keep leaking across the membrane, so their gradients would run down without a pump.', clear: true, actions: leakActions, items: leakItems },
       // Slide 3: the pump itself.
-      { say: 'The Na⁺/K⁺ pump is an ATP-powered protein that moves ions against their gradients.', clear: true, actions: meetActions, items: meetItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump look like, and what are its parts?]\n[• Which way does it move each ion, and how many?]\n[• Why does it need ATP (what is active transport)?]', say: 'The Na⁺/K⁺ pump is an ATP-powered protein that moves ions against their gradients.', clear: true, actions: meetActions, items: meetItems },
       // Slide 4: the cycle, step by step.
-      { say: 'Each cycle: 3 Na⁺ bind, ATP phosphorylates the pump, it flips and releases them outside, 2 K⁺ bind, the phosphate leaves and K⁺ is released inside.', clear: true, actions: cycleActions, items: cycleItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• How does the pump actually move the ions, step by step?]\n[• Where does ATP come in, and what does the phosphate do?]\n[• How does the pump switch between facing inside and outside?]', say: 'Each cycle: 3 Na⁺ bind, ATP phosphorylates the pump, it flips and releases them outside, 2 K⁺ bind, the phosphate leaves and K⁺ is released inside.', clear: true, actions: cycleActions, items: cycleItems },
       // Slide 5: 3 out, 2 in (electrogenic).
-      { say: 'Moving 3 positive charges out for every 2 in makes the pump electrogenic.', clear: true, actions: elecActions, items: elecItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Why 3 Na⁺ out but only 2 K⁺ in, and what does that do to the charge?]\n[• What does “electrogenic” mean?]\n[• How does the pump help set the resting membrane potential?]', say: 'Moving 3 positive charges out for every 2 in makes the pump electrogenic.', clear: true, actions: elecActions, items: elecItems },
       // Slide 6: when the pump stops.
-      { say: 'If the pump stops, the gradients run down, the resting potential is lost and the cell swells.', clear: true, actions: stopActions, items: stopItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What happens to the cell if the pump stops working?]\n[• Why would the cell swell?]\n[• Where does this matter in real life (e.g. digoxin)?]', say: 'If the pump stops, the gradients run down, the resting potential is lost and the cell swells.', clear: true, actions: stopActions, items: stopItems },
       // Slide 7: review.
-      { say: 'Review: 3 Na⁺ out, 2 K⁺ in, 1 ATP per cycle, keeping the gradients the cell depends on.', clear: true, items: reviewItems },
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What are the key things to remember about the pump?]\n[• Can I explain what it moves, what powers it, why it matters and what happens if it stops?]', say: 'Review: 3 Na⁺ out, 2 K⁺ in, 1 ATP per cycle, keeping the gradients the cell depends on.', clear: true, items: reviewItems },
     ],
   });
 })();
