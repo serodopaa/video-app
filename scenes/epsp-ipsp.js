@@ -568,17 +568,15 @@
       // Slide 1: intro - a neuron receives thousands of inputs and has to decide whether to fire.
       ...(slideIntro ? [{
         say: 'A neuron receives thousands of excitatory and inhibitory inputs, and the axon hillock adds them all up to decide whether to fire.',
-        script: `Right now, thousands of tiny signals are landing on this neuron. [point to the terminals around the dendrites]
+        script: `Thousands of signals are landing on this neuron right now. [point to the terminals]
 
-Some of them are excitatory. They're saying "fire!" [point to an orange terminal]
-
-Others are inhibitory. They're saying "don't fire." [point to a teal terminal]
+Some say "fire!" [point to an orange terminal] Others say "don't fire." [point to a teal terminal]
 
 [click "Inputs arrive"]
 
-All of these signals arrive at once, and the neuron has to make a decision. Down here, at the axon hillock, [point to the circled hillock] it adds them all up. If the total reaches negative 55 millivolts, it fires an action potential. If not, nothing happens.
+The axon hillock adds them all up. [point to the hillock] If the total reaches −55 millivolts, the neuron fires.
 
-So how does a neuron add up all those signals? That's what we're going to figure out. We'll start with the two types of signals, EPSPs and IPSPs, and then look at how they combine across space and across time.`,
+So how does it add them up? Let's start with the two kinds of signals: EPSPs and IPSPs.`,
         actions: slideIntro.actions,
         items: slideIntro.items,
       }] : []),
