@@ -16,6 +16,8 @@ dependencies. Open `index.html` in a browser.
   While a clip is paused, ✂ Cut part / ✂ −5 s drop the last recorded part; the recording keeps
   running and the clip stores the kept file ranges in `keep` ([[start, end], …]; missing = whole
   file). Preview, trim and export skip the gaps (`expand()` turns clips into kept pieces).
+  ▶ Last 10 s (while recording) pauses and plays the end of the kept recording so far in a small
+  on-screen window (`.replay-pop`, never recorded); it closes on Resume / Stop / a cut.
   🔊 Volume (`wb-loudness` in localStorage, 100–400%) boosts the audio in export and previews,
   with a limiter so it never distorts. Never change how existing clips are stored.
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.

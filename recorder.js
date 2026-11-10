@@ -212,7 +212,8 @@
     const canCut = rec.state === 'paused' && rec.parts.length > 0;
     $('cutPartBtn').disabled = !canCut;
     $('cut5Btn').disabled = !canCut;
-    $('cutPartBtn').hidden = $('cut5Btn').hidden = !(rec.state === 'recording' || rec.state === 'paused'); // only while a clip is being recorded
+    $('cutPartBtn').hidden = $('cut5Btn').hidden = $('replayBtn').hidden = !(rec.state === 'recording' || rec.state === 'paused'); // only while a clip is being recorded
+    $('replayBtn').disabled = !(rec.state === 'recording' || canCut);
     const last = rec.parts[rec.parts.length - 1];
     $('cutPartBtn').textContent = canCut ? `✂ Cut part (${fmt(last[1] - last[0])})` : '✂ Cut part';
     ui.badge.hidden = !(rec.state === 'recording' || rec.state === 'paused');
@@ -273,6 +274,7 @@
       if (rec.elapsed - rec.partStart > 0.05) rec.parts.push([rec.partStart, rec.elapsed]);
       rec.state = 'paused';
     } else if (rec.state === 'paused') {
+      closeReplay();
       rec.recorder.resume();
       rec.segStart = performance.now();
       rec.partStart = rec.elapsed;
@@ -285,12 +287,14 @@
   // The recording keeps running underneath; the cut bit is simply left out of the clip.
   function cutLastPart() {
     if (rec.state !== 'paused' || !rec.parts.length) return;
+    closeReplay();
     rec.parts.pop();
     updateRecUI();
     ui.time.textContent = fmt(keptTime());
   }
   function cutSeconds(sec) {
     if (rec.state !== 'paused' || !rec.parts.length) return;
+    closeReplay();
     let left = sec;
     while (left > 0 && rec.parts.length) {
       const last = rec.parts[rec.parts.length - 1], len = last[1] - last[0];
@@ -299,6 +303,79 @@
     updateRecUI();
     ui.time.textContent = fmt(keptTime());
   }
+  // ---------- replay the end of what has been recorded so far (while paused) ----------
+  // Plays the last 10 s of the kept parts in a small window over the board. It is
+  // never in the video: the recorder draws the board on its own canvas.
+  const REPLAY_S = 10;
+  const rp = { box: null, video: null, url: null, ranges: [], end: 0, raf: 0 };
+  function replayBox() {
+    if (rp.box) return rp.box;
+    const box = document.createElement('div');
+    box.className = 'replay-pop';
+    box.innerHTML = `<div class="replay-head"><b>Where you left off</b><span>Only you see and hear this</span><button title="Close">✕</button></div>
+      <video playsinline></video>
+      <div class="replay-foot"><button data-a="again">↺ Play again</button><span class="replay-note"></span></div>`;
+    document.body.appendChild(box);
+    rp.box = box;
+    rp.video = box.querySelector('video');
+    box.querySelector('.replay-head button').addEventListener('click', closeReplay);
+    box.querySelector('[data-a="again"]').addEventListener('click', () => startReplayAt());
+    return box;
+  }
+  function closeReplay() {
+    if (!rp.box || rp.box.hidden) return;
+    rp.video.pause();
+    cancelAnimationFrame(rp.raf);
+    rp.box.hidden = true;
+    if (rp.url) { URL.revokeObjectURL(rp.url); rp.url = null; }
+  }
+  // file time that is REPLAY_S seconds of kept recording before the end
+  function replayStart() {
+    let left = REPLAY_S;
+    for (let i = rp.ranges.length - 1; i >= 0; i--) {
+      const [a, b] = rp.ranges[i];
+      if (b - a >= left) return b - left;
+      left -= b - a;
+    }
+    return rp.ranges.length ? rp.ranges[0][0] : 0;
+  }
+  function startReplayAt() {
+    const v = rp.video;
+    cancelAnimationFrame(rp.raf);
+    v.currentTime = replayStart();
+    v.play().catch(() => {});
+    const step = () => {
+      if (rp.box.hidden) return;
+      const t = v.currentTime;
+      if (t >= rp.end - 0.03) { v.pause(); return; }
+      if (!v.paused && !rp.ranges.some(([a, b]) => t >= a - 0.01 && t < b)) {  // skip parts that were cut
+        const next = rp.ranges.find(([a]) => a > t);
+        if (next) v.currentTime = next[0]; else { v.pause(); return; }
+      }
+      rp.raf = requestAnimationFrame(step);
+    };
+    rp.raf = requestAnimationFrame(step);
+  }
+  async function replayLast() {
+    if (rec.state === 'recording') togglePause();
+    if (rec.state !== 'paused' || !rec.parts.length) return;
+    const mr = rec.recorder;
+    // get everything recorded so far out of the recorder
+    await Promise.race([new Promise((res) => { mr.addEventListener('dataavailable', res, { once: true }); try { mr.requestData(); } catch (_) { res(); } }), sleep(800)]);
+    const blob = await withDuration(new Blob(rec.chunks, { type: (mr.mimeType || MIME || 'video/webm').split(';')[0] }), rec.elapsed);
+    replayBox();
+    closeReplay();
+    rp.ranges = rec.parts.map((p) => p.slice());
+    rp.end = rp.ranges[rp.ranges.length - 1][1];
+    rp.url = URL.createObjectURL(blob);
+    rp.box.hidden = false;
+    rp.box.querySelector('.replay-note').textContent = `Last ${fmt(Math.min(REPLAY_S, keptTime()))} of ${fmt(keptTime())} kept`;
+    const v = rp.video;
+    v.src = rp.url;
+    await Promise.race([once(v, 'loadeddata'), sleep(3000)]);
+    startReplayAt();
+  }
+  $('replayBtn').addEventListener('click', replayLast);
   $('cutPartBtn').addEventListener('click', cutLastPart);
   $('cut5Btn').addEventListener('click', () => cutSeconds(5));
 
@@ -308,6 +385,7 @@
     if (rec.state === 'recording' && duration - rec.partStart > 0.05) rec.parts.push([rec.partStart, duration]);
     const keep = rec.parts.slice();
     const recorder = rec.recorder;
+    closeReplay();
     const stopped = once(recorder, 'stop');
     recorder.stop();
     await stopped;

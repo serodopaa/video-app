@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611100651" />
+  <link rel="stylesheet" href="style.css?v=202611100741" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -108,6 +108,7 @@
       <button id="stopBtn" title="Stop and add the clip to the timeline" disabled>⏹ Stop</button>
       <button id="cutPartBtn" title="While paused: cut out the last part you recorded (since your last pause), then press Resume to record it again" disabled>✂ Cut part</button>
       <button id="cut5Btn" title="While paused: cut out the last 5 seconds you recorded (press again to go further back)" disabled>✂ −5 s</button>
+      <button id="replayBtn" title="Play the last 10 seconds you recorded in this clip, so you know where to pick up (pauses the recording first; only you see and hear it)" disabled>▶ Last 10 s</button>
       <span id="recTime" class="rec-time">0:00</span>
       <span class="meter" title="Microphone level"><i id="meterFill"></i></span>
       <label class="opt" title="Show a red dot where your pointer is, in the video"><input type="checkbox" id="showPointer" checked /> Pointer in video</label>
@@ -165,14 +166,14 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611100651"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611100651"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611100651"></script>
-  <script src="scenes/brain-art.js?v=202611100651"></script>
-  <script src="scenes/brain-views.js?v=202611100651"></script>
-  <script src="scenes/protein-structure.js?v=202611100651"></script>
-  <script src="app.js?v=202611100651"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611100651"></script>
-  <script src="recorder.js?v=202611100651"></script>
+  <script src="scenes/neuron.js?v=202611100741"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611100741"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611100741"></script>
+  <script src="scenes/brain-art.js?v=202611100741"></script>
+  <script src="scenes/brain-views.js?v=202611100741"></script>
+  <script src="scenes/protein-structure.js?v=202611100741"></script>
+  <script src="app.js?v=202611100741"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611100741"></script>
+  <script src="recorder.js?v=202611100741"></script>
 </body>
 </html>
