@@ -71,31 +71,44 @@
     glu: [['na', [255, 352], [260, 640]], ['na', [425, 350], [400, 700]], ['na', [180, 372], [350, 655]]],
     gaba: [['cl', [795, 352], [800, 650]], ['cl', [965, 350], [960, 700]], ['cl', [1060, 355], [880, 760]]],
   };
+  // two extra ions per receptor, only used by the large release
+  flows.glu.push(['na', [490, 372], [520, 770]], ['na', [150, 300], [210, 790]]);
+  flows.gaba.push(['cl', [715, 388], [700, 780]], ['cl', [1110, 300], [1060, 690]]);
+  // Graded potentials: how much transmitter is released sets how big the EPSP / IPSP is.
+  // mid = the original single release (still used by "Release both").
+  const AMT = {
+    small: { fuse: [FUSE[0]], ions: 1, open: 0.5, gap: 0.35, nt: 2, peak: { glu: -66, gaba: -71 } },
+    mid: { fuse: FUSE, ions: 3, open: 1, gap: 0.35, nt: 4, peak: PEAK },
+    large: { fuse: [...FUSE, [5, [-64, 290]], [7, [66, 290]]], ions: 5, open: 1, gap: 0.22, nt: 4, peak: { glu: -58, gaba: -74 } },
+  };
   const pore = (x, from, to) => [from, [x, M.top - 40], [x, M.mid], [x, M.bot + 50], to];
 
   // One terminal releasing, starting at t0: vesicles fuse, neurotransmitter crosses
   // and binds, the receptor channel opens, ions flow in, then it all closes again.
-  const release = (k, drive = true) => {
-    const s = SYN[k], x = s.x, site = [x - 28, M.top - 22], t0 = 0;
+  const release = (k, drive = true, amt = 'mid') => {
+    const s = SYN[k], x = s.x, site = [x - 28, M.top - 22], t0 = 0, A = AMT[amt];
     return [
-      ...FUSE.map(([vi, [fx, fy]], i) => ({
+      ...A.fuse.map(([vi, [fx, fy]], i) => ({
         type: 'vesicle', fuse: true, r: 13, color: '#2c5a92', dot: s.nt,
         path: [[x + VES[vi][0], VES[vi][1]], [x + fx, fy]], duration: 1.2, at: t0 + i * 0.15,
       })),
       // one molecule binds the receptor, the others drift in the cleft
       { type: 'mover', once: true, r: 7, color: s.nt, smooth: true, path: [[x - 24, 304], [x - 30, 345], site], duration: 0.7, at: t0 + 0.8, until: 3.4 },
       { type: 'mover', once: true, vanish: true, r: 7, color: s.nt, smooth: true, path: [site, [x - 70, 360], [x - 120, 330]], duration: 0.8, at: t0 + 4.2 },
-      ...[[-60, 340], [40, 330], [70, 365], [-100, 365]].map(([dx, dy], i) => ({
+      ...[[-60, 340], [40, 330], [70, 365], [-100, 365]].slice(0, A.nt).map(([dx, dy], i) => ({
         type: 'mover', once: true, vanish: true, r: 6, color: s.nt, smooth: true,
         path: [[x + (i % 2 ? 24 : -24), 304], [x + dx * 0.6, (304 + dy) / 2 + 8], [x + dx, dy]], duration: 1.6, at: t0 + 0.85 + i * 0.1,
       })),
-      { type: 'value', id: `ch-${k}`, from: 0, to: 1, at: t0 + 1.5, duration: 0.35 },
-      ...flows[k].map(([ion, from, to], i) => ({ type: 'ion', ion, smooth: true, path: pore(x, from, to), duration: 1.4, at: t0 + 1.7 + i * 0.35 })),
-      { type: 'value', id: `ch-${k}`, from: 1, to: 0, at: t0 + 4.1, duration: 0.35 },
+      { type: 'value', id: `ch-${k}`, from: 0, to: A.open, at: t0 + 1.5, duration: 0.35 },
+      ...flows[k].slice(0, A.ions).map(([ion, from, to], i) => ({ type: 'ion', ion, smooth: true, path: pore(x, from, to), duration: 1.4, at: t0 + 1.7 + i * A.gap })),
+      { type: 'value', id: `ch-${k}`, from: A.open, to: 0, at: t0 + 4.1, duration: 0.35 },
       // the membrane potential rises (EPSP) or falls (IPSP) while the ions cross, then recovers
       ...(drive ? [
-        { type: 'value', id: 'psp', from: REST, to: PEAK[k], at: t0 + 1.9, duration: 1.9 },
-        { type: 'value', id: 'psp', from: PEAK[k], to: REST, at: t0 + 4.6, duration: 2.2 },
+        { type: 'value', id: 'psp', from: REST, to: A.peak[k], at: t0 + 1.9, duration: 1.9 },
+        { type: 'value', id: 'psp', from: A.peak[k], to: REST, at: t0 + 4.6, duration: 2.2 },
+        { type: 'rect', x: 380, y: 582, w: 460, h: 38, color: s.nameColor, fill: '#ffffff', fillOpacity: 0.95, width: 2, rough: false, at: t0 + 2.4, until: 4.6 },
+        { type: 'text', x: 610, y: 601, size: 24, font: 'sans', bold: true, align: 'center', color: s.nameColor, at: t0 + 2.4, until: 4.6,
+          text: `${amt === 'large' ? 'Large' : 'Small'} release → ${amt === 'large' ? 'large' : 'small'} ${k === 'glu' ? 'EPSP' : 'IPSP'} (${k === 'glu' ? '+' : '−'}${Math.abs(A.peak[k] - REST)} mV)` },
       ] : []),
     ];
   };
@@ -107,10 +120,11 @@
     // vesicles (the fusing ones hide while their animation plays)
     ...Object.entries(SYN).flatMap(([k, s]) => VES.map(([dx, y], vi) => ({
       type: 'vesicle', x: s.x + dx, y, r: 13, color: '#2c5a92', dot: s.nt,
-      hideDuring: FUSE.some(([fi]) => fi === vi) ? [k, 'both'] : undefined,
+      hideDuring: (() => { const ids = [['small', `${k}-s`], ['large', `${k}-l`], ['mid', 'both']].filter(([a]) => AMT[a].fuse.some(([fi]) => fi === vi)).map(([, id]) => id); return ids.length ? ids : undefined; })(),
     }))),
     ...staticIons.map(([ion, x, y]) => ({ type: 'ion', ion, x, y })),
-    ...Object.entries(flows).flatMap(([k, list]) => list.map(([ion, from]) => ({ type: 'ion', ion, x: from[0], y: from[1], hideDuring: [k, 'both'] }))),
+    ...Object.entries(flows).flatMap(([k, list]) => list.map(([ion, from], i) => ({ type: 'ion', ion, x: from[0], y: from[1],
+      hideDuring: [['small', `${k}-s`], ['large', `${k}-l`], ['mid', 'both']].filter(([a]) => i < AMT[a].ions).map(([, id]) => id) }))),
     ...Object.entries(SYN).flatMap(([k, s]) => [
       { type: 'channel', id: `ch-${k}`, x: s.x, y: M.mid, h: 130, ...CH_STYLE[s.ch], label: s.receptor },
       { type: 'text', x: s.x, y: M.mid + 65 + 54, text: s.lets, size: 20, font: 'sans', color: '#5b6270', align: 'center' },
@@ -582,11 +596,13 @@ So how does it add them up? Let's start with the two kinds of signals: EPSPs and
       }] : []),
       // Slide 2: two inputs onto one dendrite, and what each does to the membrane potential.
       {
-        say: 'Glutamate opens Na⁺ channels and gives an EPSP; GABA opens Cl⁻ channels and gives an IPSP.',
+        say: 'Glutamate opens Na⁺ channels and gives an EPSP; GABA opens Cl⁻ channels and gives an IPSP. More transmitter gives a bigger change: they are graded potentials.',
         clear: true,
         actions: [
-          { id: 'glu', label: 'Release glutamate', items: release('glu') },
-          { id: 'gaba', label: 'Release GABA', items: release('gaba') },
+          { id: 'glu-s', label: 'Small glutamate release', items: release('glu', true, 'small') },
+          { id: 'glu-l', label: 'Large glutamate release', items: release('glu', true, 'large') },
+          { id: 'gaba-s', label: 'Small GABA release', items: release('gaba', true, 'small') },
+          { id: 'gaba-l', label: 'Large GABA release', items: release('gaba', true, 'large') },
           { // both at once: the EPSP and IPSP cancel each other out
             id: 'both', label: 'Release both',
             items: [...release('glu', false), ...release('gaba', false),
