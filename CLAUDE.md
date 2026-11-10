@@ -13,6 +13,11 @@ dependencies. Open `index.html` in a browser.
   clips (MediaRecorder), timeline (reorder/trim/re-record/delete, stored in
   IndexedDB), preview, and export (plays trimmed clips in order and re-records
   them into one file, in real time). Prefers H.264 MP4, else WebM.
+  While a clip is paused, ✂ Cut part / ✂ −5 s drop the last recorded part; the recording keeps
+  running and the clip stores the kept file ranges in `keep` ([[start, end], …]; missing = whole
+  file). Preview, trim and export skip the gaps (`expand()` turns clips into kept pieces).
+  🔊 Volume (`wb-loudness` in localStorage, 100–400%) boosts the audio in export and previews,
+  with a limiter so it never distorts. Never change how existing clips are stored.
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as
   `window.WB_BRAIN_MID`; `brain-art.js` uses it for the medial view and the midsagittal cut face. Load it first.

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611100410" />
+  <link rel="stylesheet" href="style.css?v=202611100559" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -106,12 +106,15 @@
       <button id="recBtn" class="rec" title="Record a new clip (only the board is recorded, plus your microphone)">⏺ Record</button>
       <button id="pauseBtn" title="Pause / resume this clip (A)" disabled>⏸ Pause</button>
       <button id="stopBtn" title="Stop and add the clip to the timeline" disabled>⏹ Stop</button>
+      <button id="cutPartBtn" title="While paused: cut out the last part you recorded (since your last pause), then press Resume to record it again" disabled>✂ Cut part</button>
+      <button id="cut5Btn" title="While paused: cut out the last 5 seconds you recorded (press again to go further back)" disabled>✂ −5 s</button>
       <span id="recTime" class="rec-time">0:00</span>
       <span class="meter" title="Microphone level"><i id="meterFill"></i></span>
       <label class="opt" title="Show a red dot where your pointer is, in the video"><input type="checkbox" id="showPointer" checked /> Pointer in video</label>
       <span class="spacer"></span>
       <span id="tlInfo" class="tl-info"></span>
       <button id="previewAll" title="Watch all clips in order, with trims applied">▶ Preview all</button>
+      <label class="opt loud" title="How loud your voice is in the exported video (previews play at this loudness too). A limiter stops loud bits from distorting.">🔊 Volume <input type="range" id="loudness" min="1" max="4" step="0.25" value="1" /> <b id="loudVal">100%</b></label>
       <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export video</button>
       <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
     </div>
@@ -161,14 +164,14 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611100410"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611100410"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611100410"></script>
-  <script src="scenes/brain-art.js?v=202611100410"></script>
-  <script src="scenes/brain-views.js?v=202611100410"></script>
-  <script src="scenes/protein-structure.js?v=202611100410"></script>
-  <script src="app.js?v=202611100410"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611100410"></script>
-  <script src="recorder.js?v=202611100410"></script>
+  <script src="scenes/neuron.js?v=202611100559"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611100559"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611100559"></script>
+  <script src="scenes/brain-art.js?v=202611100559"></script>
+  <script src="scenes/brain-views.js?v=202611100559"></script>
+  <script src="scenes/protein-structure.js?v=202611100559"></script>
+  <script src="app.js?v=202611100559"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611100559"></script>
+  <script src="recorder.js?v=202611100559"></script>
 </body>
 </html>

@@ -39,7 +39,17 @@
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
   const fmtPrecise = (s) => `${fmt(s)}.${Math.floor(((s || 0) % 1) * 10)}`;
-  const clipLen = (c) => Math.max(0, c.out - c.in);
+  // A clip can have parts cut out while it was being recorded: `keep` lists the
+  // [start, end] ranges of the file that are kept (missing = the whole file).
+  const keepOf = (c) => (c.keep && c.keep.length ? c.keep : [[0, c.duration]]);
+  const piecesOf = (c) => keepOf(c).map(([a, b]) => [Math.max(a, c.in), Math.min(b, c.out)]).filter(([a, b]) => b - a > 0.05);
+  const clipLen = (c) => piecesOf(c).reduce((s, [a, b]) => s + (b - a), 0);
+  // Every kept piece of every clip, in order, as clip-like objects (they share the clip's file).
+  const expand = (list) => list.flatMap((c, ci) => piecesOf(c).map(([a, b]) => {
+    const seg = Object.create(c);
+    seg.in = a; seg.out = b; seg._root = c; seg._ci = ci;
+    return seg;
+  }));
   const once = (el, ev) => new Promise((res) => el.addEventListener(ev, res, { once: true }));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -81,7 +91,7 @@
       }
     });
   }
-  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created }));
+  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created, keep: c.keep }));
   const unpersist = (id) => dbDo('readwrite', (s) => s.delete(id));
   const curScene = () => WB.sceneId();
   const saveOrder = () => clips.forEach((c, i) => { c.order = i; persist(c); });
@@ -97,7 +107,10 @@
     segStart: 0,
     thumb: null,
     videoTrack: null,
+    parts: [],      // kept [start, end] ranges of this recording (file time)
+    partStart: 0,   // file time where the part being recorded now started
   };
+  const keptTime = () => rec.parts.reduce((s, [a, b]) => s + (b - a), 0) + (rec.state === 'recording' ? Math.max(0, currentElapsed() - rec.partStart) : 0);
 
   // ---------- the 1920x1080 recording canvas ----------
   const recCanvas = document.createElement('canvas');
@@ -196,6 +209,12 @@
     ui.pause.disabled = !(rec.state === 'recording' || rec.state === 'paused');
     ui.pause.textContent = rec.state === 'paused' ? '⏵ Resume' : '⏸ Pause';
     ui.stop.disabled = !(rec.state === 'recording' || rec.state === 'paused');
+    const canCut = rec.state === 'paused' && rec.parts.length > 0;
+    $('cutPartBtn').disabled = !canCut;
+    $('cut5Btn').disabled = !canCut;
+    $('cutPartBtn').hidden = $('cut5Btn').hidden = !(rec.state === 'recording' || rec.state === 'paused'); // only while a clip is being recorded
+    const last = rec.parts[rec.parts.length - 1];
+    $('cutPartBtn').textContent = canCut ? `✂ Cut part (${fmt(last[1] - last[0])})` : '✂ Cut part';
     ui.badge.hidden = !(rec.state === 'recording' || rec.state === 'paused');
     ui.badge.classList.toggle('paused', rec.state === 'paused');
     ui.badge.lastChild.textContent = rec.state === 'paused' ? ' PAUSED' : ' REC';
@@ -206,7 +225,7 @@
   }
 
   setInterval(() => {
-    if (rec.state === 'recording' || rec.state === 'paused') ui.time.textContent = fmt(currentElapsed());
+    if (rec.state === 'recording' || rec.state === 'paused') ui.time.textContent = fmt(keptTime()) + (rec.parts.length > 1 || (rec.parts.length && rec.state === 'recording') ? ` · ${rec.parts.length + (rec.state === 'recording' ? 1 : 0)} parts` : '');
   }, 250);
 
   async function startRecording() {
@@ -241,6 +260,8 @@
     rec.recorder.start(1000);
     rec.elapsed = 0;
     rec.segStart = performance.now();
+    rec.parts = [];
+    rec.partStart = 0;
     updateRecUI();
   }
 
@@ -248,18 +269,43 @@
     if (rec.state === 'recording') {
       rec.recorder.pause();
       rec.elapsed += (performance.now() - rec.segStart) / 1000;
+      if (rec.elapsed - rec.partStart > 0.05) rec.parts.push([rec.partStart, rec.elapsed]);
       rec.state = 'paused';
     } else if (rec.state === 'paused') {
       rec.recorder.resume();
       rec.segStart = performance.now();
+      rec.partStart = rec.elapsed;
       rec.state = 'recording';
     }
     updateRecUI();
   }
 
+  // While paused: throw away the last part (or the last few seconds) and record it again.
+  // The recording keeps running underneath; the cut bit is simply left out of the clip.
+  function cutLastPart() {
+    if (rec.state !== 'paused' || !rec.parts.length) return;
+    rec.parts.pop();
+    updateRecUI();
+    ui.time.textContent = fmt(keptTime());
+  }
+  function cutSeconds(sec) {
+    if (rec.state !== 'paused' || !rec.parts.length) return;
+    let left = sec;
+    while (left > 0 && rec.parts.length) {
+      const last = rec.parts[rec.parts.length - 1], len = last[1] - last[0];
+      if (len <= left + 0.05) { rec.parts.pop(); left -= len; } else { last[1] -= left; left = 0; }
+    }
+    updateRecUI();
+    ui.time.textContent = fmt(keptTime());
+  }
+  $('cutPartBtn').addEventListener('click', cutLastPart);
+  $('cut5Btn').addEventListener('click', () => cutSeconds(5));
+
   async function stopRecording() {
     if (rec.state !== 'recording' && rec.state !== 'paused') return;
     const duration = currentElapsed();
+    if (rec.state === 'recording' && duration - rec.partStart > 0.05) rec.parts.push([rec.partStart, duration]);
+    const keep = rec.parts.slice();
     const recorder = rec.recorder;
     const stopped = once(recorder, 'stop');
     recorder.stop();
@@ -268,8 +314,18 @@
     rec.state = 'idle';
     ui.time.textContent = '0:00';
 
+    const kept = keep.reduce((s, [a, b]) => s + (b - a), 0);
+    if (kept < 0.3) {
+      alert('Everything in this recording was cut out, so no clip was added.');
+      replaceId = null;
+      renderTimeline();
+      updateRecUI();
+      return;
+    }
+    const whole = keep.length === 1 && keep[0][0] < 0.1 && keep[0][1] > duration - 0.1;
     const blob = await withDuration(new Blob(rec.chunks, { type: (recorder.mimeType || MIME || 'video/webm').split(';')[0] }), duration);
     const clip = {
+      keep: whole ? undefined : keep,
       id: 'clip-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       blob,
       mime: blob.type,
@@ -318,7 +374,7 @@
 
   // ---------- timeline ----------
   const tl = $('timeline');
-  const urlOf = (c) => c._url || (c._url = URL.createObjectURL(c.blob));
+  const urlOf = (c) => { const root = c._root || c; return root._url || (root._url = URL.createObjectURL(root.blob)); };
 
   function renderTimeline() {
     tl.innerHTML = '';
@@ -335,7 +391,7 @@
     clips.forEach((c, i) => {
       const card = document.createElement('div');
       card.className = 'clip' + (c.id === replaceId ? ' replace' : '');
-      const trimmed = c.in > 0.05 || c.out < c.duration - 0.05;
+      const trimmed = c.in > 0.05 || c.out < c.duration - 0.05 || (c.keep && c.keep.length > 0);
       card.innerHTML = `
         <img alt="Clip ${i + 1}" title="Open to watch and trim" />
         <div class="meta"><b>Clip ${i + 1}</b><span>${trimmed ? '✂ ' : ''}${fmt(clipLen(c))}</span></div>
@@ -397,10 +453,40 @@
     $('trimRange').style.left = (trim.in / d) * 100 + '%';
     $('trimRange').style.width = ((trim.out - trim.in) / d) * 100 + '%';
     $('trimHead').style.left = (Math.min(vid.currentTime, d) / d) * 100 + '%';
-    $('trimText').textContent = `Start ${fmtPrecise(trim.in)}  ·  End ${fmtPrecise(trim.out)}  ·  Length ${fmtPrecise(trim.out - trim.in)}`;
+    const len = clipLen({ ...c, in: trim.in, out: trim.out });
+    $('trimText').textContent = `Start ${fmtPrecise(trim.in)}  ·  End ${fmtPrecise(trim.out)}  ·  Length ${fmtPrecise(len)}`;
+    // the parts cut out while recording, shown hatched
+    const bar = $('trimBar');
+    bar.querySelectorAll('.trim-cut').forEach((n) => n.remove());
+    const k = keepOf(c);
+    let prev = 0;
+    [...k, [d, d]].forEach(([a, b]) => {
+      if (a - prev > 0.05) {
+        const n = document.createElement('div');
+        n.className = 'trim-cut';
+        n.title = 'Cut out while recording';
+        n.style.left = (prev / d) * 100 + '%';
+        n.style.width = ((a - prev) / d) * 100 + '%';
+        bar.appendChild(n);
+      }
+      prev = Math.max(prev, b);
+    });
   }
+  // Skip the cut-out parts while the clip plays in the dialog.
+  (function skipCuts() {
+    const c = trim.clip;
+    if (c && c.keep && !vid.paused) {
+      const t = vid.currentTime;
+      if (!c.keep.some(([a, b]) => t >= a - 0.01 && t < b)) {
+        const next = c.keep.find(([a]) => a > t);
+        if (next) vid.currentTime = next[0]; else vid.pause();
+      }
+    }
+    requestAnimationFrame(skipCuts);
+  })();
 
   function openClip(c) {
+    ensureMonitor();
     trim.clip = c;
     trim.in = c.in;
     trim.out = c.out;
@@ -410,7 +496,7 @@
     $('previewUI').hidden = true;
     vid.controls = false;
     vid.src = urlOf(c);
-    vid.currentTime = c.in;
+    vid.currentTime = Math.max(c.in, keepOf(c)[0][0]);
     stopAt = null;
     drawTrim();
     dlg.showModal();
@@ -471,6 +557,47 @@
     vid.hidden = false;
   });
 
+  // ---------- loudness ----------
+  // Boosts the voice in the exported video (and in previews, so you hear it first).
+  // A limiter after the boost stops loud bits from distorting.
+  let loudness = 1;
+  try { loudness = Math.max(1, Math.min(4, parseFloat(localStorage.getItem('wb-loudness')) || 1)); } catch (_) { /* default */ }
+  function loudChain(ac, out) {
+    const gain = ac.createGain();
+    gain.gain.value = loudness;
+    const lim = ac.createDynamicsCompressor();
+    lim.threshold.value = -2;
+    lim.knee.value = 0;
+    lim.ratio.value = 20;
+    lim.attack.value = 0.002;
+    lim.release.value = 0.2;
+    gain.connect(lim).connect(out);
+    return gain;
+  }
+  // Previews play through the same boost.
+  let monAc = null, monGain = null;
+  function ensureMonitor() {
+    try {
+      if (!monAc) {
+        monAc = new AudioContext();
+        monGain = loudChain(monAc, monAc.destination);
+        [vid, ...pv.vids].forEach((v) => monAc.createMediaElementSource(v).connect(monGain));
+      }
+      monAc.resume();
+      monGain.gain.value = loudness;
+    } catch (_) { /* previews just play at normal volume */ }
+  }
+  const loudInput = $('loudness');
+  const showLoud = () => { $('loudVal').textContent = Math.round(loudness * 100) + '%'; };
+  loudInput.value = loudness;
+  showLoud();
+  loudInput.addEventListener('input', () => {
+    loudness = parseFloat(loudInput.value) || 1;
+    try { localStorage.setItem('wb-loudness', String(loudness)); } catch (_) { /* not saved */ }
+    if (monGain) monGain.gain.value = loudness;
+    showLoud();
+  });
+
   // ---------- gapless playback helpers ----------
   // Two video elements take turns: while one plays, the next clip is loaded and
   // parked on its first frame in the other, so a cut never shows a black frame.
@@ -514,7 +641,7 @@
     const pct = pv.total ? (g / pv.total) * 100 : 0;
     $('pvHead').style.left = pct + '%';
     $('pvFill').style.width = pct + '%';
-    $('pvTime').textContent = `${fmt(g)} / ${fmt(pv.total)}${pv.idx >= 0 ? `  ·  Clip ${pv.idx + 1} of ${pv.list.length}` : ''}`;
+    $('pvTime').textContent = `${fmt(g)} / ${fmt(pv.total)}${pv.idx >= 0 ? `  ·  Clip ${pv.list[pv.idx]._ci + 1} of ${clips.length}` : ''}`;
     $('pvPlay').textContent = pv.playing ? '⏸ Pause' : '▶ Play';
   }
   // Get the clip after the current one ready in the spare video element.
@@ -620,7 +747,8 @@
     $('previewUI').hidden = false;
     vid.hidden = true;
     pvCanvas.hidden = false;
-    pv.list = clips.slice();
+    ensureMonitor();
+    pv.list = expand(clips);
     pv.starts = [];
     let acc = 0;
     for (const c of pv.list) { pv.starts.push(acc); acc += clipLen(c); }
@@ -632,7 +760,7 @@
     pv.playing = true;
     const segs = $('pvSegs');
     segs.innerHTML = '';
-    pv.list.forEach((c, i) => {
+    clips.forEach((c, i) => {
       const d = document.createElement('div');
       d.style.width = (pv.total ? (clipLen(c) / pv.total) * 100 : 0) + '%';
       d.textContent = `Clip ${i + 1}`;
@@ -675,7 +803,8 @@
     const ac = new AudioContext();
     await ac.resume();
     const dest = ac.createMediaStreamDestination();
-    vids.forEach((v) => ac.createMediaElementSource(v).connect(dest)); // to the file only, not the speakers
+    const boost = loudChain(ac, dest); // loudness boost + limiter
+    vids.forEach((v) => ac.createMediaElementSource(v).connect(boost)); // to the file only, not the speakers
 
     // The recorder is created once the first clip's first frame is on the canvas,
     // so the file doesn't start with a black frame.
@@ -717,7 +846,7 @@
     };
     draw();
 
-    const list = clips.slice();
+    const list = expand(clips);
     const total = list.reduce((s, c) => s + clipLen(c), 0);
     const signal = exportAbort.signal;
     let ok = false;
