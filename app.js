@@ -1272,7 +1272,7 @@
     SPEEDS.forEach((s) => {
       const o = document.createElement('option');
       o.value = s;
-      o.textContent = `Speed ${s}×`;
+      o.textContent = `${s}×`;
       o.selected = s === clock.rate;
       speed.appendChild(o);
     });
@@ -2163,9 +2163,29 @@
   function setTool(tool) {
     state.tool = tool;
     toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === tool));
+    // the tool picker button shows the current tool
+    const tb = [...toolButtons].find((b) => b.dataset.tool === tool);
+    if (tb && document.getElementById('toolIcon')) {
+      document.getElementById('toolIcon').textContent = tb.firstChild.textContent;
+      document.getElementById('toolName').textContent = tb.querySelector('span').textContent;
+    }
     canvas.style.cursor = tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : tool === 'pan' ? 'grab' : 'crosshair';
   }
-  toolButtons.forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  toolButtons.forEach((b) => b.addEventListener('click', () => { setTool(b.dataset.tool); closePops(); }));
+
+  // Tool, colour and size live in small pop-ups that open from their button.
+  const pickers = [['toolPick', 'toolPop'], ['colorPick', 'colors'], ['sizePick', 'sizePop']]
+    .map(([b, p]) => [document.getElementById(b), document.getElementById(p)]).filter(([b, p]) => b && p);
+  function closePops() { pickers.forEach(([b, p]) => { p.hidden = true; b.classList.remove('open'); }); }
+  pickers.forEach(([btn, pop]) => btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = pop.hidden;
+    closePops();
+    pop.hidden = !open;
+    btn.classList.toggle('open', open);
+  }));
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.picker')) closePops(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePops(); });
 
   const colorBox = document.getElementById('colors');
   ['ink', 'blue', 'red', 'green', 'orange', 'purple', 'yellow'].forEach((c) => {
@@ -2176,6 +2196,8 @@
     b.addEventListener('click', () => {
       state.color = c;
       colorBox.querySelectorAll('.swatch').forEach((x) => x.classList.toggle('active', x === b));
+      showPenStyle();
+      closePops();
     });
     colorBox.appendChild(b);
   });
@@ -2183,7 +2205,20 @@
   document.querySelectorAll('[data-size]').forEach((b) => b.addEventListener('click', () => {
     state.size = +b.dataset.size;
     document.querySelectorAll('[data-size]').forEach((x) => x.classList.toggle('active', x === b));
+    showPenStyle();
+    closePops();
   }));
+  // the colour and size buttons show the current pen colour and thickness
+  function showPenStyle() {
+    const cur = document.getElementById('colorCur'), sz = document.getElementById('sizeCur');
+    if (cur) cur.style.background = COLORS[state.color] || state.color;
+    if (sz) {
+      const d = { 3: 4, 6: 8, 12: 14 }[state.size] || 8;
+      sz.style.width = sz.style.height = d + 'px';
+      sz.style.background = COLORS[state.color] || state.color;
+    }
+  }
+  showPenStyle();
 
   document.getElementById('undo').addEventListener('click', undo);
   document.getElementById('redo').addEventListener('click', redo);

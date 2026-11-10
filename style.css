@@ -32,7 +32,8 @@ button, select {
 
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;   /* always one row: the slide's animation buttons scroll if they don't fit */
+  align-items: center;
   gap: 8px;
   padding: 8px 12px;
   background: var(--panel);
@@ -47,6 +48,31 @@ button, select {
   border-right: 1px solid var(--line);
 }
 .group:last-child { border-right: 0; }
+.group { flex: 0 0 auto; }
+.group.actions { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.group.actions > * { flex: 0 0 auto; }
+
+/* tool / colour / size pickers: a button that opens a small pop-up */
+.picker { position: relative; }
+.toolbar .pick-btn { border: 1px solid var(--line); background: #fff; gap: 6px; }
+.toolbar .pick-btn em { font-style: normal; font-size: 10px; color: var(--muted); }
+.toolbar .pick-btn.open { border-color: var(--accent); background: #e6eefc; }
+.tool-pick b { font-weight: 400; }
+.tool-pick span { min-width: 44px; text-align: left; }
+.cur-swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); display: block; }
+.cur-size { display: block; border-radius: 50%; background: var(--ink); }
+#sizePick { min-width: 50px; justify-content: center; }
+.pop {
+  position: absolute; top: 42px; left: 0; z-index: 100;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 24, 40, 0.18); padding: 6px;
+  width: max-content;
+}
+.pop[hidden] { display: none; }
+.pop-tools { display: grid; grid-template-columns: repeat(3, auto); gap: 4px; }
+.pop-tools button { justify-content: flex-start; }
+.pop-colors { display: flex; gap: 6px; padding: 8px; }
+.pop-sizes { display: flex; gap: 4px; }
 
 .toolbar button {
   display: inline-flex;
@@ -107,6 +133,7 @@ button, select {
   pointer-events: none;
 }
 .paused-badge[hidden] { display: none; }
+.toolbar .speed-select { height: 32px; }
 .toolbar button.action-btn {
   background: #fff4e5;
   border-color: #f0b46a;
@@ -155,12 +182,17 @@ button, select {
 .player {
   background: var(--panel);
   border-top: 1px solid var(--line);
-  padding: 8px 12px 10px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: nowrap;   /* one row; scrolls sideways on a very narrow window */
+  gap: 12px;
   align-items: center;
+  overflow-x: auto;
 }
+.player > * { flex: 0 0 auto; }
+.player > .topic-pick { flex: 0 1 auto; }
+.player > .spacer { flex: 1 1 0; }
+.out-controls { flex-wrap: nowrap !important; }
 
 .player select {
   height: 36px;
@@ -175,7 +207,7 @@ button, select {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .controls button {
   height: 36px;
@@ -195,6 +227,7 @@ button, select {
 .step-label { color: var(--muted); font-size: 14px; min-width: 80px; }
 .narrate { font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
 
+.caption[hidden] { display: none; }
 .caption {
   grid-column: 1 / -1;
   margin: 0;
@@ -205,8 +238,6 @@ button, select {
 
 @media (max-width: 700px) {
   .toolbar button span { display: none; }
-  .player { grid-template-columns: 1fr; }
-  .player select { max-width: none; width: 100%; }
   .caption { font-size: 16px; }
 }
 
@@ -218,7 +249,8 @@ button, select {
 }
 .rec-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   align-items: center;
   gap: 6px;
 }

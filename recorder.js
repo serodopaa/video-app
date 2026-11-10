@@ -887,7 +887,7 @@
     const btn = $('exportBtn');
     updateRecUI();
     btn.disabled = false;
-    btn.textContent = 'Exporting… 0% (click to cancel)';
+    btn.textContent = '⏳ 0% · Cancel';
 
     const out = document.createElement('canvas');
     out.width = RW;
@@ -929,7 +929,7 @@
         held = true;
         if (active) active.pause();
         if (mr && mr.state === 'recording') mr.pause();
-        btn.textContent = 'Export paused: come back to this tab to continue';
+        btn.textContent = '⏸ Come back to this tab';
       } else if (held) {
         held = false;
         if (mr && mr.state === 'paused') mr.resume();
@@ -971,7 +971,7 @@
           const check = () => {
             if (held) { requestAnimationFrame(check); return; }
             if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02) return resolve();
-            btn.textContent = `Exporting… ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% (click to cancel)`;
+            btn.textContent = `⏳ ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% · Cancel`;
             requestAnimationFrame(check);
           };
           check();
@@ -1009,7 +1009,7 @@
     }
     exporting = false;
     exportAbort = null;
-    btn.textContent = '⬇ Export video';
+    btn.textContent = '⬇ Export';
     updateRecUI();
   }
   $('exportBtn').addEventListener('click', exportVideo);

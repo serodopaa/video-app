@@ -7,40 +7,51 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611100741" />
+  <link rel="stylesheet" href="style.css?v=202611100751" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
-    <div class="group" role="group" aria-label="Tools">
-      <button class="tool active" data-tool="pen" title="Pen (P)">✏️<span>Pen</span></button>
-      <button class="tool" data-tool="hl" title="Highlighter (H)">🖍️<span>Marker</span></button>
-      <button class="tool" data-tool="line" title="Line (L)">╱<span>Line</span></button>
-      <button class="tool" data-tool="arrow" title="Arrow (A)">➜<span>Arrow</span></button>
-      <button class="tool" data-tool="rect" title="Rectangle (R)">▭<span>Box</span></button>
-      <button class="tool" data-tool="ellipse" title="Circle (O)">◯<span>Circle</span></button>
-      <button class="tool" data-tool="text" title="Text (T)">T<span>Text</span></button>
-      <button class="tool" data-tool="eraser" title="Eraser (E)">🧽<span>Erase</span></button>
-    </div>
-    <div class="group" id="colors" role="group" aria-label="Colors"></div>
-    <div class="group" role="group" aria-label="Size">
-      <button class="size" data-size="3" title="Thin"><i style="width:4px;height:4px"></i></button>
-      <button class="size active" data-size="6" title="Medium"><i style="width:8px;height:8px"></i></button>
-      <button class="size" data-size="12" title="Thick"><i style="width:14px;height:14px"></i></button>
+    <div class="group" role="group" aria-label="Drawing">
+      <div class="picker">
+        <button class="pick-btn tool-pick" id="toolPick" title="Drawing tool (click to choose)"><b id="toolIcon">✏️</b><span id="toolName">Pen</span><em>▾</em></button>
+        <div class="pop pop-tools" id="toolPop" hidden>
+          <button class="tool active" data-tool="pen" title="Pen (P)">✏️<span>Pen</span></button>
+          <button class="tool" data-tool="hl" title="Highlighter (H)">🖍️<span>Marker</span></button>
+          <button class="tool" data-tool="line" title="Line (L)">╱<span>Line</span></button>
+          <button class="tool" data-tool="arrow" title="Arrow (A)">➜<span>Arrow</span></button>
+          <button class="tool" data-tool="rect" title="Rectangle (R)">▭<span>Box</span></button>
+          <button class="tool" data-tool="ellipse" title="Circle (O)">◯<span>Circle</span></button>
+          <button class="tool" data-tool="text" title="Text (T)">T<span>Text</span></button>
+          <button class="tool" data-tool="eraser" title="Eraser (E)">🧽<span>Erase</span></button>
+          <button class="tool" data-tool="pan" title="Move (M): drag your drawings or text to move them. Drag empty space to look around when zoomed in.">✋<span>Move</span></button>
+        </div>
+      </div>
+      <div class="picker">
+        <button class="pick-btn" id="colorPick" title="Pen colour (click to choose)"><i class="cur-swatch" id="colorCur"></i><em>▾</em></button>
+        <div class="pop pop-colors" id="colors" hidden></div>
+      </div>
+      <div class="picker">
+        <button class="pick-btn" id="sizePick" title="Pen size (click to choose)"><i class="cur-size" id="sizeCur"></i><em>▾</em></button>
+        <div class="pop pop-sizes" id="sizePop" hidden>
+          <button class="size" data-size="3" title="Thin"><i style="width:4px;height:4px"></i></button>
+          <button class="size active" data-size="6" title="Medium"><i style="width:8px;height:8px"></i></button>
+          <button class="size" data-size="12" title="Thick"><i style="width:14px;height:14px"></i></button>
+        </div>
+      </div>
     </div>
     <div class="group" role="group" aria-label="Edit">
       <button id="undo" title="Undo (Ctrl/Cmd+Z)">↶</button>
       <button id="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↷</button>
-      <button id="clearInk" title="Erase all of my drawing">🗑️</button>
-      <button id="replay" title="Replay my drawing as an animation">🎬<span>Replay ink</span></button>
-      <button id="export" title="Save the board as a PNG image">💾<span>PNG</span></button>
-      <button id="notesToggle" title="Show or hide your notes for this slide (never in the video)">📝<span>Notes</span></button>
-      <button id="tpToggle" title="Teleprompter for this slide: turn it on or off for each slide (G). Only you see it, never the video.">📜<span>Prompter</span></button>
+      <button id="clearInk" title="Erase all of my drawing on this slide">🗑️</button>
+      <button id="replay" title="Replay my drawing as an animation">🎬</button>
+      <button id="export" title="Save the board as a PNG image">💾</button>
+      <button id="notesToggle" title="Notes for this slide: show or hide (only you see them, never in the video)">📝</button>
+      <button id="tpToggle" title="Teleprompter for this slide: turn it on or off for each slide (G). Only you see it, never the video.">📜</button>
     </div>
     <div class="group" role="group" aria-label="Zoom">
       <button id="zoomOut" title="Zoom out (−)">−</button>
       <button id="zoomLabel" class="zoom-label" title="Show the whole slide (0)">100%</button>
       <button id="zoomIn" title="Zoom in (+). On a trackpad you can also pinch.">＋</button>
-      <button class="tool" data-tool="pan" title="Move (M): drag your drawings or text to move them. Drag empty space to look around when zoomed in.">✋<span>Move</span></button>
     </div>
     <div class="group actions" id="slideActions" role="group" aria-label="Animations for this slide" hidden></div>
   </header>
@@ -96,9 +107,17 @@
       <button id="play" class="primary" title="Play / pause (Space)">▶ Play</button>
       <button id="next" title="Next step (→)">⏭</button>
       <span id="stepLabel" class="step-label"></span>
-      <label class="narrate" title="Read the captions out loud"><input type="checkbox" id="narrate" /> 🔊 Narrate</label>
+      <label class="narrate" title="Read the captions out loud"><input type="checkbox" id="narrate" /> 🗣️ Narrate</label>
     </div>
-    <p id="caption" class="caption"></p>
+    <span class="spacer"></span>
+    <div class="rec-controls out-controls">
+      <button id="previewAll" title="Watch all clips in order, with trims applied">▶ Preview</button>
+      <label class="opt loud" title="How loud your voice is in the exported video (previews play at this loudness too). A limiter stops loud bits from distorting.">🔊 <input type="range" id="loudness" min="1" max="4" step="0.25" value="1" /> <b id="loudVal">100%</b></label>
+      <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export</button>
+      <button id="deleteAllClips" title="Delete every clip in this topic (asks first)">🗑️ All clips</button>
+      <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
+    </div>
+    <p id="caption" class="caption" hidden></p>
   </footer>
 
   <section class="studio" aria-label="Recording">
@@ -114,11 +133,6 @@
       <label class="opt" title="Show a red dot where your pointer is, in the video"><input type="checkbox" id="showPointer" checked /> Pointer in video</label>
       <span class="spacer"></span>
       <span id="tlInfo" class="tl-info"></span>
-      <button id="previewAll" title="Watch all clips in order, with trims applied">▶ Preview all</button>
-      <label class="opt loud" title="How loud your voice is in the exported video (previews play at this loudness too). A limiter stops loud bits from distorting.">🔊 Volume <input type="range" id="loudness" min="1" max="4" step="0.25" value="1" /> <b id="loudVal">100%</b></label>
-      <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export video</button>
-      <button id="deleteAllClips" title="Delete every clip in this topic (asks first)">🗑️ All clips</button>
-      <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
     </div>
     <div id="timeline" class="timeline"></div>
   </section>
@@ -166,14 +180,14 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611100741"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611100741"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611100741"></script>
-  <script src="scenes/brain-art.js?v=202611100741"></script>
-  <script src="scenes/brain-views.js?v=202611100741"></script>
-  <script src="scenes/protein-structure.js?v=202611100741"></script>
-  <script src="app.js?v=202611100741"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611100741"></script>
-  <script src="recorder.js?v=202611100741"></script>
+  <script src="scenes/neuron.js?v=202611100751"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611100751"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611100751"></script>
+  <script src="scenes/brain-art.js?v=202611100751"></script>
+  <script src="scenes/brain-views.js?v=202611100751"></script>
+  <script src="scenes/protein-structure.js?v=202611100751"></script>
+  <script src="app.js?v=202611100751"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611100751"></script>
+  <script src="recorder.js?v=202611100751"></script>
 </body>
 </html>

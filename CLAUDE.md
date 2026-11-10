@@ -5,7 +5,10 @@ play step by step on the same board with captions. No build step or
 dependencies. Open `index.html` in a browser.
 
 ## Files
-- `index.html` – layout and the `<script>` list of scenes.
+- `index.html` – layout and the `<script>` list of scenes. Keep the UI compact: ONE toolbar row above
+  the board (tool / colour / size are pop-up pickers, edit buttons are icon-only, the slide's animation
+  buttons scroll sideways if they don't fit) and at most TWO rows below it (player + output buttons, then
+  the recording controls); only the timeline may add more. The caption text is hidden.
 - `style.css` – UI styling.
 - `app.js` – engine: drawing tools, animation player, rendering. Exposes
   `window.WB` (renderTo, onFrame, pointer) for the recorder.
