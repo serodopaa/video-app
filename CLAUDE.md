@@ -12,6 +12,10 @@ dependencies. Open `index.html` in a browser.
 - `style.css` – UI styling.
 - `app.js` – engine: drawing tools, animation player, rendering. Exposes
   `window.WB` (renderTo, onFrame, pointer) for the recorder.
+  Heavy `svg`/`inset` pictures (>15 KB or with filters) are drawn from a cached bitmap per device scale
+  (`drawSvgCached`: cropped to their content, pixel-aligned, LRU-bounded ~48 M px); short-lived animation
+  frames (`until` < 0.5 s) and small SVGs are drawn directly. Chrome's own SVG cache thrashes when the
+  screen and the 1920×1080 recording draw at different sizes, which caused stutter.
 - `recorder.js` – recording studio: records the board at 1920×1080 + mic into
   clips (MediaRecorder), timeline (reorder/trim/re-record/delete, stored in
   IndexedDB), preview, and export (plays trimmed clips in order and re-records

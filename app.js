@@ -320,6 +320,112 @@
     }
   }
 
+  // ---------- picture cache ----------
+  // Drawing an SVG picture onto a canvas makes Chrome redraw it from its vector shapes, and Chrome only
+  // keeps a few ready-made copies. With the screen and the 1920x1080 recording each needing their own
+  // size, those copies get thrown away and redrawn now and then, which shows as stutter. So each picture
+  // is drawn once per size into its own small canvas (cropped to where the picture actually has
+  // something), and that canvas is reused every frame. Least recently used copies are dropped when the
+  // total gets big, so memory stays bounded.
+  const svgCache = new Map(); // key -> { canvas, px, used }
+  let svgCachePx = 0;
+  const SVG_CACHE_MAX_PX = 48e6; // about 190 MB of pixels
+  let svgCacheTick = 0;
+  // Working out where a picture has content needs a read-back from the GPU, which would stall a frame,
+  // so it's done in idle time: when a slide is shown, all its pictures (and those of its animation
+  // buttons) are queued. Until a picture is ready it's simply drawn the normal way.
+  const bboxQueue = new Set();
+  let bboxBusy = false;
+  const idle = window.requestIdleCallback || ((f) => setTimeout(() => f({ timeRemaining: () => 8 }), 30));
+  function queueSvgPrep(items) {
+    for (const it of items) {
+      if ((it.type !== 'svg' && it.type !== 'inset') || it._bbox || (it.until !== undefined && it.until < 0.5)) continue;
+      if (it.svg.length > 15000 || /<filter/.test(it.svg)) bboxQueue.add(it);
+    }
+    if (bboxQueue.size && !bboxBusy) { bboxBusy = true; idle(prepSvgs, { timeout: 400 }); }
+  }
+  function prepSvgs(deadline) {
+    let n = 0;
+    for (const it of bboxQueue) {
+      if (n++ >= 2 && deadline.timeRemaining() < 4) break; // always do a couple, even on a busy page
+      const img = it._img;
+      if (!img || !img.complete) continue; // still loading: try again later
+      if (img.naturalWidth) svgBounds(it, img, it.x || 0, it.y || 0, it.w || W, it.h || H);
+      bboxQueue.delete(it);
+    }
+    if (bboxQueue.size) idle(prepSvgs, { timeout: 400 }); else bboxBusy = false;
+  }
+  function svgBounds(item, img, x, y, w, h) {
+    if (item._bbox) return item._bbox;
+    let bb = [x, y, w, h];
+    try {
+      const k = 1 / 6, cw = Math.max(1, Math.ceil(w * k)), ch = Math.max(1, Math.ceil(h * k));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0, cw, ch);
+      const d = cx.getImageData(0, 0, cw, ch).data;
+      let x0 = cw, y0 = ch, x1 = -1, y1 = -1;
+      for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) if (d[(j * cw + i) * 4 + 3]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
+      if (x1 < 0) bb = [x, y, 0, 0];
+      else {
+        const pad = 14;
+        const bx = Math.max(x, x + x0 / k - pad), by = Math.max(y, y + y0 / k - pad);
+        bb = [bx, by, Math.min(x + w, x + (x1 + 1) / k + pad) - bx, Math.min(y + h, y + (y1 + 1) / k + pad) - by];
+      }
+    } catch (_) { /* can't read it: cache the whole rect */ }
+    item._bbox = bb;
+    return bb;
+  }
+  function dropSvgCache(e) {
+    if (!svgCache.delete(e)) return;
+    svgCachePx -= e.px;
+    if (e.item._cache === e) e.item._cache = null;
+    if (e.item._cache2 === e) e.item._cache2 = null;
+    e.canvas.width = e.canvas.height = 0; // free its memory now
+  }
+  function drawSvgCached(c, item, x, y, w, h) {
+    const img = item._img;
+    const m = c.getTransform();
+    const dev = Math.hypot(m.a, m.b) || 1;
+    const sc = Math.min(6, Math.round(dev * 1000) / 1000); // the exact device scale: no resampling, so it looks identical
+    // a picture that keeps being drawn (e.g. a slide's background) is prepared right away on its 4th draw;
+    // short-lived ones (animation frames) are prepared in idle time and drawn directly meanwhile
+    // Only heavy pictures (big, or with shadow/blur effects) are worth caching; simple ones are cheaper to
+    // draw directly. Frames of a frame-by-frame animation (shown for under half a second) aren't either.
+    if (item._heavy === undefined) item._heavy = item.svg.length > 15000 || /<filter/.test(item.svg);
+    if (!item._heavy || (item.until !== undefined && item.until < 0.5)) { c.drawImage(img, x, y, w, h); return; }
+    if (!item._bbox && (item._draws = (item._draws || 0) + 1) > 3) svgBounds(item, img, x, y, w, h);
+    if (!item._bbox) { queueSvgPrep([item]); c.drawImage(img, x, y, w, h); return; }
+    const [bx0, by0, bw0, bh0] = item._bbox;
+    if (bw0 <= 0 || bh0 <= 0) return;
+    // line the copy up with the device pixel grid (so it is drawn 1:1, not blurred by sub-pixel filtering)
+    const bx = Math.floor(bx0 * sc) / sc, by = Math.floor(by0 * sc) / sc;
+    const cw = Math.ceil((bx0 + bw0 - bx) * sc), ch = Math.ceil((by0 + bh0 - by) * sc);
+    const bw = cw / sc, bh = ch / sc;
+    if (cw * ch > 12e6) { c.drawImage(img, x, y, w, h); return; } // hugely zoomed in: draw it directly
+    let entry = item._cache && item._cache.sc === sc ? item._cache : item._cache2 && item._cache2.sc === sc ? item._cache2 : null;
+    if (!entry) {
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      canvas.getContext('2d').drawImage(img, (x - bx) * sc, (y - by) * sc, w * sc, h * sc);
+      entry = { canvas, sc, px: cw * ch, used: 0, item };
+      // keep up to two sizes per picture (screen + recording); drop this picture's oldest size
+      if (item._cache2) dropSvgCache(item._cache2);
+      item._cache2 = item._cache;
+      item._cache = entry;
+      svgCache.set(entry, true);
+      svgCachePx += entry.px;
+      if (svgCachePx > SVG_CACHE_MAX_PX) {
+        for (const e of [...svgCache.keys()].sort((p, q) => p.used - q.used)) {
+          if (svgCachePx <= SVG_CACHE_MAX_PX * 0.8) break;
+          if (e !== entry) dropSvgCache(e);
+        }
+      }
+    } else if (entry === item._cache2) { item._cache2 = item._cache; item._cache = entry; } // most recent first
+    entry.used = ++svgCacheTick;
+    c.drawImage(entry.canvas, bx, by, bw, bh);
+  }
+
   function pointAt(pts, cum, f) {
     const total = cum[cum.length - 1];
     const target = total * f;
@@ -437,12 +543,12 @@
         // (see updateInsets). Its svg's viewBox is the rect x, y, w, h.
         frameInsets.push(item);
         const img = item._img;
-        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, item.x, item.y, item.w, item.h);
+        if (img && img.complete && img.naturalWidth) drawSvgCached(ctx, item, item.x, item.y, item.w, item.h);
         break;
       }
       case 'svg': {
         const img = item._img;
-        if (img && img.complete && img.naturalWidth) ctx.drawImage(img, item.x || 0, item.y || 0, item.w || W, item.h || H);
+        if (img && img.complete && img.naturalWidth) drawSvgCached(ctx, item, item.x || 0, item.y || 0, item.w || W, item.h || H);
         break;
       }
       case 'highlight': {
@@ -1257,6 +1363,16 @@
     return null;
   }
   function renderActionButtons() {
+    // get this slide's pictures (incl. every animation frame) ready in idle time
+    {
+      const steps = player.scene.steps;
+      let first = Math.max(0, player.step);
+      while (first > 0 && !steps[first].clear) first--;
+      const its = [];
+      for (let i = first; i <= player.step && i < steps.length; i++) its.push(...(steps[i].items || []));
+      for (const a of slideActions()) its.push(...a.items);
+      queueSvgPrep(its);
+    }
     if (!actionsBox) return;
     const list = slideActions().filter((a) => !a.hidden);
     actionsBox.innerHTML = '';
