@@ -576,9 +576,13 @@
     const c = trim.clip;
     if (c && c.keep && !vid.paused) {
       const t = vid.currentTime;
-      if (!c.keep.some(([a, b]) => t >= a - 0.01 && t < b)) {
+      const cur = c.keep.find(([a, b]) => t >= a - 0.01 && t < b);
+      if (cur && !vid._fadingOut && t >= cur[1] - 0.05) { vid._fadingOut = true; fadeTo(vid, 0); }
+      if (!cur) {
         const next = c.keep.find(([a]) => a > t);
-        if (next) vid.currentTime = next[0]; else vid.pause();
+        vid._fadingOut = false;
+        silence(vid);
+        if (next) { vid.currentTime = next[0]; vid.addEventListener('seeked', () => fadeTo(vid, 1), { once: true }); } else vid.pause();
       }
     }
     requestAnimationFrame(skipCuts);
@@ -618,9 +622,11 @@
   });
   $('dlgPlay').addEventListener('click', () => {
     stopAt = null;
+    if (vid.paused) { vid._fadingOut = false; fadeTo(vid, 1, 0.005); }
     vid.paused ? vid.play() : vid.pause();
   });
   $('dlgPlayTrim').addEventListener('click', () => {
+    vid._fadingOut = false; fadeTo(vid, 1, 0.005);
     vid.currentTime = trim.in;
     stopAt = trim.out;
     vid.play();
@@ -670,8 +676,33 @@
     lim.ratio.value = 20;
     lim.attack.value = 0.002;
     lim.release.value = 0.2;
-    gain.connect(lim).connect(out);
+    const trim = ac.createGain();
+    trim.gain.value = 0.8; // about -2 dB of headroom: peaks stay below full scale, so the MP4/WebM audio never clips
+    gain.connect(lim).connect(trim).connect(out);
     return gain;
+  }
+  // Short fades on each video's own sound, so a join between clips (or around a cut part) is smooth
+  // instead of a click. `fadeNode(ac, v, out)` routes v through its own gain; fadeTo(v, 0 or 1) ramps it.
+  const FADE = 0.012;
+  function fadeNode(ac, v, out) {
+    const g = ac.createGain();
+    ac.createMediaElementSource(v).connect(g).connect(out);
+    v._fade = g;
+    v._fadeAc = ac;
+  }
+  function fadeTo(v, level, sec = FADE) {
+    const g = v && v._fade;
+    if (!g) return;
+    const t = v._fadeAc.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(level, t + sec);
+  }
+  function silence(v) {
+    const g = v && v._fade;
+    if (!g) return;
+    g.gain.cancelScheduledValues(v._fadeAc.currentTime);
+    g.gain.setValueAtTime(0, v._fadeAc.currentTime);
   }
   // Previews play through the same boost.
   let monAc = null, monGain = null;
@@ -680,7 +711,7 @@
       if (!monAc) {
         monAc = new AudioContext();
         monGain = loudChain(monAc, monAc.destination);
-        [vid, ...pv.vids].forEach((v) => monAc.createMediaElementSource(v).connect(monGain));
+        [vid, ...pv.vids].forEach((v) => fadeNode(monAc, v, monGain));
       }
       monAc.resume();
       monGain.gain.value = loudness;
@@ -765,13 +796,13 @@
     if (token !== pv.token) return;
     pv.idx = i;
     pvPreloadNext();
-    if (pv.playing && !pv.dragging) pvVid().play().catch(() => {});
+    if (pv.playing && !pv.dragging) { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, 1)).catch(() => {}); }
   }
   function pvSetPlaying(on) {
     pv.playing = on;
     if (on) {
       if (pvGlobal() >= pv.total - 0.1) pvSeek(0);
-      else pvVid().play().catch(() => {});
+      else { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, 1)).catch(() => {}); }
     } else pvVid().pause();
     pvDraw();
   }
@@ -779,14 +810,18 @@
     if (!pv.active) return;
     const v = pvVid(), c = pv.list[pv.idx];
     if (c && v._clip === c && v.readyState >= 2) pvCtx.drawImage(v, 0, 0, pvCanvas.width, pvCanvas.height);
+    if (c && pv.playing && !pv.dragging && !v._fadingOut && v.currentTime >= c.out - 0.06) { v._fadingOut = true; fadeTo(v, 0); }
     if (c && pv.playing && !pv.dragging && (v.ended || v.currentTime >= c.out - 0.03)) {
+      v._fadingOut = false;
       if (pv.idx < pv.list.length - 1) {
         if (pv.nextReady === pv.idx + 1) {
           // instant cut to the parked next clip
+          silence(v);
           v.pause();
           pv.cur = 1 - pv.cur;
           pv.idx++;
-          pvVid().play().catch(() => {});
+          silence(pvVid());
+          pvVid().play().then(() => fadeTo(pvVid(), 1)).catch(() => {});
           pvCtx.drawImage(pvVid(), 0, 0, pvCanvas.width, pvCanvas.height);
           pvPreloadNext();
         } else {
@@ -903,7 +938,28 @@
     await ac.resume();
     const dest = ac.createMediaStreamDestination();
     const boost = loudChain(ac, dest); // loudness boost + limiter
-    vids.forEach((v) => ac.createMediaElementSource(v).connect(boost)); // to the file only, not the speakers
+    vids.forEach((v) => fadeNode(ac, v, boost)); // fallback sound path (only used if a clip's audio can't be decoded)
+    // Each clip's sound is decoded once and every piece is scheduled on the audio clock with exact
+    // fades in and out, so joins (between clips, and around cut parts) never click and never let
+    // trimmed audio slip through. Video elements only provide the picture then.
+    const decoded = new Map(); // root clip -> Promise<AudioBuffer | null>
+    const decode = (c) => {
+      const root = c._root || c;
+      if (!decoded.has(root)) decoded.set(root, root.blob.arrayBuffer().then((ab) => ac.decodeAudioData(ab)).catch(() => null));
+      return decoded.get(root);
+    };
+    const playPiece = (buf, offset, dur) => {
+      const t = ac.currentTime + 0.005, F = Math.min(FADE, dur / 4);
+      const src = ac.createBufferSource(), g = ac.createGain();
+      src.buffer = buf;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(1, t + F);
+      g.gain.setValueAtTime(1, t + dur - F);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      src.connect(g).connect(boost);
+      src.start(t, Math.max(0, offset), dur);
+      return src;
+    };
 
     // The recorder is created once the first clip's first frame is on the canvas,
     // so the file doesn't start with a black frame.
@@ -928,12 +984,14 @@
       if (document.hidden) {
         held = true;
         if (active) active.pause();
+        ac.suspend();
         if (mr && mr.state === 'recording') mr.pause();
         btn.textContent = '⏸ Come back to this tab';
       } else if (held) {
         held = false;
+        ac.resume();
         if (mr && mr.state === 'paused') mr.resume();
-        if (active && playingNow) active.play().catch(() => {});
+        if (active && playingNow) { if (!active.muted) silence(active); active.play().then(() => { if (!active.muted) fadeTo(active, 1); }).catch(() => {}); }
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -956,11 +1014,20 @@
       for (let i = 0; i < list.length && !signal.aborted; i++) {
         const v = vids[i % 2], c = list[i];
         if (i > 0) await nextPrep;
+        const buf = await decode(c);
+        if (i + 1 < list.length) decode(list[i + 1]); // get the next one ready
+        // drop decoded sound that is no longer needed (keeps memory low on long videos)
+        for (const k of [...decoded.keys()]) if (!list.slice(i).some((x) => (x._root || x) === k)) decoded.delete(k);
+        v.muted = !!buf;
         await whenVisible();
         active = v;
         octx.drawImage(v, 0, 0, RW, RH);
-        if (i === 0) startRecorder();
+        if (i === 0) { startRecorder(); await sleep(150); } // let the recorder get going so the first sound isn't clipped
+        silence(v);
         await v.play();
+        // (the decoded sound can be a little shorter than the clip's length: fade out where it really ends)
+        if (buf) playPiece(buf, v.currentTime, Math.max(0.05, Math.min(c.out, buf.duration - 0.005) - v.currentTime));
+        else fadeTo(v, 1);
         playingNow = true;
         if (i > 0) {
           const spare = vids[(i + 1) % 2];
@@ -970,6 +1037,7 @@
         await new Promise((resolve) => {
           const check = () => {
             if (held) { requestAnimationFrame(check); return; }
+            if (!v._fadingOut && v.currentTime >= c.out - 0.05) { v._fadingOut = true; fadeTo(v, 0); }
             if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02) return resolve();
             btn.textContent = `⏳ ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% · Cancel`;
             requestAnimationFrame(check);
@@ -977,8 +1045,13 @@
           check();
         });
         playingNow = false;
-        if (i + 1 < list.length && nextPrep) await nextPrep; // hold this frame until the next is parked
+        // Stop (silently) right at the end point, THEN wait for the next clip: otherwise the old one would
+        // keep playing past its end, letting trimmed or cut audio slip into the file. The canvas keeps
+        // showing this last frame meanwhile.
+        silence(v);
         v.pause();
+        v._fadingOut = false;
+        if (i + 1 < list.length && nextPrep) await nextPrep;
         done += clipLen(c);
       }
       ok = !signal.aborted;

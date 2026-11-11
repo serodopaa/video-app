@@ -22,7 +22,10 @@ dependencies. Open `index.html` in a browser.
   ▶ Last 10 s (while recording) pauses and plays the end of the kept recording so far in a small
   on-screen window (`.replay-pop`, never recorded); it closes on Resume / Stop / a cut.
   🔊 Volume (`wb-loudness` in localStorage, 100–400%) boosts the audio in export and previews,
-  with a limiter so it never distorts. Never change how existing clips are stored.
+  with a limiter (+ ~2 dB headroom trim) so it never distorts. Export decodes each clip's audio
+  (`decodeAudioData`) and schedules every kept piece on the AudioContext clock with 12 ms fades, so
+  joins and cut parts never click; video elements are muted then and only give the picture.
+  Never change how existing clips are stored.
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as
   `window.WB_BRAIN_MID`; `brain-art.js` uses it for the medial view and the midsagittal cut face. Load it first.
