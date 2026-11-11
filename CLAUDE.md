@@ -16,6 +16,10 @@ dependencies. Open `index.html` in a browser.
   (`drawSvgCached`: cropped to their content, pixel-aligned, LRU-bounded ~48 M px); short-lived animation
   frames (`until` < 0.5 s) and small SVGs are drawn directly. Chrome's own SVG cache thrashes when the
   screen and the 1920×1080 recording draw at different sizes, which caused stutter.
+  SVG images are built lazily: only for the slide being shown, and the next slide's in idle chunks
+  (`ensureSlideImages` / `prefetchSlideImages`); building every topic's images at start-up took ~35 s.
+  An `svg` item can have `move: [[t, dx, dy], …]` (eased offsets over its duration) so ONE picture
+  travels, instead of a new picture per animation frame. Prefer it for anything that moves.
 - `recorder.js` – recording studio: records the board at 1920×1080 + mic into
   clips (MediaRecorder), timeline (reorder/trim/re-record/delete, stored in
   IndexedDB), preview, and export (plays trimmed clips in order and re-records
@@ -36,6 +40,9 @@ dependencies. Open `index.html` in a browser.
 - `scenes/brain-art.js` – stylised brain illustrations (lateral, medial, superior, inferior, anterior,
   posterior views, coronal/axial sections) as SVG markup, shared via `window.WB_BRAIN_ART`; used by
   `brain-views.js` (must be loaded before it).
+- `scenes/affinity-specificity.js` – also shares its receptor / ligand artwork and animation helpers as
+  `window.WB_LIGAND_ART` (`track` = a moving picture via `move`; `frameTrack` = per-frame pictures for
+  things that change shape, e.g. gauges); `agonist-antagonist.js` uses them (load it after).
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**

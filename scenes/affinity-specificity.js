@@ -85,20 +85,37 @@
   const contacts = (x, top, pocket, n, s = 1) => CONTACTS[pocket].slice(0, n).map(([dx, dy]) =>
     `<g transform="translate(${f1(x + dx * s)} ${f1(top + dy * s)})"><circle r="${f1(9 * s)}" fill="#ffd34d" opacity="0.55"/><circle r="${f1(4.5 * s)}" fill="#f2b300" stroke="#a87900" stroke-width="1.5"/></g>`).join('');
 
-  // ---------- frame animation helper ----------
-  // keys: [[t, ...state]] ; draw(state) -> svg. Holds when nothing moves, otherwise frames at fps.
+  // ---------- animation helpers ----------
+  // track: one picture that travels through keys [[t, x, y, bound?], …] (the engine moves it; no per-frame
+  // pictures). draw([x, y]) draws it at its first position; whenBound() is drawn while bound > 0.5.
+  const track = (keys, draw, whenBound = null, t0 = 0) => {
+    const [ta, x0, y0] = keys[0], tz = keys[keys.length - 1][0];
+    const out = [{ ...svgItem(draw([x0, y0])), at: t0 + ta, duration: Math.max(0.01, tz - ta), solid: true,
+      move: keys.map(([t, x, y]) => [t - ta, x - x0, y - y0]) }];
+    if (whenBound) {
+      for (let k = 0; k < keys.length; k++) {
+        if (!(keys[k][3] > 0.5) || (k > 0 && keys[k - 1][3] > 0.5)) continue;
+        let e = k + 1;
+        while (e < keys.length && keys[e][3] > 0.5) e++;
+        const at = t0 + keys[k][0];
+        out.push({ ...svgItem(whenBound()), at, duration: 0.001, solid: true, ...(e < keys.length ? { until: keys[e][0] - keys[k][0] } : {}) });
+      }
+    }
+    return out;
+  };
+  // frameTrack: for things that change shape rather than position (e.g. a filling gauge): one picture per
+  // frame while it changes, one held picture while it doesn't.
   const OVL = 0.005;
-  const track = (keys, draw, fps = 15, t0 = 0, last = true) => {
+  const frameTrack = (keys, draw, fps = 12, t0 = 0) => {
     const out = [];
     for (let k = 0; k < keys.length; k++) {
       const [ta, ...a] = keys[k];
-      if (k === keys.length - 1) { out.push({ ...svgItem(draw(a)), at: t0 + ta, duration: 0.001, solid: true, ...(last ? {} : { until: 0.05 }) }); break; }
+      if (k === keys.length - 1) { out.push({ ...svgItem(draw(a)), at: t0 + ta, duration: 0.001, solid: true }); break; }
       const [tb, ...b] = keys[k + 1];
-      const moving = a.some((v, i) => typeof v === 'number' && v !== b[i]);
-      if (!moving) { out.push({ ...svgItem(draw(a)), at: t0 + ta, duration: 0.001, solid: true, until: tb - ta + OVL }); continue; }
+      if (!a.some((v, i) => v !== b[i])) { out.push({ ...svgItem(draw(a)), at: t0 + ta, duration: 0.001, solid: true, until: tb - ta + OVL }); continue; }
       const n = Math.max(1, Math.round((tb - ta) * fps));
       for (let i = 0; i < n; i++) {
-        const u = ease(i / n), st = a.map((v, j) => (typeof v === 'number' ? lerp(v, b[j], u) : v));
+        const u = ease(i / n), st = a.map((v, j) => lerp(v, b[j], u));
         out.push({ ...svgItem(draw(st)), at: t0 + ta + ((tb - ta) * i) / n, duration: 0.001, solid: true, until: (tb - ta) / n + OVL });
       }
     }
@@ -167,7 +184,8 @@
   const affActions = [{
     id: 'bind2', label: 'Watch them bind', stay: true, drawn: false,
     items: [
-      ...track(hiKeys, hiDraw), ...track(loKeys, loDraw),
+      ...track(hiKeys, ([x, y]) => hiDraw([x, y, 0]), () => contacts(A2.L.rx, A2.top, 'tri', 4)),
+      ...track(loKeys, ([x, y]) => loDraw([x, y, 0]), () => contacts(A2.R.rx, A2.top, 'tri', 1)),
       { type: 'flash', x: A2.L.rx, y: dockL, r: 60, color: '#ffd34d', duration: 0.6, at: 1.25 },
       txt('Stays bound', 420, 760, 26, AFF, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.4 }),
       txt('Keeps falling off', 1180, 760, 26, BAD, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.4 }),
@@ -211,8 +229,8 @@
   const specActions = [{
     id: 'bind4', label: 'Watch them bind', stay: true, drawn: false,
     items: [
-      ...[0, 1, 2].flatMap((i) => track(specL(i), drawSpecL(i))),
-      ...[0, 1, 2].flatMap((i) => track(specR(i), drawSpecR(i))),
+      ...[0, 1, 2].flatMap((i) => track(specL(i), ([x, y]) => drawSpecL(i)([x, y, 0]), () => contacts(RX.L[i], S4.top, 'tri', 4, 0.8))),
+      ...[0, 1, 2].flatMap((i) => track(specR(i), ([x, y]) => drawSpecR(i)([x, y, 0]), () => contacts(RX.R[i], S4.top, RECS[i][0], 2, 0.8))),
       ...[1, 2].map((i) => txt('✕', RX.L[i], S4.top - 190, 40, BAD, { align: 'center', bold: true, at: 1.4 + i * 1.6, until: 1.6, anim: 'pop', duration: 0.3 })),
       txt('Only its target: fewer side effects', 420, 830, 22, GOOD, { align: 'center', bold: true, at: 5.5, anim: 'fade', duration: 0.4 }),
       txt('Binds other receptors too: side effects', 1180, 830, 22, BAD, { align: 'center', bold: true, at: 3.0, anim: 'fade', duration: 0.4 }),
@@ -289,7 +307,7 @@
   ];
   const comboView = (q) => [
     ...tabBar(q.id),
-    ...[0, 1, 2].flatMap((i) => track(comboKeys(q, i), comboDraw(q, i))),
+    ...[0, 1, 2].flatMap((i) => track(comboKeys(q, i), ([x, y]) => comboDraw(q, i)([x, y, 0]), () => contacts(C5.xs[i], C5.top, RECS[i][0], q.aff === 'high' ? 4 : 1))),
     ...(q.spec === 'high' ? [1, 2].map((i) => txt('✕', C5.xs[i], C5.top - 225, 44, BAD, { align: 'center', bold: true, at: 0.6 + i * 0.5 + 1.0, until: 1.0, anim: 'pop', duration: 0.3 })) : []),
     ...sidePanel(q),
   ];
@@ -332,6 +350,9 @@
     { type: 'rect', x: 60, y: 790, w: 1480, h: 70, color: '#1f2430', fill: '#f4f5f8', fillOpacity: 1, width: 2, rough: false },
     txt('They are independent: a ligand can bind tightly but to many receptors, or loosely but only to one.', 800, 825, 24, '#1f2430', { align: 'center', bold: true }),
   ];
+
+  // shared with other scene files (e.g. agonist-antagonist.js), which must be loaded after this one
+  window.WB_LIGAND_ART = { panel, bilayer, receptor, ligand, contacts, DOCK, track, frameTrack, T, LCOL, RCOL, svgItem, txt, title, label, f1, lerp, ease };
 
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
   (window.WB_SCENES = window.WB_SCENES || []).push({

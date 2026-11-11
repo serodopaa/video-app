@@ -314,10 +314,41 @@
       item._cum = measure(item._pts);
     }
     if (item.type === 'text') item._lines = String(item.text).split('\n');
+    // (svg / inset pictures get their image only when their topic is opened: see ensureImages)
+  }
+  // Building an image from SVG markup is slow, and topics have hundreds of pictures, so this is done
+  // for one topic at a time (when it's opened), not for every topic at start-up.
+  function ensureImg(item) {
     if ((item.type === 'svg' || item.type === 'inset') && !item._img) {
       item._img = new Image();
       item._img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(item.svg);
     }
+  }
+  // the steps of the slide that contains step i (a slide starts at a step with clear: true)
+  function slideSteps(scene, i) {
+    const steps = scene.steps;
+    if (i < 0 || i >= steps.length) return [];
+    let a = i, b = i;
+    while (a > 0 && !steps[a].clear) a--;
+    while (b + 1 < steps.length && !steps[b + 1].clear) b++;
+    return steps.slice(a, b + 1);
+  }
+  const slideItems = (scene, i) => slideSteps(scene, i).flatMap((st) => [...(st.items || []), ...(st.actions || []).flatMap((a) => a.items)]);
+  function ensureSlideImages(scene, i) {
+    for (const it of slideItems(scene, i)) ensureImg(it);
+  }
+  // the next slide's pictures, a few at a time in idle moments (so the current slide never stutters)
+  let prefetchToken = 0;
+  function prefetchSlideImages(scene, i) {
+    const token = ++prefetchToken;
+    const todo = slideItems(scene, i).filter((it) => (it.type === 'svg' || it.type === 'inset') && !it._img);
+    const work = (deadline) => {
+      if (token !== prefetchToken) return; // the slide changed: a new prefetch took over
+      let n = 0;
+      while (todo.length && (n++ < 2 || deadline.timeRemaining() > 3)) ensureImg(todo.shift());
+      if (todo.length) idle(work, { timeout: 1000 });
+    };
+    if (todo.length) idle(work, { timeout: 1000 });
   }
 
   // ---------- picture cache ----------
@@ -424,6 +455,19 @@
     } else if (entry === item._cache2) { item._cache2 = item._cache; item._cache = entry; } // most recent first
     entry.used = ++svgCacheTick;
     c.drawImage(entry.canvas, bx, by, bw, bh);
+  }
+
+  function moveAt(keys, t) {
+    if (t <= keys[0][0]) return [keys[0][1], keys[0][2]];
+    for (let i = 1; i < keys.length; i++) {
+      const [tb, xb, yb] = keys[i];
+      if (t <= tb) {
+        const [ta, xa, ya] = keys[i - 1], u = tb > ta ? easeInOut((t - ta) / (tb - ta)) : 1;
+        return [xa + (xb - xa) * u, ya + (yb - ya) * u];
+      }
+    }
+    const k = keys[keys.length - 1];
+    return [k[1], k[2]];
   }
 
   function pointAt(pts, cum, f) {
@@ -542,13 +586,20 @@
         // A small picture that blows up to fill the slide when hovered for 1 s
         // (see updateInsets). Its svg's viewBox is the rect x, y, w, h.
         frameInsets.push(item);
+        if (!item._img) ensureImg(item);
         const img = item._img;
         if (img && img.complete && img.naturalWidth) drawSvgCached(ctx, item, item.x, item.y, item.w, item.h);
         break;
       }
       case 'svg': {
+        if (!item._img) ensureImg(item);
         const img = item._img;
-        if (img && img.complete && img.naturalWidth) drawSvgCached(ctx, item, item.x || 0, item.y || 0, item.w || W, item.h || H);
+        if (!(img && img.complete && img.naturalWidth)) break;
+        // `move: [[t, dx, dy], …]` slides the picture along (eased between keys, t in seconds from its
+        // start), so one picture can travel instead of needing a new picture for every frame
+        const [ox, oy] = item.move ? moveAt(item.move, p * item._dur) : [0, 0];
+        if (ox || oy) { ctx.translate(ox, oy); drawSvgCached(ctx, item, item.x || 0, item.y || 0, item.w || W, item.h || H); ctx.translate(-ox, -oy); }
+        else drawSvgCached(ctx, item, item.x || 0, item.y || 0, item.w || W, item.h || H);
         break;
       }
       case 'highlight': {
@@ -1363,6 +1414,14 @@
     return null;
   }
   function renderActionButtons() {
+    // build this slide's pictures now, and the next slide's in the background
+    ensureSlideImages(player.scene, Math.max(0, player.step));
+    {
+      const sc = player.scene, steps = sc.steps;
+      let nx = Math.max(0, player.step) + 1;
+      while (nx < steps.length && !steps[nx].clear) nx++;
+      if (nx < steps.length) prefetchSlideImages(sc, nx);
+    }
     // get this slide's pictures (incl. every animation frame) ready in idle time
     {
       const steps = player.scene.steps;
