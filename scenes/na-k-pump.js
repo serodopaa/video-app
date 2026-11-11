@@ -375,37 +375,7 @@
   const pumpSmall = (px, top, bot) => `<g transform="translate(${px} ${(top + bot) / 2}) scale(0.62) translate(${-px} ${-(top + bot) / 2})">${pumpSvg(px, top, bot, 0)}</g>`;
   const EVEN = { naOut: 78, naIn: 78, kOut: 72, kIn: 72 };
 
-  // ====================================================================== slide 3: the pump's real job, building the gradients
-  const G3 = { x0: 70, x1: 900, y0: 120, y1: 860, top: 440, bot: 540, px: 485 };
-  const g3 = gradIons(G3, 31, [[90, 130, 360, 170], [90, 815, 330, 850], [G3.px - 100, 300, G3.px + 200, 640], [150, 740, 820, 820]]);
-  const B3 = { x: 930, y: 112, w: 610, h: 560 };
-  const gradNote = (x, y, w, h, on) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${on ? '#eef3ff' : '#ffffff'}" stroke="${on ? BLUE : '#d9dce3'}" stroke-width="${on ? 3 : 2}"/>`;
-  const slide3Static = [
-    svgItem(cellPanel(G3.x0, G3.x1, G3.y0, G3.top, G3.bot, G3.y1, [[G3.px - 100, G3.px + 100]]) + pumpSmall(G3.px, G3.top, G3.bot)),
-    ...label('Na⁺/K⁺ pump', G3.px, 330, [G3.px, 346], [G3.px, G3.top - 40], 'center', 22),
-    txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }), txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
-  ];
-  const slide3Items = [
-    title('Why the pump matters: it builds the gradients'),
-    ...slide3Static,
-    ...g3.before.map((it) => ({ ...it, hideDuring: 'g3' })),
-    { ...svgItem(bars(B3.x, B3.y, B3.w, B3.h, EVEN, { title: 'Concentration (mM)' })), hideDuring: 'g3' },
-    { ...svgItem(gradNote(930, 690, 610, 170, false)), hideDuring: 'g3' },
-    { ...txt('Without the pump, Na⁺ and K⁺ would\nend up evenly spread: no gradients.', 1235, 760, 23, '#5b6270', { align: 'center', bold: true }), hideDuring: 'g3' },
-  ];
-  const slide3Actions = [{
-    id: 'g3', label: 'Run the pump', stay: true, drawn: false,
-    items: [
-      ...g3.moving(0.3, 7),
-      ...pumpLoops([G3.px], G3.top, G3.bot).map((it) => ({ ...it, until: 7.6 })),
-      ...frames((t) => bars(B3.x, B3.y, B3.w, B3.h, mixV(EVEN, NORMAL, t), { title: 'Concentration (mM)' }), 0.3, 7, 14),
-      { ...svgItem(gradNote(930, 690, 610, 170, true)), at: 7.4, duration: 0.3 },
-      txt('Na⁺ gradient: ~12× more OUTSIDE\nK⁺ gradient: ~28× more INSIDE', 1235, 735, 25, BLUE, { align: 'center', bold: true, at: 7.4, anim: 'fade', duration: 0.4 }),
-      txt('This is the pump’s main job: building and\nkeeping up these gradients (stored energy).', 1235, 815, 19, '#3b4252', { align: 'center', bold: true, at: 7.8, anim: 'fade', duration: 0.4 }),
-    ],
-  }];
-
-  // ====================================================================== slide 4: from gradients to −70 mV
+  // ====================================================================== slide 3: from gradients to −70 mV
   // Stage 1: pump only -> gradients, but the membrane potential barely moves (about −5 mV, electrogenic).
   // Stage 2: + K⁺ leak channels -> K⁺ flows out, inside becomes very negative (about −85 mV, near E_K = −90).
   // Stage 3: + Na⁺ leak channels -> a little Na⁺ leaks in and pulls it up to the real resting potential, −70 mV.
@@ -470,6 +440,45 @@
       ...capBox4('Fewer Na⁺ channels, so only a little Na⁺ leaks IN:\nit settles at −70 mV, close to E K⁺. All working together.', NA_C, 0.6)] },
   ];
 
+  // ====================================================================== slide 4: review
+  const RV = { x: [60, 432, 804, 1176], y: 130, w: 352, h: 640 };
+  const miniTrace = (x) => {
+    const X = (i) => x - 120 + i * 60, Y = (v) => 210 + (-v / 90) * 140;
+    const pts = [[0, 0], [1, -5], [2.5, -85], [4, -70]];
+    return `<line x1="${x - 130}" y1="${Y(0)}" x2="${x + 130}" y2="${Y(0)}" stroke="#c9ced8" stroke-width="2" stroke-dasharray="6 5"/>
+      <line x1="${x - 130}" y1="${Y(-70)}" x2="${x + 130}" y2="${Y(-70)}" stroke="#8a8f98" stroke-width="2" stroke-dasharray="3 5"/>
+      <polyline points="${pts.map(([i, v]) => `${f1(X(i))},${f1(Y(v))}`).join(' ')}" fill="none" stroke="${BLUE}" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${[['0', 0, 0], ['−5', 1, -5], ['−85', 2.5, -85], ['−70', 4, -70]].map(([t, i, v]) => `<circle cx="${f1(X(i))}" cy="${f1(Y(v))}" r="6" fill="${BLUE}"/>
+      <text x="${f1(X(i))}" y="${f1(Y(v) + (v < -60 ? 26 : -12))}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="16" text-anchor="middle" fill="${BLUE}">${t}</text>`).join('')}`;
+  };
+  const RCARDS = [
+    { h: 'What it does', c: NA_C, b: 'Every cycle it moves\n3 Na⁺ OUT and 2 K⁺ IN,\nagainst their gradients,\nusing 1 ATP.',
+      icon: (x) => `${ionSvg('na', x - 70, 215)}${ionSvg('na', x - 30, 215)}${ionSvg('na', x + 10, 215)}<path d="M${x + 70} 270 v-80" stroke="#a8640a" stroke-width="6"/><polygon points="${x + 58},194 ${x + 82},194 ${x + 70},176" fill="#a8640a"/>
+        ${ionSvg('k', x - 50, 300)}${ionSvg('k', x - 10, 300)}<path d="M${x + 70} 270 v70" stroke="#47309a" stroke-width="6"/><polygon points="${x + 58},336 ${x + 82},336 ${x + 70},354" fill="#47309a"/>` },
+    { h: 'How it works', c: '#2c5a92', b: 'It binds 3 Na⁺ inside, ATP\nphosphorylates it, it flips\nopen to the outside, swaps\nfor 2 K⁺ and flips back.',
+      icon: (x) => `<g transform="translate(${x - 80} 255) scale(0.36) translate(-400 -445)">${pumpSvg(400, 390, 500, 0)}</g><text x="${x - 2}" y="262" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="34" text-anchor="middle" fill="#2c5a92">⇄</text><g transform="translate(${x + 62} 255) scale(0.36) translate(-400 -445)">${pumpSvg(400, 390, 500, 1)}</g>
+        <text x="${x - 80}" y="375" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="16" text-anchor="middle" fill="#5b6270">open inside</text><text x="${x + 62}" y="375" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="16" text-anchor="middle" fill="#5b6270">open outside</text>` },
+    { h: 'Its real job', c: BLUE, b: 'It builds and keeps up the\nNa⁺ and K⁺ concentration\ngradients: Na⁺ high outside,\nK⁺ high inside.',
+      icon: (x) => `<rect x="${x - 100}" y="${340 - 150}" width="38" height="150" rx="5" fill="#f0a12e"/><rect x="${x - 56}" y="${340 - 14}" width="38" height="14" rx="5" fill="#f6c47a"/><rect x="${x + 18}" y="${340 - 8}" width="38" height="8" rx="5" fill="#a995e6"/><rect x="${x + 62}" y="${340 - 144}" width="38" height="144" rx="5" fill="#7b5cd6"/><line x1="${x - 120}" y1="340" x2="${x + 120}" y2="340" stroke="#8a8f98" stroke-width="2"/>
+        <text x="${x - 59}" y="362" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="16" text-anchor="middle" fill="#a8640a">Na⁺</text><text x="${x + 59}" y="362" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="16" text-anchor="middle" fill="#47309a">K⁺</text>` },
+    { h: '−70 mV, indirectly', c: '#7b3fd0', b: 'On its own it only gives\nabout −5 mV. The gradients\nlet K⁺ leak out (−85), and a\nlittle Na⁺ leak in sets −70.',
+      icon: (x) => miniTrace(x) },
+  ];
+  const reviewItems = [
+    title('Review: the Na⁺/K⁺ pump'),
+    ...RCARDS.flatMap((cd, i) => {
+      const x = RV.x[i], cx = x + RV.w / 2;
+      return [
+        { type: 'rect', x, y: RV.y, w: RV.w, h: RV.h, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+        svgItem(`<circle cx="${x + 36}" cy="${RV.y + 36}" r="19" fill="${cd.c}"/><text x="${x + 36}" y="${RV.y + 44}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="21" text-anchor="middle" fill="#ffffff">${i + 1}</text><g transform="translate(0 80)">${cd.icon(cx)}</g>`),
+        txt(cd.h, x + 66, RV.y + 36, 25, cd.c, { bold: true }),
+        txt(cd.b, cx, 600, 21, 'ink', { align: 'center', bold: true }),
+      ];
+    }),
+    { type: 'rect', x: 60, y: 790, w: 1468, h: 70, color: BLUE, fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('The pump doesn’t set −70 mV directly: it keeps the gradients that let leak channels do it.', 794, 825, 25, BLUE, { align: 'center', bold: true }),
+  ];
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'na-k-pump',
     title: '🔋 Sodium–potassium pump (neurons)',
@@ -495,10 +504,10 @@ Without it, your neurons couldn't fire. So how does it work, and why do neurons 
       },
       // Slide 2: how the pump works. Two views: Overview (high level) and Step by step (the 6-step cycle).
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump look like, and what are its parts?]\n[• Which way does it move each ion, and how many?]\n[• Why does it need ATP (what is active transport)?]\n[• How does it actually move the ions, step by step?]\n[• Where does ATP come in, and what does the phosphate do?]\n[• How does it switch between facing inside and outside?]\n\n[Start with ▶ Overview, then switch to ▶ Step by step and ▶ Full cycle (or Step 1–6).]', say: 'The Na⁺/K⁺ pump uses ATP to carry 3 Na⁺ out and 2 K⁺ in, flipping its shape each cycle.', clear: true, actions: pumpActions, items: pumpItems },
-      // Slide 3: the pump's real job: building the Na⁺ and K⁺ gradients.
-      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What is the pump actually for?]\n[• What would happen to Na⁺ and K⁺ without it?]\n[• What are the Na⁺ and K⁺ concentration gradients, and which way do they point?]', say: 'The pump’s main job is to build and maintain the Na⁺ and K⁺ concentration gradients.', clear: true, actions: slide3Actions, items: slide3Items },
-      // Slide 4: the gradients set −70 mV indirectly, through leak channels.
+      // Slide 3: the gradients set −70 mV indirectly, through leak channels.
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Does the pump itself make the membrane potential −70 mV? (No: only about −5 mV.)]\n[• How do K⁺ leak channels use the K⁺ gradient to make the inside negative?]\n[• Why does adding Na⁺ leak channels bring it to −70 mV?]\n[• So how does the pump set the resting potential? (Indirectly, by keeping the gradients.)]', say: 'On its own the pump barely changes the membrane potential; the gradients it keeps let K⁺ and Na⁺ leak channels set −70 mV.', clear: true, actions: slide4Actions, items: slide4Items },
+      // Slide 4: review.
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump do, and what powers it?]\n[• How does one cycle work?]\n[• What is its real job?]\n[• How does it lead to the −70 mV resting potential?]', say: 'Review: the pump uses ATP to move 3 Na⁺ out and 2 K⁺ in, keeping the gradients that leak channels use to set −70 mV.', clear: true, items: reviewItems },
     ],
   });
 })();
