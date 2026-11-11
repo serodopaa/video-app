@@ -458,7 +458,97 @@
       ...capBox4('Fewer Na⁺ channels, so only a little Na⁺ leaks IN:\nit settles at −70 mV, close to E K⁺. All working together.', NA_C, 0.6)] },
   ];
 
-  // ====================================================================== slide 4: review
+  // ====================================================================== slide 4: what if the pump stops?
+  // Same membrane as slide 3. Healthy: an action potential fires. Stop the pump: the leaks keep going, so the
+  // gradients run down, the potential drifts toward 0, water follows Na⁺ in and the neuron swells.
+  // Then a stimulus can no longer make an action potential.
+  const SB5 = { x: 790, y: 112, w: 380, h: 360 };
+  const DOWN = { naOut: 82, naIn: 76, kOut: 70, kIn: 76 };
+  const bars5 = (v) => bars(SB5.x, SB5.y, SB5.w, SB5.h, v, { title: 'Concentration (mM)', compact: true });
+  const sizeBox = (r) => `<rect x="790" y="490" width="380" height="370" rx="18" fill="#ffffff" stroke="#d9dce3" stroke-width="2"/>
+    <text x="980" y="530" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="22" text-anchor="middle" fill="#1f2430">Neuron size</text>
+    <circle cx="980" cy="700" r="${f1(r)}" fill="#efe6f8" stroke="#6b3c87" stroke-width="4"/>
+    <circle cx="980" cy="700" r="70" fill="none" stroke="#8a8f98" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="980" y="840" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="16" text-anchor="middle" fill="#8a8f98">dashed = normal size</text>`;
+  const STOP_T = 9;
+  const vm5 = (from, to, at, duration) => ({ type: 'value', id: 'vm5', from, to, at, duration });
+  const cross = txt('✕', G4.px, (G4.top + G4.bot) / 2 + 4, 120, RED, { align: 'center', bold: true });
+  // leaking ions: Na⁺ from outside to inside through the Na⁺ channel, K⁺ from inside to outside through the K⁺ channels
+  const KEEP = 18, mid4 = (G4.top + G4.bot) / 2;
+  const leakMoves = (t0, span) => {
+    const out = [...g4.after.slice(0, KEEP).map((it) => ({ ...it, solid: true, duration: 0.01 }))];
+    g4.after.slice(KEEP).forEach((it, i) => {
+      const to = g4.before[KEEP + i], cx = it.ion === 'na' ? G4.nax : G4.kxs[i % 2];
+      const s0 = t0 + (i % 6) * (span / 6) + (it.ion === 'k' ? 0.4 : 0);
+      out.push({ ...it, solid: true, duration: 0.01, until: s0 + 0.02 });
+      out.push({ type: 'ion', ion: it.ion, solid: true, smooth: true, path: [[it.x, it.y], [cx, it.ion === 'na' ? G4.top - 40 : G4.bot + 40], [cx, mid4], [cx, it.ion === 'na' ? G4.bot + 40 : G4.top - 40], [to.x, to.y]], at: s0, duration: 1.6 });
+    });
+    return out;
+  };
+  const channels4 = [...kLeaks, ...kLabel, naLeak, ...naLabel];
+  const capBox5 = (text, color, at = 0.4, until) => [
+    { type: 'rect', x: 90, y: 712, w: 650, h: 86, color, fill: '#ffffff', fillOpacity: 0.95, width: 2.5, rough: false, at, ...(until ? { until } : {}) },
+    txt(text, 415, 737, 20, color, { align: 'center', bold: true, at, anim: 'fade', duration: 0.4, ...(until ? { until } : {}) }),
+  ];
+  const STOP_IDS = ['f5', 'stop5', 'try5'];
+  const stopItems = [
+    title('What if the pump stops?'),
+    svgItem(cellPanel(G4.x0, G4.x1, G4.y0, G4.top, G4.bot, G4.y1, [[G4.px - 100, G4.px + 100], ...G4.kxs.map((x) => [x - 46, x + 46]), [G4.nax - 46, G4.nax + 46]]) + pumpSmall(G4.px, G4.top, G4.bot)),
+    ...label('Na⁺/K⁺ pump', G4.px, 330, [G4.px, 346], [G4.px, G4.top - 40], 'center', 22),
+    txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }), txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
+    ...channels4,
+    ...g4.after.map((it) => ({ ...it, hideDuring: STOP_IDS })),
+    ...pumpLoops([G4.px], G4.top, G4.bot).map((it) => ({ ...it, hideDuring: ['stop5', 'try5'] })),
+    { ...svgItem(bars5(NORMAL)), hideDuring: ['stop5', 'try5'] },
+    { ...svgItem(sizeBox(70)), hideDuring: ['stop5', 'try5'] },
+    { type: 'meter', id: 'vm5', value: -70, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 40, title: 'Membrane potential',
+      fireText: 'Action potential!', threshold: 10, downText: 'Inside is negative', upText: 'Less negative than normal', marks: [{ v: -90, label: 'E K⁺ (−90)', color: K_C, dy: 16 }] },
+  ];
+  const stimulus = (at) => [
+    { type: 'flash', x: 465, y: 490, r: 80, color: '#ffd34d', duration: 0.6, at },
+    txt('⚡ stimulus', 465, 400, 24, '#b38600', { align: 'center', bold: true, at, until: 1.4, anim: 'pop', duration: 0.3 }),
+  ];
+  const stoppedState = [
+    cross, ...g4.before.map((it) => ({ ...it, solid: true, duration: 0.01 })), ...kLeakLoops, ...naLeakLoops,
+    svgItem(bars5(DOWN)), svgItem(sizeBox(92)),
+  ];
+  const stopActions = [
+    {
+      id: 'f5', label: 'Healthy: fire an action potential', group: 'p5', stay: true, drawn: false,
+      items: [
+        ...g4.after.map((it) => ({ ...it, solid: true, duration: 0.01 })),
+        ...stimulus(0.4),
+        ...[0, 1, 2].map((i) => ({ type: 'ion', ion: 'na', solid: true, smooth: true, path: [[G4.nax - 40 + i * 40, G4.top - 120], [G4.nax, mid4], [G4.nax - 50 + i * 50, G4.bot + 60]], at: 0.6 + i * 0.08, duration: 0.6, until: 1.4 })),
+        vm5(-70, -55, 0.4, 0.3), vm5(-55, 30, 0.7, 0.25), vm5(30, -80, 0.95, 0.6), vm5(-80, -70, 1.55, 1.2),
+        ...capBox5('With the gradients in place, Na⁺ rushes in when\nthe neuron is stimulated: an action potential fires.', BLUE, 0.9),
+      ],
+    },
+    {
+      id: 'stop5', label: 'Stop the pump (no ATP)', group: 'p5', stay: true, drawn: false,
+      items: [
+        cross, txt('No ATP: pump stopped', G4.px, 290, 22, RED, { align: 'center', bold: true, at: 0.2, anim: 'fade', duration: 0.3 }),
+        ...leakMoves(0.6, STOP_T - 2), ...kLeakLoops, ...naLeakLoops,
+        ...frames((t) => bars5(mixV(NORMAL, DOWN, t)), 0.5, STOP_T, 18, true, true),
+        ...frames((t) => sizeBox(70 + 22 * t), 0.5, STOP_T, 18, true, true),
+        { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[860, 600], [930, 660]], duration: 1.4, at: 3 },
+        { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[1100, 600], [1030, 660]], duration: 1.4, at: 5.5 },
+        { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[980, 840], [980, 790]], duration: 1.4, at: 7.5 },
+        vm5(-70, -20, 0.5, STOP_T),
+        ...capBox5('The leaks keep going but nothing pumps the ions back,\nso the gradients run down and the potential drifts up.', RED, 0.6, STOP_T - 0.3),
+        ...capBox5('Water follows Na⁺ in and the neuron swells. This is what\nhappens in a stroke: no blood flow → no ATP → no pumping.', RED, STOP_T),
+      ],
+    },
+    {
+      id: 'try5', label: 'Try to fire again', group: 'p5', stay: true, drawn: false,
+      items: [
+        ...stoppedState,
+        vm5(-20, -20, -8, 8.4), ...stimulus(0.4), vm5(-20, -12, 0.45, 0.3), vm5(-12, -20, 0.75, 1.0),
+        ...capBox5('Without a Na⁺ gradient there is nothing to rush in:\nno action potential. The neuron can no longer signal.', RED, 0.9),
+      ],
+    },
+  ];
+
+  // ====================================================================== slide 5: review
   const RV = { x: [60, 432, 804, 1176], y: 130, w: 352, h: 640 };
   const miniTrace = (x) => {
     const X = (i) => x - 120 + i * 60, Y = (v) => 210 + (-v / 90) * 140;
@@ -524,7 +614,9 @@ Without it, your neurons couldn't fire. So how does it work, and why do neurons 
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump look like, and what are its parts?]\n[• Which way does it move each ion, and how many?]\n[• Why does it need ATP (what is active transport)?]\n[• How does it actually move the ions, step by step?]\n[• Where does ATP come in, and what does the phosphate do?]\n[• How does it switch between facing inside and outside?]\n\n[Start with ▶ Overview, then switch to ▶ Step by step and ▶ Full cycle (or Step 1–6).]', say: 'The Na⁺/K⁺ pump uses ATP to carry 3 Na⁺ out and 2 K⁺ in, flipping its shape each cycle.', clear: true, actions: pumpActions, items: pumpItems },
       // Slide 3: the gradients set −70 mV indirectly, through leak channels.
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Does the pump itself make the membrane potential −70 mV? (No: only about −5 mV.)]\n[• How do K⁺ leak channels use the K⁺ gradient to make the inside negative?]\n[• Why does adding Na⁺ leak channels bring it to −70 mV?]\n[• So how does the pump set the resting potential? (Indirectly, by keeping the gradients.)]', say: 'On its own the pump barely changes the membrane potential; the gradients it keeps let K⁺ and Na⁺ leak channels set −70 mV.', clear: true, actions: slide4Actions, items: slide4Items },
-      // Slide 4: review.
+      // Slide 4: what happens if the pump stops (why it matters).
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What happens to a neuron if its pumps stop (for example with no ATP)?]\n[• Why do the gradients run down, and what does that do to the membrane potential?]\n[• Why does the neuron swell?]\n[• Why can it no longer fire an action potential?]\n[• Where does this happen in real life? (stroke)]\n\n[Press ▶ Healthy first, then ▶ Stop the pump, then ▶ Try to fire again.]', say: 'Without the pump the gradients run down, the neuron swells and it can no longer fire action potentials.', clear: true, actions: stopActions, items: stopItems },
+      // Slide 5: review.
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump do, and what powers it?]\n[• How does one cycle work?]\n[• What is its real job?]\n[• How does it lead to the −70 mV resting potential?]', say: 'Review: the pump uses ATP to move 3 Na⁺ out and 2 K⁺ in, keeping the gradients that leak channels use to set −70 mV.', clear: true, items: reviewItems },
     ],
   });
