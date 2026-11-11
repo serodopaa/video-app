@@ -270,7 +270,7 @@
     txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }),
     txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
     { type: 'stepper', id: 'cyc', x: 890, y: 112, w: 650, h: 748, title: 'One turn of the pump', steps: CYCLE, rowH: 56,
-      idleText: 'Press ▶ Full cycle, or play one\nstep at a time with the buttons.' },
+      idleText: 'Click a step to play it, or\nplay the full cycle below.' },
     txt('One cycle: 3 Na⁺ out, 2 K⁺ in, 1 ATP used', 1215, 820, 22, BLUE, { align: 'center', bold: true }),
   ];
   const cycleActions = [
@@ -295,7 +295,7 @@
     const na = u < 1.8 ? mixPts(NA_WAIT, cp.sNa, ph(u, 0, 1)) : mixPts(cp.sNa, NA_OUT, ph(u, 1.8, 2.6));
     const k = u < 4.4 ? mixPts(K_WAIT, cp.sK, ph(u, 2.6, 3.6)) : mixPts(cp.sK, K_IN, ph(u, 4.4, 5.4));
     const atp = u < 1 ? pill(cp.atpSite[0], cp.atpSite[1], 'ATP', '#e0453a', '#8e1d14')
-      : u < 2.2 ? pill(lerp(cp.atpSite[0], ADP_GONE[0], ph(u, 1, 2.2)), lerp(cp.atpSite[1], ADP_GONE[1], ph(u, 1, 2.2)), 'ADP', '#8a8f98', '#545b68') : '';
+      : u < 2.2 ? pill(lerp(cp.atpSite[0], 520, ph(u, 1, 2.2)), lerp(cp.atpSite[1], 790, ph(u, 1, 2.2)), 'ADP', '#8a8f98', '#545b68') : '';
     return pumpAt(c) + atp + na.map(([x, y]) => ionSvg('na', x, y)).join('') + k.map(([x, y]) => ionSvg('k', x, y)).join('');
   };
   const OV_N = 60;
@@ -307,22 +307,37 @@
   const ovPanel = meetItems.slice(meetItems.indexOf(m3Common[m3Common.length - 1]) + 1);
   const stepPanel = [
     { type: 'stepper', id: 'cyc', x: 900, y: 112, w: 640, h: 748, title: 'One turn of the pump', steps: CYCLE, rowH: 56,
-      idleText: 'Press ▶ Full cycle, or play one\nstep at a time with the buttons.' },
+      idleText: 'Click a step to play it, or\nplay the full cycle below.' },
     txt('One cycle: 3 Na⁺ out, 2 K⁺ in, 1 ATP used', 1220, 820, 22, BLUE, { align: 'center', bold: true }),
   ];
   const stepStart = cycleStatic.map(({ hideDuring, ...it }) => it);
+  // clickable tabs on the slide: Overview / Step by step (active one filled)
+  const TABS = [['Overview', 'ov', 590], ['Step by step', 'steps', 730]];
+  const tabs = (active) => TABS.flatMap(([t, id, x]) => [
+    { type: 'rect', x, y: 132, w: 132, h: 40, color: '#2c5a92', fill: id === active ? '#2c5a92' : '#ffffff', fillOpacity: 1, width: 2.5, rough: false },
+    txt(t, x + 66, 152, 19, id === active ? '#ffffff' : '#2c5a92', { align: 'center', bold: true }),
+  ]);
+  const tabHotspots = TABS.map(([, id, x]) => ({ type: 'hotspot', x, y: 132, w: 132, h: 40, action: id }));
+  // in the step view: click a step in the list to play it, or the button for the whole cycle
+  const stepHotspots = [
+    ...CYCLE.map((_, i) => ({ type: 'hotspot', x: 914, y: 112 + 92 + i * 56 - 24, w: 612, h: 48, action: `c${i + 1}` })),
+    { type: 'rect', x: 1090, y: 708, w: 260, h: 48, color: BLUE, fill: '#eef3ff', fillOpacity: 1, width: 2.5, rough: false },
+    txt('▶ Play full cycle', 1220, 732, 22, BLUE, { align: 'center', bold: true }),
+    { type: 'hotspot', x: 1090, y: 708, w: 260, h: 48, action: 'cfull' },
+  ];
   const pumpItems = [
     title('How the pump works'),
     m3Panel,
     txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }),
     txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
-    ...[m3View(0), ...m3Labels(0), ...ovLabels, ...ovPanel].map((it) => ({ ...it, hideDuring: PUMP_IDS })),
+    ...[m3View(0), ...m3Labels(0), ...ovLabels, ...ovPanel, ...tabs('ov')].map((it) => ({ ...it, hideDuring: PUMP_IDS })),
+    ...tabHotspots,
   ];
   const pumpActions = [
-    { id: 'ov', label: 'Overview', group: 'pm', stay: true, drawn: false, items: [...ovLabels, ...ovPanel, ...ovFrames] },
-    { id: 'steps', label: 'Step by step', group: 'pm', stay: true, drawn: false, items: [...stepStart, ...stepPanel] },
-    { id: 'cfull', label: 'Full cycle', group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...[1, 2, 3, 4, 5, 6].flatMap((k) => segment(k, (k - 1) * D, k === 6))] },
-    ...[1, 2, 3, 4, 5, 6].map((k) => ({ id: `c${k}`, label: `Step ${k}`, group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...segment(k, 0, true)] })),
+    { id: 'ov', label: 'Overview', group: 'pm', stay: true, drawn: false, items: [...ovLabels, ...ovPanel, ...ovFrames, ...tabs('ov')] },
+    { id: 'steps', label: 'Step by step', group: 'pm', stay: true, drawn: false, items: [...stepStart, ...stepPanel, ...stepHotspots, ...tabs('steps')] },
+    { id: 'cfull', label: 'Full cycle', group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...stepHotspots, ...tabs('steps'), ...[1, 2, 3, 4, 5, 6].flatMap((k) => segment(k, (k - 1) * D, k === 6))] },
+    ...[1, 2, 3, 4, 5, 6].map((k) => ({ id: `c${k}`, label: `Step ${k}`, group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...stepHotspots, ...tabs('steps'), ...segment(k, 0, true)] })),
   ];
 
   // ====================================================================== slide 5: 3 out, 2 in -> electrogenic
