@@ -176,67 +176,7 @@
     ],
   }];
 
-  // ====================================================================== slide 3: Kd
-  // Binding curves: fraction bound = C / (C + Kd). x axis is log10 concentration (0.01 nM … 10 µM).
-  const G = { x: 130, y: 170, w: 620, h: 500 }, LX0 = -2, LX1 = 4;
-  const KD_HI = 1, KD_LO = 100;
-  const gx = (lc) => G.x + ((lc - LX0) / (LX1 - LX0)) * G.w, gy = (f) => G.y + G.h - f * G.h;
-  const occ = (c, kd) => c / (c + kd);
-  const curve = (kd) => { let d = ''; for (let i = 0; i <= 120; i++) { const lc = LX0 + ((LX1 - LX0) * i) / 120; d += `${i ? 'L' : 'M'}${f1(gx(lc))} ${f1(gy(occ(10 ** lc, kd)))}`; } return d; };
-  const concLabel = (c) => (c >= 1000 ? `${+(c / 1000).toPrecision(2)} µM` : c >= 1 ? `${+c.toPrecision(2)} nM` : `${+c.toPrecision(2)} nM`);
-  const graphSvg = `
-    <rect x="${G.x}" y="${G.y}" width="${G.w}" height="${G.h}" fill="#ffffff" stroke="#c9ced8" stroke-width="2"/>
-    ${[0, 0.5, 1].map((f) => `<line x1="${G.x}" y1="${gy(f)}" x2="${G.x + G.w}" y2="${gy(f)}" stroke="${f === 0.5 ? '#8a8f98' : '#e3e6ec'}" stroke-width="2" ${f === 0.5 ? 'stroke-dasharray="8 6"' : ''}/>
-      ${T(G.x - 12, gy(f) + 7, 18, '#5b6270', 600, 'end')(`${f * 100}%`)}`).join('')}
-    ${[-2, -1, 0, 1, 2, 3, 4].map((lc) => `<line x1="${gx(lc)}" y1="${G.y + G.h}" x2="${gx(lc)}" y2="${G.y + G.h + 8}" stroke="#8a8f98" stroke-width="2"/>
-      ${T(gx(lc), G.y + G.h + 30, 16, '#5b6270', 600)(concLabel(10 ** lc))}`).join('')}
-    ${T(G.x + G.w / 2, G.y + G.h + 64, 20, '#3b4252')('Ligand concentration (log scale) →')}
-    <text transform="translate(${G.x - 70} ${G.y + G.h / 2}) rotate(-90)" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="20" text-anchor="middle" fill="#3b4252">Receptors bound</text>
-    <path d="${curve(KD_HI)}" fill="none" stroke="${AFF}" stroke-width="5"/>
-    <path d="${curve(KD_LO)}" fill="none" stroke="#e8890c" stroke-width="5"/>
-    <line x1="${gx(0)}" y1="${gy(0.5)}" x2="${gx(0)}" y2="${G.y + G.h}" stroke="${AFF}" stroke-width="2.5" stroke-dasharray="4 5"/>
-    <line x1="${gx(2)}" y1="${gy(0.5)}" x2="${gx(2)}" y2="${G.y + G.h}" stroke="#e8890c" stroke-width="2.5" stroke-dasharray="4 5"/>
-    <circle cx="${gx(0)}" cy="${gy(0.5)}" r="7" fill="${AFF}"/><circle cx="${gx(2)}" cy="${gy(0.5)}" r="7" fill="#e8890c"/>
-    ${T(gx(0) - 10, gy(0.5) - 16, 19, AFF, 700, 'end')('Kd = 1 nM')}
-    ${T(gx(2) + 12, gy(0.5) + 30, 19, '#c46f00', 700, 'start')('Kd = 100 nM')}
-    ${T(gx(-1.2), gy(0.92), 19, AFF, 700, 'middle')('High affinity')}
-    ${T(gx(3.1), gy(0.22), 19, '#c46f00', 700, 'middle')('Low affinity')}`;
-  // right side: 6 receptors per ligand, filled according to the fraction bound
-  const RR = { x0: 830, gap: 110, rowTop: [400, 690], s: 0.55 };
-  const rowSvg = (row, kind, frac, color, k) => {
-    const n = Math.round(frac * 6), top = RR.rowTop[row];
-    let s = '';
-    for (let i = 0; i < 6; i++) {
-      const x = RR.x0 + 60 + i * RR.gap;
-      s += receptor(x, top, 'tri', 'blue', RR.s);
-      if (i < n) s += ligand('tri', x, top + DOCK.tri * RR.s - (k < 1 ? 2 : 0), color, k, RR.s);
-    }
-    return s;
-  };
-  const RPANEL = `${panel(800, 1540, 230, 400, 434, 470)}${panel(800, 1540, 520, 690, 724, 760)}`;
-  const kdDyn = (lc) => {
-    const c = 10 ** lc, fh = occ(c, KD_HI), fl = occ(c, KD_LO);
-    return `<line x1="${gx(lc)}" y1="${G.y}" x2="${gx(lc)}" y2="${G.y + G.h}" stroke="#1f2430" stroke-width="3"/>
-      <rect x="${gx(lc) - 52}" y="${G.y - 36}" width="104" height="30" rx="8" fill="#1f2430"/>${T(gx(lc), G.y - 15, 17, '#ffffff')(concLabel(c))}
-      <circle cx="${gx(lc)}" cy="${gy(fh)}" r="9" fill="${AFF}" stroke="#ffffff" stroke-width="3"/><circle cx="${gx(lc)}" cy="${gy(fl)}" r="9" fill="#e8890c" stroke="#ffffff" stroke-width="3"/>
-      ${rowSvg(0, 'tri', fh, 'amber', 1)}${rowSvg(1, 'tri', fl, 'pale', 0.74)}
-      ${T(1520, 268, 22, AFF, 700, 'end')(`${Math.round(fh * 100)}% bound`)}${T(1520, 558, 22, '#c46f00', 700, 'end')(`${Math.round(fl * 100)}% bound`)}`;
-  };
-  const kdItems = [
-    title('Measuring affinity: Kd'),
-    svgItem(graphSvg + RPANEL),
-    txt('High-affinity ligand', 820, 268, 22, AFF, { bold: true }),
-    txt('Low-affinity ligand', 820, 558, 22, '#c46f00', { bold: true }),
-    { ...svgItem(kdDyn(-2)), hideDuring: 'conc' },
-    { type: 'rect', x: 60, y: 790, w: 1480, h: 70, color: AFF, fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
-    txt('Kd = the concentration that fills HALF the receptors.  Lower Kd = higher affinity.', 800, 825, 26, AFF, { align: 'center', bold: true }),
-  ];
-  const kdActions = [{
-    id: 'conc', label: 'Add more and more ligand', stay: true, drawn: false,
-    items: track([[0, -2], [10, 4]], ([lc]) => kdDyn(lc), 8),
-  }];
-
-  // ====================================================================== slide 4: specificity
+  // ====================================================================== slide 3: specificity
   const S4 = { top: 650, bot: 710 };
   const RX = { L: [200, 420, 640], R: [960, 1180, 1400] };
   const RECS = [['tri', 'blue', 'Target'], ['round', 'green', 'Other\nreceptor'], ['square', 'pink', 'Other\nreceptor']];
@@ -279,7 +219,7 @@
     ],
   }];
 
-  // ====================================================================== slide 5: independent (tabs, one combination at a time)
+  // ====================================================================== slide 4: independent (tabs, one combination at a time)
   // Four tabs across the top. The chosen combination fills the slide: three big receptors (target + two
   // others) with ligands binding the way that combination does, and a panel that explains it.
   const COMBO = [
@@ -364,7 +304,7 @@
   ];
   const indActions = COMBO.map((q) => ({ id: q.id, label: q.tab.replace('\n', ' / '), group: 'combo', stay: true, drawn: false, items: comboView(q) }));
 
-  // ====================================================================== slide 6: review
+  // ====================================================================== slide 5: review
   const RV = (x, c, head, q, rows) => [
     { type: 'rect', x, y: 120, w: 700, h: 650, color: c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
     { type: 'rect', x, y: 120, w: 700, h: 76, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
@@ -379,13 +319,13 @@
     title('Review: affinity vs specificity'),
     ...RV(60, AFF, 'AFFINITY', 'How TIGHTLY does it bind?', [
       ['What it describes', 'How strongly a ligand holds on to ONE receptor'],
-      ['How it’s measured', 'Kd: the concentration that fills half the receptors\n(lower Kd = higher affinity)'],
+      ['What makes it high', 'A snug fit and many bonds, so it\nstays bound instead of falling off'],
       ['High affinity means', 'It works at low concentrations (low doses)'],
       ['Analogy', 'How firm the handshake is'],
     ]),
     ...RV(840, SPEC, 'SPECIFICITY', 'How CHOOSY is it?', [
       ['What it describes', 'How it binds its target compared with\nOTHER receptors'],
-      ['How it’s measured', 'Compare affinities: much higher for the target\nthan for anything else'],
+      ['What makes it high', 'A shape that fits only its target,\nso it can’t bind the other receptors'],
       ['High specificity means', 'Fewer side effects'],
       ['Analogy', 'Whose hand you shake'],
     ]),
@@ -417,14 +357,12 @@ The first is affinity. The second is specificity. They sound similar, but they'r
       },
       // Slide 2: affinity.
       { script: Qs('What is affinity?', 'What makes a ligand bind tightly (fit and number of bonds)?', 'What does high vs low affinity look like at the receptor?'), say: 'A high-affinity ligand fits snugly and makes many bonds, so it stays bound; a low-affinity one keeps falling off.', clear: true, actions: affActions, items: affItems },
-      // Slide 3: Kd.
-      { script: Qs('How do we measure affinity?', 'What is Kd?', 'Why does a LOWER Kd mean a HIGHER affinity?'), say: 'Kd is the concentration that fills half the receptors: the lower the Kd, the higher the affinity.', clear: true, actions: kdActions, items: kdItems },
-      // Slide 4: specificity.
+      // Slide 3: specificity.
       { script: Qs('What is specificity?', 'What does a specific vs a non-specific ligand do?', 'Why does low specificity cause side effects?'), say: 'A highly specific ligand binds only its target; a non-specific one binds other receptors too, causing side effects.', clear: true, actions: specActions, items: specItems },
-      // Slide 5: independent.
+      // Slide 4: independent.
       { script: Qs('Are affinity and specificity linked?', 'What do the four combinations look like?', 'Which combination makes the best drug, and why?'), say: 'Affinity and specificity are independent: the best drugs have both high affinity and high specificity.', clear: true, actions: indActions, items: indItems },
-      // Slide 6: review.
-      { script: Qs('What is the difference between affinity and specificity?', 'How is each one measured?', 'Why do both matter for drugs?'), say: 'Affinity: how tightly. Specificity: how choosy. They are independent, and good drugs need both.', clear: true, items: reviewItems },
+      // Slide 5: review.
+      { script: Qs('What is the difference between affinity and specificity?', 'What makes each one high?', 'Why do both matter for drugs?'), say: 'Affinity: how tightly. Specificity: how choosy. They are independent, and good drugs need both.', clear: true, items: reviewItems },
     ],
   });
 })();
