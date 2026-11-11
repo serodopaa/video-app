@@ -340,7 +340,8 @@
     if (p <= 0 && !((item.type === 'ion' || item.type === 'vesicle') && item._pts)) return null;
     // Static items (scene option drawn: false) fade in fully formed instead of
     // being drawn stroke by stroke.
-    const base = item._static ? easeInOut(p) : 1;
+    // `solid: true`: no fade-in (shown at full strength as soon as it starts), e.g. frame-by-frame animations
+    const base = item._static ? (item.solid ? (p > 0 ? 1 : 0) : easeInOut(p)) : 1;
     const e = item._static ? 1 : easeInOut(p);
     const width = item.width || 5;
     ctx.save();

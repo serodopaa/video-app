@@ -97,9 +97,13 @@
   const RUNDOWN = { naOut: 92, naIn: 66, kOut: 58, kIn: 88 };
   const mixV = (a, b, t) => Object.fromEntries(Object.keys(a).map((k) => [k, lerp(a[k], b[k], t)]));
   // frames of something that changes over time: f(t in 0..1) -> svg markup
-  const frames = (f, t0, dur, n = 12, last = true) => [...Array(n + 1)].map((_, k) => ({
-    ...svgItem(f(ease(k / n))), at: t0 + (dur * k) / n, duration: 0.01, ...(k < n || !last ? { until: dur / n + 0.004 } : {}),
-  }));
+  // Frame k shows from its time until just after the next one starts (a small overlap so there is never a
+  // blank moment). The first frame shows from 0, so nothing disappears while waiting for t0.
+  const FRAME_OVERLAP = 0.005;
+  const frames = (f, t0, dur, n = 12, last = true, early = false) => [...Array(n + 1)].map((_, k) => {
+    const at = k === 0 && early ? 0 : t0 + (dur * k) / n, end = t0 + (dur * (k + 1)) / n + FRAME_OVERLAP;
+    return { ...svgItem(f(ease(k / n))), at, duration: 0.001, solid: true, ...(k < n || !last ? { until: end - at } : {}) };
+  });
 
   // ====================================================================== slide 1: hook
   const H = { top: 470, bot: 560 };
@@ -227,23 +231,23 @@
   // items for step k (1..6) starting at t0; everything disappears at t0 + D unless it is the last step
   const segment = (k, t0, last) => {
     const a = st(k - 1), b = st(k), out = [];
-    const hold = (it, from = 0) => ({ duration: 0.01, ...it, at: t0 + from, ...(last ? {} : { until: D - from }) });
+    const hold = (it, from = 0) => ({ duration: 0.01, solid: true, ...it, at: t0 + from, ...(last ? {} : { until: D - from + FRAME_OVERLAP }) });
     // pump shape (morphing in steps 3 and 5)
     const morphFrom = k === 3 ? 0 : k === 5 ? 0.9 : -1;
     if (morphFrom >= 0) {
       const n = 10, md = 1.1;
-      out.push({ ...svgItem(pumpAt(a.c)), at: t0, duration: 0.01, until: morphFrom + 0.02 });
+      out.push({ ...svgItem(pumpAt(a.c)), at: t0, duration: 0.001, solid: true, until: morphFrom + md / n + FRAME_OVERLAP });
       for (let i = 1; i <= n; i++) {
         const isEnd = i === n;
-        out.push({ ...svgItem(pumpAt(lerp(a.c, b.c, ease(i / n)))), at: t0 + morphFrom + (md * i) / n, duration: 0.01,
-          ...(isEnd ? (last ? {} : { until: D - morphFrom - md }) : { until: md / n + 0.02 }) });
+        out.push({ ...svgItem(pumpAt(lerp(a.c, b.c, ease(i / n)))), at: t0 + morphFrom + (md * i) / n, duration: 0.001,
+          solid: true, ...(isEnd ? (last ? {} : { until: D - morphFrom - md + FRAME_OVERLAP }) : { until: md / n + FRAME_OVERLAP }) });
       }
     } else out.push(hold({ ...svgItem(pumpAt(a.c)), duration: 0.01 }));
     // ions
     const moveIons = (ion, from, to, via, start, gap) => from.forEach((p, i) => {
       if (p === to[i]) { out.push(hold({ type: 'ion', ion, x: p[0], y: p[1], duration: 0.01 })); return; }
       const s0 = start + i * gap;
-      out.push({ type: 'ion', ion, x: p[0], y: p[1], at: t0, duration: 0.01, until: s0 + 0.02 });
+      out.push({ type: 'ion', ion, x: p[0], y: p[1], at: t0, duration: 0.01, solid: true, until: s0 + 0.02 });
       out.push(hold({ type: 'ion', ion, path: [p, ...via(i), to[i]], duration: 1.3 }, s0));
     });
     moveIons('na', a.na, b.na, (i) => (k === 1 ? [[C.px - 60 + i * 20, 590], [C.px - 10 + i * 10, C.bot + 30]] : [[C.px, C.top - 30], [C.px - 40 * i, C.top - 90]]), k === 3 ? 1.6 : 0.2, 0.3);
@@ -309,9 +313,10 @@
     return pumpAt(c) + atp + na.map(([x, y]) => ionSvg('na', x, y)).join('') + k.map(([x, y]) => ionSvg('k', x, y)).join('');
   };
   const OV_N = 60;
-  const ovFrames = [...Array(OV_N + 1)].map((_, i) => ({
-    ...svgItem(ovSvg((OV_T * i) / OV_N)), at: 0.3 + (OV_T * i) / OV_N, duration: 0.002, ...(i < OV_N ? { until: OV_T / OV_N + 0.004 } : {}),
-  }));
+  const ovFrames = [...Array(OV_N + 1)].map((_, i) => {
+    const at = i === 0 ? 0 : 0.3 + (OV_T * i) / OV_N, end = 0.3 + (OV_T * (i + 1)) / OV_N + FRAME_OVERLAP;
+    return { ...svgItem(ovSvg((OV_T * i) / OV_N)), at, duration: 0.001, solid: true, ...(i < OV_N ? { until: end - at } : {}) };
+  });
   const PUMP_IDS = ['ov', 'steps', ...CYC_IDS];
   const ovLabels = m3Common.filter((it) => !(it.type === 'text' && /neuron$/.test(it.text)));
   const ovPanel = meetItems.slice(meetItems.indexOf(m3Common[m3Common.length - 1]) + 1);
@@ -443,7 +448,7 @@
   const slide4Actions = [
     { id: 's1', label: '1. Pump only', group: 's4', stay: true, drawn: false, items: [
       stage(0), vm4(0, -5, 1, 6), ...g4.moving(0.3, 7), ...pumpLoops([G4.px], G4.top, G4.bot),
-      ...frames((t) => bars4(mixV(EVEN, NORMAL, t)), 0.3, 7, 14),
+      ...frames((t) => bars4(mixV(EVEN, NORMAL, t)), 0.3, 7, 14, true, true),
       ...capBox4('The pump builds the gradients… but on its own\nit only moves the potential to about −5 mV.', '#2c5a92', 7.4)] },
     { id: 's2', label: '2. + K⁺ leak channels', group: 's4', stay: true, drawn: false, items: [
       stage(1), svgItem(bars4(NORMAL)), vm4(-5, -5, -8, 8.5), vm4(-5, -85, 0.6, 3.5), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...kLeaks, ...kLabel,
