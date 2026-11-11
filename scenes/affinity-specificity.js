@@ -279,57 +279,90 @@
     ],
   }];
 
-  // ====================================================================== slide 5: independent (2x2)
-  const Q = { x0: 260, y0: 150, w: 620, h: 330 };
-  const QUADS = [
-    { col: 1, row: 0, aff: 'high', spec: 'high', head: 'High affinity + high specificity', body: 'Binds tightly, and only to its target.\nThe ideal drug: works at low doses\nwith few side effects.', c: GOOD },
-    { col: 0, row: 0, aff: 'low', spec: 'high', head: 'Low affinity + high specificity', body: 'Only binds its target, but weakly.\nNeeds a high dose to have\nan effect.', c: '#c46f00' },
-    { col: 1, row: 1, aff: 'high', spec: 'low', head: 'High affinity + low specificity', body: 'Binds tightly to many receptors.\nStrong effects, and strong\nside effects.', c: BAD },
-    { col: 0, row: 1, aff: 'low', spec: 'low', head: 'Low affinity + low specificity', body: 'Binds weakly to many receptors.\nNot much use as a drug.', c: '#8a8f98' },
+  // ====================================================================== slide 5: independent (tabs, one combination at a time)
+  // Four tabs across the top. The chosen combination fills the slide: three big receptors (target + two
+  // others) with ligands binding the way that combination does, and a panel that explains it.
+  const COMBO = [
+    { id: 'c-hh', tab: 'High affinity\nHigh specificity', aff: 'high', spec: 'high', c: GOOD, verdict: '✔ The ideal drug',
+      body: 'Binds TIGHTLY, and ONLY\nto its target.\n\nIt works at low doses and\ncauses few side effects.' },
+    { id: 'c-lh', tab: 'Low affinity\nHigh specificity', aff: 'low', spec: 'high', c: '#c46f00', verdict: 'Choosy but weak',
+      body: 'Only binds its target, but it\nkeeps falling off.\n\nNeeds a high dose to have\nan effect.' },
+    { id: 'c-hl', tab: 'High affinity\nLow specificity', aff: 'high', spec: 'low', c: BAD, verdict: '✖ Strong side effects',
+      body: 'Binds TIGHTLY, but to many\ndifferent receptors.\n\nStrong effects, and strong\nside effects.' },
+    { id: 'c-ll', tab: 'Low affinity\nLow specificity', aff: 'low', spec: 'low', c: '#8a8f98', verdict: 'Weak and unselective',
+      body: 'Binds weakly to many receptors.\n\nNot much use as a drug.' },
   ];
-  const quadArt = (q) => {
-    const x = Q.x0 + q.col * Q.w, y = Q.y0 + q.row * Q.h, top = y + 250, xs = [x + 180, x + 310, x + 440];
-    let s = `<rect x="${x + 100}" y="${top}" width="420" height="22" fill="#fbecd6"/><line x1="${x + 100}" y1="${top}" x2="${x + 520}" y2="${top}" stroke="#c99a62" stroke-width="3"/>`;
-    xs.forEach((rx, i) => {
-      s += receptor(rx, top, RECS[i][0], RECS[i][1], 0.5);
-      const bound = q.spec === 'high' ? i === 0 : true;
-      if (!bound) return;
-      const kind = q.spec === 'high' ? 'tri' : 'blob', color = q.spec === 'high' ? (q.aff === 'high' ? 'amber' : 'pale') : 'teal';
-      const k = q.aff === 'high' ? 1 : 0.8, dy = q.spec === 'high' ? DOCK.tri : blobDock[RECS[i][0]];
-      s += ligand(kind, rx, top + dy * 0.5 - (q.aff === 'high' ? 0 : 3), color, k, 0.5);
-      s += contacts(rx, top, RECS[i][0], q.aff === 'high' ? 4 : 1, 0.5);
-    });
-    return s;
-  };
-  const gridSvg = `
-    ${QUADS.map((q) => `<rect x="${Q.x0 + q.col * Q.w + 8}" y="${Q.y0 + q.row * Q.h + 8}" width="${Q.w - 16}" height="${Q.h - 16}" rx="18" fill="#ffffff" stroke="#d9dce3" stroke-width="2"/>${quadArt(q)}`).join('')}
-    <line x1="${Q.x0}" y1="${Q.y0 + 2 * Q.h + 20}" x2="${Q.x0 + 2 * Q.w}" y2="${Q.y0 + 2 * Q.h + 20}" stroke="${AFF}" stroke-width="5"/>
-    <polygon points="${Q.x0 + 2 * Q.w + 18},${Q.y0 + 2 * Q.h + 20} ${Q.x0 + 2 * Q.w},${Q.y0 + 2 * Q.h + 10} ${Q.x0 + 2 * Q.w},${Q.y0 + 2 * Q.h + 30}" fill="${AFF}"/>
-    ${T(Q.x0 + Q.w, Q.y0 + 2 * Q.h + 58, 24, AFF)('AFFINITY: low → high')}
-    <line x1="${Q.x0 - 20}" y1="${Q.y0 + 2 * Q.h}" x2="${Q.x0 - 20}" y2="${Q.y0}" stroke="${SPEC}" stroke-width="5"/>
-    <polygon points="${Q.x0 - 20},${Q.y0 - 18} ${Q.x0 - 30},${Q.y0} ${Q.x0 - 10},${Q.y0}" fill="${SPEC}"/>
-    <text transform="translate(${Q.x0 - 52} ${Q.y0 + Q.h}) rotate(-90)" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="24" text-anchor="middle" fill="${SPEC}">SPECIFICITY: low → high</text>`;
-  const qHot = (q, i) => ({ type: 'hotspot', x: Q.x0 + q.col * Q.w, y: Q.y0 + q.row * Q.h, w: Q.w, h: Q.h, action: `q${i}` });
-  const qText = (q) => {
-    const x = Q.x0 + q.col * Q.w, y = Q.y0 + q.row * Q.h;
-    return [txt(q.head, x + Q.w / 2, y + 42, 23, q.c, { align: 'center', bold: true })];
-  };
-  const qBody = (q) => {
-    const x = Q.x0 + q.col * Q.w, y = Q.y0 + q.row * Q.h;
+  const C5 = { x0: 60, x1: 1100, top: 650, bot: 710, xs: [260, 580, 900] };
+  const TABW = 362, TABX = (i) => 60 + i * (TABW + 10);
+  LCOL.paleteal = ['#c9eef3', '#7fcfdb', '#3d8f9c'];
+  const c5Base = svgItem(panel(C5.x0, C5.x1, 195, C5.top, C5.bot, 860) + C5.xs.map((x, i) => receptor(x, C5.top, RECS[i][0], RECS[i][1], 1)).join('')
+    + C5.xs.map((x, i) => T(x, 780, 22, i ? '#5b6270' : '#2c5a92')(i ? 'Other receptor' : 'Target')).join(''));
+  const tabBar = (active) => COMBO.flatMap((q, i) => {
+    const on = q.id === active;
     return [
-      { type: 'rect', x: x + 8, y: y + 8, w: Q.w - 16, h: Q.h - 16, color: q.c, fill: q.c, fillOpacity: 0.06, width: 5, rough: false },
-      { type: 'rect', x: x + 40, y: y + 62, w: Q.w - 80, h: 92, color: q.c, fill: '#ffffff', fillOpacity: 0.97, width: 2, rough: false },
-      txt(q.body, x + Q.w / 2, y + 84, 19, '#1f2430', { align: 'center', bold: true, anim: 'fade', duration: 0.3 }),
+      { type: 'rect', x: TABX(i), y: 108, w: TABW, h: 72, color: q.c, fill: on ? q.c : '#ffffff', fillOpacity: 1, width: 3, rough: false },
+      txt(q.tab, TABX(i) + TABW / 2, 132, 21, on ? '#ffffff' : q.c, { align: 'center', bold: true }),
     ];
+  });
+  const tabHot = COMBO.map((q, i) => ({ type: 'hotspot', x: TABX(i), y: 108, w: TABW, h: 72, action: q.id }));
+  // the ligand for a combination: shape by specificity (tri = only fits the target, blob = fits all), look by affinity
+  const comboLig = (q, i) => {
+    const kind = q.spec === 'high' ? 'tri' : 'blob';
+    const color = q.spec === 'high' ? (q.aff === 'high' ? 'amber' : 'pale') : (q.aff === 'high' ? 'teal' : 'paleteal');
+    const k = q.aff === 'high' ? 1 : 0.78;
+    const dock = C5.top + (kind === 'tri' ? DOCK.tri : blobDock[RECS[i][0]]) - (q.aff === 'high' ? 0 : 4);
+    return { kind, color, k, dock };
   };
+  const comboKeys = (q, i) => {
+    const x = C5.xs[i], L = comboLig(q, i), t0 = 0.6 + i * 0.5, start = [x - 90, 290];
+    if (q.spec === 'high' && i > 0) { // wrong receptor: tries, doesn't fit, leaves
+      const hover = C5.top - 131 - 40;
+      return [[0, ...start, 0], [t0 + 0.8, x, hover, 0], [t0 + 1.3, x, hover, 0], [t0 + 2.2, x + 100, 320, 0], [10, x + 100, 320, 0]];
+    }
+    if (q.aff === 'high') return [[0, ...start, 0], [t0 + 1, x, L.dock, 0], [t0 + 1.1, x, L.dock, 1], [10, x, L.dock, 1]];
+    // low affinity: binds briefly, falls off, comes back
+    const a = t0 + 1;
+    return [[0, ...start, 0], [a, x, L.dock, 0], [a + 0.1, x, L.dock, 1], [a + 0.9, x, L.dock, 1], [a + 1.0, x, L.dock, 0],
+      [a + 1.9, x + 110, 330, 0], [a + 3.0, x + 110, 330, 0], [a + 4.0, x, L.dock, 0], [a + 4.1, x, L.dock, 1], [a + 4.9, x, L.dock, 1],
+      [a + 5.0, x, L.dock, 0], [a + 5.9, x - 110, 320, 0], [10, x - 110, 320, 0]];
+  };
+  const comboDraw = (q, i) => ([x, y, b]) => {
+    const L = comboLig(q, i);
+    return ligand(L.kind, x, y, L.color, L.k) + (b > 0.5 ? contacts(C5.xs[i], C5.top, RECS[i][0], q.aff === 'high' ? 4 : 1) : '');
+  };
+  // right panel: verdict, explanation and a small 2x2 map with this combination highlighted
+  const miniMap = (q) => {
+    const mx = 1200, my = 560, cs = 120;
+    const pos = { 'c-lh': [0, 0], 'c-hh': [1, 0], 'c-ll': [0, 1], 'c-hl': [1, 1] };
+    return COMBO.map((o) => { const [cx, cy] = pos[o.id], on = o.id === q.id;
+      return `<rect x="${mx + cx * cs}" y="${my + cy * cs}" width="${cs - 8}" height="${cs - 8}" rx="10" fill="${on ? o.c : '#ffffff'}" fill-opacity="${on ? 0.9 : 1}" stroke="${on ? o.c : '#d9dce3'}" stroke-width="3"/>`; }).join('')
+      + `<line x1="${mx - 14}" y1="${my + 2 * cs}" x2="${mx - 14}" y2="${my - 6}" stroke="${SPEC}" stroke-width="4"/><polygon points="${mx - 14},${my - 18} ${mx - 22},${my - 4} ${mx - 6},${my - 4}" fill="${SPEC}"/>
+      <line x1="${mx - 14}" y1="${my + 2 * cs + 6}" x2="${mx + 2 * cs + 8}" y2="${my + 2 * cs + 6}" stroke="${AFF}" stroke-width="4"/><polygon points="${mx + 2 * cs + 20},${my + 2 * cs + 6} ${mx + 2 * cs + 6},${my + 2 * cs - 2} ${mx + 2 * cs + 6},${my + 2 * cs + 14}" fill="${AFF}"/>
+      ${T(mx + cs, my + 2 * cs + 34, 17, AFF)('Affinity →')}
+      <text transform="translate(${mx - 30} ${my + cs}) rotate(-90)" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="17" text-anchor="middle" fill="${SPEC}">Specificity →</text>`;
+  };
+  const sidePanel = (q) => [
+    { type: 'rect', x: 1120, y: 195, w: 420, h: 665, color: q.c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(q.verdict, 1330, 240, 28, q.c, { align: 'center', bold: true }),
+    txt(q.body, 1145, 300, 21, '#1f2430', { bold: true }),
+    svgItem(miniMap(q)),
+  ];
+  const comboView = (q) => [
+    ...tabBar(q.id),
+    ...[0, 1, 2].flatMap((i) => track(comboKeys(q, i), comboDraw(q, i))),
+    ...(q.spec === 'high' ? [1, 2].map((i) => txt('✕', C5.xs[i], C5.top - 225, 44, BAD, { align: 'center', bold: true, at: 0.6 + i * 0.5 + 1.0, until: 1.0, anim: 'pop', duration: 0.3 })) : []),
+    ...sidePanel(q),
+  ];
+  const COMBO_IDS = COMBO.map((q) => q.id);
   const indItems = [
     title('They are independent of each other'),
-    svgItem(gridSvg),
-    ...QUADS.flatMap(qText),
-    ...QUADS.map(qHot),
-    txt('Click a box to see what it means', 1500, 124, 19, '#8a8f98', { align: 'right' }),
+    c5Base,
+    ...[...tabBar(null), { type: 'rect', x: 1120, y: 195, w: 420, h: 665, color: '#d9dce3', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+      txt('Affinity and specificity can be\nhigh or low separately.\n\nClick a tab above to see each of\nthe four combinations.', 1330, 300, 21, '#5b6270', { align: 'center', bold: true }),
+      svgItem(miniMap({ id: '' }))].map((it) => ({ ...it, hideDuring: COMBO_IDS })),
+    ...tabHot,
   ];
-  const indActions = QUADS.map((q, i) => ({ id: `q${i}`, label: q.head.replace(' + ', ' / '), group: 'quad', stay: true, drawn: false, items: qBody(q) }));
+  const indActions = COMBO.map((q) => ({ id: q.id, label: q.tab.replace('\n', ' / '), group: 'combo', stay: true, drawn: false, items: comboView(q) }));
 
   // ====================================================================== slide 6: review
   const RV = (x, c, head, q, rows) => [
