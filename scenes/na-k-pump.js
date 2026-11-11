@@ -97,7 +97,7 @@
   const mixV = (a, b, t) => Object.fromEntries(Object.keys(a).map((k) => [k, lerp(a[k], b[k], t)]));
   // frames of something that changes over time: f(t in 0..1) -> svg markup
   const frames = (f, t0, dur, n = 12, last = true) => [...Array(n + 1)].map((_, k) => ({
-    ...svgItem(f(ease(k / n))), at: t0 + (dur * k) / n, duration: 0.01, ...(k < n || !last ? { until: dur / n + 0.02 } : {}),
+    ...svgItem(f(ease(k / n))), at: t0 + (dur * k) / n, duration: 0.01, ...(k < n || !last ? { until: dur / n + 0.004 } : {}),
   }));
 
   // ====================================================================== slide 1: hook
@@ -149,51 +149,8 @@
       txt('3 Na⁺ out, 2 K⁺ in, over and over', 535, 695, 22, '#5b6270', { align: 'center', bold: true, at: 0.3, anim: 'fade', duration: 0.4 })],
   }];
 
-  // ====================================================================== slide 2: the leak problem
-  const L = { top: 420, bot: 520, x1: 920 };
-  const LEAKS = [{ x: 150, ion: 'na' }, { x: 320, ion: 'k' }, { x: 720, ion: 'na' }, { x: 862, ion: 'k' }];
-  const L_PUMP = 470;
-  const leakArt = svgItem(cellPanel(70, L.x1, 120, L.top, L.bot, 860, LEAKS.map((c) => [c.x - 46, c.x + 46])));
-  const leakChannels = LEAKS.map((c) => ({ type: 'channel', x: c.x, y: (L.top + L.bot) / 2, h: 120, plain: true, open: 1,
-    fill: c.ion === 'na' ? '#f8cf8f' : '#cdbdf3', edge: c.ion === 'na' ? '#a8640a' : '#47309a', label: c.ion === 'na' ? 'Na⁺\nleak' : 'K⁺\nleak' }));
-  const LAV = [[90, 130, 360, 170], [90, 815, 330, 850], [150, 745, 820, 815], ...LEAKS.map((c) => [c.x - 60, 360, c.x + 60, 640]), [L_PUMP - 90, 360, L_PUMP + 200, 640]];
-  const leakIons = [...scatter('na', 12, 110, 890, 160, 380, 2.2, LAV), ...scatter('k', 3, 110, 890, 170, 380, 5.5, LAV),
-    ...scatter('k', 11, 110, 890, 640, 820, 4.4, LAV), ...scatter('na', 3, 110, 890, 650, 820, 6.6, LAV)];
-  const leakLoops = LEAKS.flatMap((c, j) => [0, 1].map((i) => (c.ion === 'na'
-    ? { type: 'ion', ion: 'na', loop: 2.2, phase: j * 0.4 + i * 1.1, path: [[c.x - 30 + i * 60, L.top - 90], [c.x, (L.top + L.bot) / 2], [c.x - 40 + i * 80, L.bot + 100]] }
-    : { type: 'ion', ion: 'k', loop: 2.2, phase: j * 0.4 + i * 1.1, path: [[c.x - 30 + i * 60, L.bot + 100], [c.x, (L.top + L.bot) / 2], [c.x - 40 + i * 80, L.top - 90]] })));
-  const BAR = { x: 950, y: 120, w: 590, h: 740 };
-  const capBox = (t0, until, color) => ({ type: 'rect', x: 150, y: 745, w: 670, h: 70, color, fill: '#ffffff', fillOpacity: 0.95, width: 2, rough: false, at: t0, ...(until ? { until } : {}) });
-  const leakItems = [
-    title('Why neurons need a pump'),
-    leakArt, ...leakChannels, ...leakIons.map((it) => ({ ...it, hideDuring: ['leak', 'fix'] })),
-    txt('Outside: lots of Na⁺', 100, 150, 22, '#2c5a92', { bold: true }),
-    txt('Inside: lots of K⁺', 100, 836, 22, '#6b3c87', { bold: true }),
-    { ...svgItem(bars(BAR.x, BAR.y, BAR.w, BAR.h, NORMAL)), hideDuring: ['leak', 'fix'] },
-  ];
-  const leakActions = [
-    {
-      id: 'leak', label: 'Let the ions leak', group: 'g2', stay: true, drawn: false,
-      items: [
-        ...leakIons, ...leakLoops,
-        ...frames((t) => bars(BAR.x, BAR.y, BAR.w, BAR.h, mixV(NORMAL, RUNDOWN, t)), 0.3, 8),
-        capBox(0, 6, '#8a8f98'), txt('Na⁺ leaks in, K⁺ leaks out…', 485, 780, 24, '#5b6270', { align: 'center', bold: true, until: 6 }),
-        capBox(6, 0, RED), txt('…so the differences run down. The neuron’s “battery”\ngoes flat: no resting potential, so it can’t signal.', 485, 766, 21, RED, { align: 'center', bold: true, at: 6, anim: 'fade', duration: 0.4 }),
-      ],
-    },
-    {
-      id: 'fix', label: 'Add the pump', group: 'g2', stay: true, drawn: false,
-      items: [
-        ...leakIons, ...leakLoops,
-        svgItem(`<g transform="translate(${L_PUMP} ${(L.top + L.bot) / 2}) scale(0.62) translate(${-L_PUMP} ${-(L.top + L.bot) / 2})">${pumpSvg(L_PUMP, L.top, L.bot, 0)}</g>`),
-        ...pumpLoops([L_PUMP], L.top, L.bot),
-        ...frames((t) => bars(BAR.x, BAR.y, BAR.w, BAR.h, mixV(RUNDOWN, NORMAL, t)), 0.3, 6),
-        capBox(0.5, 0, BLUE), txt('The pump pushes them back: Na⁺ out, K⁺ in', 485, 780, 24, BLUE, { align: 'center', bold: true, at: 0.5, anim: 'fade', duration: 0.4 }),
-      ],
-    },
-  ];
-
-  // ====================================================================== slide 3: meet the pump
+  // ====================================================================== slide 2: how the pump works (overview + step by step)
+  // --- overview view ---
   const M3 = { px: 400, top: 390, bot: 500 };
   const m3pts = pumpPts(M3.px, M3.top, M3.bot);
   const m3Panel = svgItem(cellPanel(70, 880, 120, M3.top, M3.bot, 860, [[M3.px - 140, M3.px + 140]]));
@@ -230,7 +187,7 @@
     { id: 'm3out', label: 'Open to the outside', group: 'm3', stay: true, drawn: false, items: [m3View(1), ...m3Labels(1)] },
   ];
 
-  // ====================================================================== slide 4: the pump cycle
+  // --- step-by-step view ---
   const C = { px: 400, top: 390, bot: 500 };
   const cp = pumpPts(C.px, C.top, C.bot);
   const cPanel = svgItem(cellPanel(70, 860, 120, C.top, C.bot, 860, [[C.px - 140, C.px + 140]]));
@@ -319,6 +276,53 @@
   const cycleActions = [
     { id: 'cfull', label: 'Full cycle', group: 'cy', stay: true, drawn: false, items: [1, 2, 3, 4, 5, 6].flatMap((k) => segment(k, (k - 1) * D, k === 6)) },
     ...[1, 2, 3, 4, 5, 6].map((k) => ({ id: `c${k}`, label: `Step ${k}`, group: 'cy', stay: true, drawn: false, items: segment(k, 0, true) })),
+  ];
+
+
+  // --- one slide, two views: Overview (high level) and Step by step (the 6-step cycle) ---
+  const ionSvg = (ion, x, y) => {
+    const [fill, edge, t] = ion === 'na' ? ['#f0a12e', '#a8640a', 'Na⁺'] : ['#7b5cd6', '#47309a', 'K⁺'];
+    return `<circle cx="${f1(x)}" cy="${f1(y)}" r="18" fill="${fill}" stroke="${edge}" stroke-width="2.5"/>
+      <text x="${f1(x)}" y="${f1(y + 5)}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#ffffff">${t}</text>`;
+  };
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const ph = (u, a, b) => ease(clamp01((u - a) / (b - a)));
+  const mixPts = (A, B, t) => A.map((p, i) => [lerp(p[0], B[i][0], t), lerp(p[1], B[i][1], t)]);
+  // the whole cycle in OV_T seconds, without the ATP details: Na⁺ in, flip, Na⁺ out, K⁺ in, flip back, K⁺ released
+  const OV_T = 6;
+  const ovSvg = (u) => {
+    const c = ph(u, 1, 1.8) - ph(u, 3.6, 4.4);
+    const na = u < 1.8 ? mixPts(NA_WAIT, cp.sNa, ph(u, 0, 1)) : mixPts(cp.sNa, NA_OUT, ph(u, 1.8, 2.6));
+    const k = u < 4.4 ? mixPts(K_WAIT, cp.sK, ph(u, 2.6, 3.6)) : mixPts(cp.sK, K_IN, ph(u, 4.4, 5.4));
+    const atp = u < 1 ? pill(cp.atpSite[0], cp.atpSite[1], 'ATP', '#e0453a', '#8e1d14')
+      : u < 2.2 ? pill(lerp(cp.atpSite[0], ADP_GONE[0], ph(u, 1, 2.2)), lerp(cp.atpSite[1], ADP_GONE[1], ph(u, 1, 2.2)), 'ADP', '#8a8f98', '#545b68') : '';
+    return pumpAt(c) + atp + na.map(([x, y]) => ionSvg('na', x, y)).join('') + k.map(([x, y]) => ionSvg('k', x, y)).join('');
+  };
+  const OV_N = 60;
+  const ovFrames = [...Array(OV_N + 1)].map((_, i) => ({
+    ...svgItem(ovSvg((OV_T * i) / OV_N)), at: 0.3 + (OV_T * i) / OV_N, duration: 0.002, ...(i < OV_N ? { until: OV_T / OV_N + 0.004 } : {}),
+  }));
+  const PUMP_IDS = ['ov', 'steps', ...CYC_IDS];
+  const ovLabels = m3Common.filter((it) => !(it.type === 'text' && /neuron$/.test(it.text)));
+  const ovPanel = meetItems.slice(meetItems.indexOf(m3Common[m3Common.length - 1]) + 1);
+  const stepPanel = [
+    { type: 'stepper', id: 'cyc', x: 900, y: 112, w: 640, h: 748, title: 'One turn of the pump', steps: CYCLE, rowH: 56,
+      idleText: 'Press ▶ Full cycle, or play one\nstep at a time with the buttons.' },
+    txt('One cycle: 3 Na⁺ out, 2 K⁺ in, 1 ATP used', 1220, 820, 22, BLUE, { align: 'center', bold: true }),
+  ];
+  const stepStart = cycleStatic.map(({ hideDuring, ...it }) => it);
+  const pumpItems = [
+    title('How the pump works'),
+    m3Panel,
+    txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }),
+    txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
+    ...[m3View(0), ...m3Labels(0), ...ovLabels, ...ovPanel].map((it) => ({ ...it, hideDuring: PUMP_IDS })),
+  ];
+  const pumpActions = [
+    { id: 'ov', label: 'Overview', group: 'pm', stay: true, drawn: false, items: [...ovLabels, ...ovPanel, ...ovFrames] },
+    { id: 'steps', label: 'Step by step', group: 'pm', stay: true, drawn: false, items: [...stepStart, ...stepPanel] },
+    { id: 'cfull', label: 'Full cycle', group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...[1, 2, 3, 4, 5, 6].flatMap((k) => segment(k, (k - 1) * D, k === 6))] },
+    ...[1, 2, 3, 4, 5, 6].map((k) => ({ id: `c${k}`, label: `Step ${k}`, group: 'pm', stay: true, drawn: false, items: [...stepPanel, ...segment(k, 0, true)] })),
   ];
 
   // ====================================================================== slide 5: 3 out, 2 in -> electrogenic
@@ -510,19 +514,15 @@ Without it, your neurons couldn't fire. So how does it work, and why do neurons 
         actions: hookActions,
         items: hookItems,
       },
-      // Slide 2: the problem it solves (leaks run the gradients down).
-      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Where are Na⁺ and K⁺ concentrated: inside or outside a neuron?]\n[• Why would those differences disappear on their own?]\n[• Why does a neuron need a pump to stay ready to fire?]', say: 'Na⁺ and K⁺ keep leaking across the neuron’s membrane, so without a pump its gradients, and its ability to fire, would run down.', clear: true, actions: leakActions, items: leakItems },
-      // Slide 3: the pump itself.
-      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump look like, and what are its parts?]\n[• Which way does it move each ion, and how many?]\n[• Why does it need ATP (what is active transport)?]\n[• Where on a neuron are the pumps?]', say: 'The Na⁺/K⁺ pump is an ATP-powered protein that moves ions against their gradients.', clear: true, actions: meetActions, items: meetItems },
-      // Slide 4: the cycle, step by step.
-      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• How does the pump actually move the ions, step by step?]\n[• Where does ATP come in, and what does the phosphate do?]\n[• How does the pump switch between facing inside and outside?]', say: 'Each cycle: 3 Na⁺ bind, ATP phosphorylates the pump, it flips and releases them outside, 2 K⁺ bind, the phosphate leaves and K⁺ is released inside.', clear: true, actions: cycleActions, items: cycleItems },
-      // Slide 5: 3 out, 2 in (electrogenic).
+      // Slide 2: how the pump works. Two views: Overview (high level) and Step by step (the 6-step cycle).
+      { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does the pump look like, and what are its parts?]\n[• Which way does it move each ion, and how many?]\n[• Why does it need ATP (what is active transport)?]\n[• How does it actually move the ions, step by step?]\n[• Where does ATP come in, and what does the phosphate do?]\n[• How does it switch between facing inside and outside?]\n\n[Start with ▶ Overview, then switch to ▶ Step by step and ▶ Full cycle (or Step 1–6).]', say: 'The Na⁺/K⁺ pump uses ATP to carry 3 Na⁺ out and 2 K⁺ in, flipping its shape each cycle.', clear: true, actions: pumpActions, items: pumpItems },
+      // Slide 3: 3 out, 2 in (electrogenic).
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• Why 3 Na⁺ out but only 2 K⁺ in, and what does that do to the charge?]\n[• What does “electrogenic” mean?]\n[• How does the pump keep a neuron at its −70 mV resting potential?]', say: 'Moving 3 positive charges out for every 2 in makes the pump electrogenic.', clear: true, actions: elecActions, items: elecItems },
-      // Slide 6: resetting the gradients after action potentials.
+      // Slide 4: resetting the gradients after action potentials.
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What does firing action potentials do to the Na⁺ and K⁺ gradients?]\n[• How does the pump put things back?]\n[• Why does a busy neuron need even more pumping?]', say: 'Each action potential lets a little Na⁺ in and K⁺ out; the pump restores the gradients so the neuron can keep firing.', clear: true, actions: resetActions, items: resetItems },
-      // Slide 7: when the pump stops (e.g. stroke).
+      // Slide 5: when the pump stops (e.g. stroke).
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What happens to a neuron if its pumps stop (for example in a stroke)?]\n[• Why can’t it fire properly anymore?]\n[• Why does the neuron swell, and why do brain cells die so fast without oxygen?]', say: 'If the pumps stop, as in a stroke, the gradients run down, the neuron can’t fire properly and it swells.', clear: true, actions: stopActions, items: stopItems },
-      // Slide 8: review.
+      // Slide 6: review.
       { script: '[QUESTIONS THIS SLIDE ANSWERS]\n[• What are the key things to remember about the pump in neurons?]\n[• Can I explain what it moves, what powers it, why neurons need it and what happens if it stops?]', say: 'Review: 3 Na⁺ out, 2 K⁺ in, 1 ATP per cycle, keeping the gradients every neuron needs to fire.', clear: true, items: reviewItems },
     ],
   });
