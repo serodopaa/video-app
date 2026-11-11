@@ -117,6 +117,15 @@
       placed.push([x, y]);
       out.push({ type: 'ion', ion, x, y });
     }
+    // not enough room: fill the rest with a looser spacing (never fail)
+    for (let i = 0; out.length < n && i < 4000; i++) {
+      const r1 = Math.abs(Math.sin(seed + 7 + i * 12.9898) * 43758.5453) % 1, r2 = Math.abs(Math.sin(seed + 7 + i * 78.233) * 12345.678) % 1;
+      const x = Math.round(x0 + r1 * (x1 - x0)), y = Math.round(y0 + r2 * (y1 - y0));
+      if (i < 3000 && avoid.some(([a, b, c, d]) => x > a - 22 && x < c + 22 && y > b - 22 && y < d + 22)) continue;
+      if (i < 2000 && placed.some(([px, py]) => Math.hypot(px - x, py - y) < 30)) continue;
+      placed.push([x, y]);
+      out.push({ type: 'ion', ion, x, y });
+    }
     return out;
   };
   const HAV = [[90, 130, 290, 170], [410, 330, 630, 400], [90, 815, 280, 850], [330, 675, 740, 715],
@@ -399,21 +408,22 @@
   // Stage 1: pump only -> gradients, but the membrane potential barely moves (about −5 mV, electrogenic).
   // Stage 2: + K⁺ leak channels -> K⁺ flows out, inside becomes very negative (about −85 mV, near E_K = −90).
   // Stage 3: + Na⁺ leak channels -> a little Na⁺ leaks in and pulls it up to the real resting potential, −70 mV.
-  const G4 = { x0: 70, x1: 760, y0: 120, y1: 860, top: 440, bot: 540, px: 200, kx: 430, nax: 640, dnBot: 700 };
+  const G4 = { x0: 70, x1: 760, y0: 120, y1: 860, top: 440, bot: 540, px: 200, kxs: [400, 530], nax: 675, dnBot: 700 };
   scatter.gap = 40;
-  const g4 = gradIons(G4, 57, [[90, 130, 360, 170], [90, 815, 330, 850], [G4.px - 120, 290, G4.px + 30, 560], [G4.px - 80, 540, G4.px + 180, 640],
-    [G4.kx - 60, 380, G4.kx + 60, 630], [G4.nax - 60, 380, G4.nax + 60, 630]]);
+  const g4 = gradIons(G4, 57, [[90, 130, 360, 170], [90, 815, 330, 850], [G4.px - 120, 290, G4.px + 100, 360], [G4.px - 120, 360, G4.px + 30, 560], [G4.px - 80, 540, G4.px + 180, 640],
+    ...G4.kxs.map((x) => [x - 60, 380, x + 60, 630]), [G4.nax - 60, 380, G4.nax + 60, 630]]);
   const STAGES = [
     { title: '1. Pump only', text: 'The pump builds the gradients.\nIts 3-out, 2-in moves a little\ncharge: only about −5 mV.', color: '#2c5a92', v: -5 },
     { title: '2. Add K⁺ leak channels', text: 'K⁺ flows OUT down its\ngradient, carrying + charge\naway: about −85 mV.', color: K_C, v: -85 },
-    { title: '3. Add Na⁺ leak channels', text: 'A little Na⁺ leaks IN, adding\nback some + charge. It settles\nat the true resting potential:\n−70 mV.', color: NA_C, v: -70 },
+    { title: '3. Add Na⁺ leak channels', text: 'There are fewer Na⁺ leak\nchannels, so only a little Na⁺\nleaks IN. It settles at the true\nresting potential: −70 mV.', color: NA_C, v: -70 },
   ].map((s, i) => ({ ...s, from: i, to: i + 1 }));
-  const kLeak = { type: 'channel', x: G4.kx, y: (G4.top + G4.bot) / 2, h: 120, plain: true, open: 1, fill: '#cdbdf3', edge: '#47309a', label: '' };
+  // more K⁺ leak channels than Na⁺ ones: that is why rest (−70) sits close to E K⁺ (−90)
+  const kLeaks = G4.kxs.map((x) => ({ type: 'channel', x, y: (G4.top + G4.bot) / 2, h: 120, plain: true, open: 1, fill: '#cdbdf3', edge: '#47309a', label: '' }));
   const naLeak = { type: 'channel', x: G4.nax, y: (G4.top + G4.bot) / 2, h: 120, plain: true, open: 1, fill: '#f8cf8f', edge: '#a8640a', label: '' };
-  const tag = (t, x, c) => [{ type: 'rect', x: x - 62, y: 600, w: 124, h: 30, color: c, fill: '#ffffff', fillOpacity: 1, width: 2, rough: false }, txt(t, x, 615, 17, c, { align: 'center', bold: true })];
-  const kLabel = tag('K⁺ leak', G4.kx, K_C);
+  const tag = (t, x, c, w = 124) => [{ type: 'rect', x: x - w / 2, y: 600, w, h: 30, color: c, fill: '#ffffff', fillOpacity: 1, width: 2, rough: false }, txt(t, x, 615, 17, c, { align: 'center', bold: true })];
+  const kLabel = tag('2 × K⁺ leak channels', (G4.kxs[0] + G4.kxs[1]) / 2, K_C, 230);
   const naLabel = tag('Na⁺ leak', G4.nax, NA_C);
-  const kLeakLoops = [0, 1, 2].map((i) => ({ type: 'ion', ion: 'k', loop: 1.8, phase: i * 0.6, path: [[G4.kx - 40 + i * 40, G4.bot + 110], [G4.kx, (G4.top + G4.bot) / 2], [G4.kx - 50 + i * 50, G4.top - 110]] }));
+  const kLeakLoops = G4.kxs.flatMap((kx, j) => [0, 1].map((i) => ({ type: 'ion', ion: 'k', loop: 1.8, phase: j * 0.45 + i * 0.9, path: [[kx - 30 + i * 60, G4.bot + 110], [kx, (G4.top + G4.bot) / 2], [kx - 40 + i * 80, G4.top - 110]] })));
   const naLeakLoops = [{ type: 'ion', ion: 'na', loop: 3.2, phase: 0, path: [[G4.nax, G4.top - 110], [G4.nax, (G4.top + G4.bot) / 2], [G4.nax + 10, G4.bot + 110]] }];
   const vm4 = (from, to, at, duration) => ({ type: 'value', id: 'vm4', from, to, at, duration });
   const stage = (n) => ({ type: 'value', id: 'st4', from: n + 0.5, to: n + 0.5, at: 0, duration: 0.01 });
@@ -423,27 +433,35 @@
   ];
   const slide4Items = [
     title('How the gradients set −70 mV'),
-    svgItem(cellPanel(G4.x0, G4.x1, G4.y0, G4.top, G4.bot, G4.y1, [[G4.px - 100, G4.px + 100], [G4.kx - 46, G4.kx + 46], [G4.nax - 46, G4.nax + 46]]) + pumpSmall(G4.px, G4.top, G4.bot)),
+    svgItem(cellPanel(G4.x0, G4.x1, G4.y0, G4.top, G4.bot, G4.y1, [[G4.px - 100, G4.px + 100], ...G4.kxs.map((x) => [x - 46, x + 46]), [G4.nax - 46, G4.nax + 46]]) + pumpSmall(G4.px, G4.top, G4.bot)),
     ...label('Na⁺/K⁺ pump', G4.px, 330, [G4.px, 346], [G4.px, G4.top - 40], 'center', 22),
     txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }), txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
     ...g4.before.map((it) => ({ ...it, hideDuring: ['s1', 's2', 's3'] })),
+    // plain membrane where the channels will go, until they are added
+    ...G4.kxs.map((x) => ({ ...svgItem(bilayer(x - 46, x + 46, G4.top, G4.bot)), hideDuring: ['s2', 's3'] })),
+    { ...svgItem(bilayer(G4.nax - 46, G4.nax + 46, G4.top, G4.bot)), hideDuring: 's3' },
     { type: 'stepper', id: 'st4', x: 790, y: 112, w: 380, h: 748, title: 'Build it up', steps: STAGES, rowH: 60,
       idleText: 'No pump running yet: no\ngradients, so 0 mV.\n\nClick each step to add it.' },
     ...STAGES.map((_, i) => ({ type: 'hotspot', x: 804, y: 112 + 92 + i * 60 - 26, w: 352, h: 52, action: `s${i + 1}` })),
     { type: 'meter', id: 'vm4', value: 0, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 20, title: 'Membrane potential',
       downText: 'Inside is negative', restText: 'No charge difference',
       marks: [{ v: -90, label: 'E K⁺ (−90)', color: K_C, dy: 16 }] },
+    txt('Equilibrium potentials', 1375, 606, 21, '#1f2430', { align: 'center', bold: true }),
+    { type: 'ion', ion: 'na', x: 1226, y: 648, r: 15 }, txt('Sodium (Na⁺)', 1252, 648, 21, '#c46f00', { bold: true }), txt('+60 mV', 1536, 648, 22, '#c46f00', { align: 'right', bold: true }),
+    { type: 'ion', ion: 'k', x: 1226, y: 690, r: 15 }, txt('Potassium (K⁺)', 1252, 690, 21, K_C, { bold: true }), txt('−90 mV', 1536, 690, 22, K_C, { align: 'right', bold: true }),
+    { type: 'line', from: [1214, 726], to: [1536, 726], color: '#e3e6ec', width: 2, rough: false },
+    txt('Resting potential (−70 mV) is much\ncloser to E K⁺ because there are more\nK⁺ leak channels than Na⁺ ones.', 1375, 790, 17, '#5b6270', { align: 'center', bold: true }),
   ];
   const slide4Actions = [
     { id: 's1', label: '1. Pump only', group: 's4', stay: true, drawn: false, items: [
       stage(0), vm4(0, -5, 1, 6), ...g4.moving(0.3, 7), ...pumpLoops([G4.px], G4.top, G4.bot),
       ...capBox4('The pump builds the gradients… but on its own\nit only moves the potential to about −5 mV.', '#2c5a92', 7.4)] },
     { id: 's2', label: '2. + K⁺ leak channels', group: 's4', stay: true, drawn: false, items: [
-      stage(1), vm4(-5, -5, -8, 8.5), vm4(-5, -85, 0.6, 3.5), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, kLeak, ...kLabel,
+      stage(1), vm4(-5, -5, -8, 8.5), vm4(-5, -85, 0.6, 3.5), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...kLeaks, ...kLabel,
       ...capBox4('K⁺ leaks OUT down its gradient, taking + charge\nwith it: the inside drops to about −85 mV.', K_C, 0.6)] },
     { id: 's3', label: '3. + Na⁺ leak channels', group: 's4', stay: true, drawn: false, items: [
-      stage(2), vm4(-85, -85, -8, 8.5), vm4(-85, -70, 0.6, 3), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...naLeakLoops, kLeak, ...kLabel, naLeak, ...naLabel,
-      ...capBox4('A little Na⁺ leaks IN and pulls it back up.\nResting potential: −70 mV. All three working together.', NA_C, 0.6)] },
+      stage(2), vm4(-85, -85, -8, 8.5), vm4(-85, -70, 0.6, 3), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...naLeakLoops, ...kLeaks, ...kLabel, naLeak, ...naLabel,
+      ...capBox4('Fewer Na⁺ channels, so only a little Na⁺ leaks IN:\nit settles at −70 mV, close to E K⁺. All working together.', NA_C, 0.6)] },
   ];
 
   (window.WB_SCENES = window.WB_SCENES || []).push({
