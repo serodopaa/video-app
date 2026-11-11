@@ -335,11 +335,24 @@
     txt('▶ Play full cycle', 1220, 732, 22, BLUE, { align: 'center', bold: true }),
     { type: 'hotspot', x: 1090, y: 708, w: 260, h: 48, action: 'cfull' },
   ];
+  // Background crowd (faded) so the gradients are visible: lots of Na⁺ outside, lots of K⁺ inside.
+  // The pump pushes ions toward the side where there are already many: uphill, so it needs ATP.
+  placed.length = 0;
+  const BGAV = [[90, 130, 470, 170], [580, 125, 870, 180], [190, 270, 610, 310], [680, 230, 890, 270], [770, 260, 810, 390],
+    [260, 320, 540, 510], [460, 500, 690, 680], [150, 150, 360, 260], [550, 200, 670, 290], [40, 615, 290, 670], [180, 450, 390, 620],
+    [150, 620, 270, 780], [250, 720, 370, 810], [480, 760, 780, 820], [690, 780, 770, 820], [490, 505, 740, 535], [740, 495, 900, 550],
+    [640, 620, 745, 750], [700, 740, 880, 780], [90, 815, 440, 850]];
+  const bgIons = [
+    ...scatter('na', 9, 90, 860, 150, 370, 3.3, BGAV), ...scatter('k', 2, 90, 860, 150, 370, 4.4, BGAV),
+    ...scatter('k', 9, 90, 860, 520, 840, 5.5, BGAV), ...scatter('na', 2, 90, 860, 520, 840, 6.6, BGAV),
+  ];
+  const bgCrowd = svgItem(`<g opacity="0.5">${bgIons.map((it) => ionSvg(it.ion, it.x, it.y)).join('')}</g>`);
   const pumpItems = [
     title('How the pump works'),
     m3Panel,
-    txt('Outside the neuron', 100, 150, 22, '#2c5a92', { bold: true }),
-    txt('Inside the neuron', 100, 836, 22, '#6b3c87', { bold: true }),
+    bgCrowd,
+    txt('Outside the neuron: lots of Na⁺', 100, 150, 22, '#2c5a92', { bold: true }),
+    txt('Inside the neuron: lots of K⁺', 100, 836, 22, '#6b3c87', { bold: true }),
     ...[m3View(0), ...m3Labels(0), ...ovLabels, ...ovPanel, ...tabs('ov')].map((it) => ({ ...it, hideDuring: PUMP_IDS })),
     ...tabHotspots,
   ];
