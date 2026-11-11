@@ -77,11 +77,12 @@
 
   // concentration bars (mM) for Na⁺ and K⁺, outside vs inside
   const bars = (x, y, w, h, v, o = {}) => {
-    const base = y + h - 56, sc = (h - 150) / 150, bw = (w - 140) / 4;
-    const cols = [['Na⁺', 'Outside', v.naOut, '#f0a12e', '#a8640a'], ['Na⁺', 'Inside', v.naIn, '#f6c47a', '#a8640a'],
-      ['K⁺', 'Outside', v.kOut, '#a995e6', '#47309a'], ['K⁺', 'Inside', v.kIn, '#7b5cd6', '#47309a']];
+    const base = y + h - 56, sc = (h - (o.compact ? 130 : 150)) / 150, bw = (w - 140) / 4;
+    const O = o.compact ? 'Out' : 'Outside', I = o.compact ? 'In' : 'Inside';
+    const cols = [['Na⁺', O, v.naOut, '#f0a12e', '#a8640a'], ['Na⁺', I, v.naIn, '#f6c47a', '#a8640a'],
+      ['K⁺', O, v.kOut, '#a995e6', '#47309a'], ['K⁺', I, v.kIn, '#7b5cd6', '#47309a']];
     let out = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="#ffffff" stroke="#d9dce3" stroke-width="2"/>
-      <text x="${x + w / 2}" y="${y + 40}" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="26" text-anchor="middle" fill="#1f2430">${o.title || 'Concentration (mM)'}</text>
+      <text x="${x + w / 2}" y="${y + 40}" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="${o.compact ? 22 : 26}" text-anchor="middle" fill="#1f2430">${o.title || 'Concentration (mM)'}</text>
       <line x1="${x + 30}" y1="${base}" x2="${x + w - 30}" y2="${base}" stroke="#8a8f98" stroke-width="2"/>`;
     cols.forEach(([ion, side, val, fill, edge], i) => {
       const bx = x + 40 + i * bw + (i >= 2 ? 60 : 0), bh = Math.max(2, val * sc);
@@ -431,6 +432,9 @@
     { type: 'rect', x: 90, y: 712, w: 650, h: 86, color, fill: '#ffffff', fillOpacity: 0.95, width: 2.5, rough: false, at },
     txt(text, 415, 737, 21, color, { align: 'center', bold: true, at, anim: 'fade', duration: 0.4 }),
   ];
+  // concentration bars at the bottom of the "Build it up" panel (same as slide 3)
+  const B4 = { x: 806, y: 560, w: 348, h: 290 };
+  const bars4 = (v) => bars(B4.x, B4.y, B4.w, B4.h, v, { title: 'Concentration (mM)', compact: true });
   const slide4Items = [
     title('How the gradients set −70 mV'),
     svgItem(cellPanel(G4.x0, G4.x1, G4.y0, G4.top, G4.bot, G4.y1, [[G4.px - 100, G4.px + 100], ...G4.kxs.map((x) => [x - 46, x + 46]), [G4.nax - 46, G4.nax + 46]]) + pumpSmall(G4.px, G4.top, G4.bot)),
@@ -442,6 +446,7 @@
     { ...svgItem(bilayer(G4.nax - 46, G4.nax + 46, G4.top, G4.bot)), hideDuring: 's3' },
     { type: 'stepper', id: 'st4', x: 790, y: 112, w: 380, h: 748, title: 'Build it up', steps: STAGES, rowH: 60,
       idleText: 'No pump running yet: no\ngradients, so 0 mV.\n\nClick each step to add it.' },
+    { ...svgItem(bars4(EVEN)), hideDuring: ['s1', 's2', 's3'] },
     ...STAGES.map((_, i) => ({ type: 'hotspot', x: 804, y: 112 + 92 + i * 60 - 26, w: 352, h: 52, action: `s${i + 1}` })),
     { type: 'meter', id: 'vm4', value: 0, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 20, title: 'Membrane potential',
       downText: 'Inside is negative', restText: 'No charge difference',
@@ -455,12 +460,13 @@
   const slide4Actions = [
     { id: 's1', label: '1. Pump only', group: 's4', stay: true, drawn: false, items: [
       stage(0), vm4(0, -5, 1, 6), ...g4.moving(0.3, 7), ...pumpLoops([G4.px], G4.top, G4.bot),
+      ...frames((t) => bars4(mixV(EVEN, NORMAL, t)), 0.3, 7, 14),
       ...capBox4('The pump builds the gradients… but on its own\nit only moves the potential to about −5 mV.', '#2c5a92', 7.4)] },
     { id: 's2', label: '2. + K⁺ leak channels', group: 's4', stay: true, drawn: false, items: [
-      stage(1), vm4(-5, -5, -8, 8.5), vm4(-5, -85, 0.6, 3.5), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...kLeaks, ...kLabel,
+      stage(1), svgItem(bars4(NORMAL)), vm4(-5, -5, -8, 8.5), vm4(-5, -85, 0.6, 3.5), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...kLeaks, ...kLabel,
       ...capBox4('K⁺ leaks OUT down its gradient, taking + charge\nwith it: the inside drops to about −85 mV.', K_C, 0.6)] },
     { id: 's3', label: '3. + Na⁺ leak channels', group: 's4', stay: true, drawn: false, items: [
-      stage(2), vm4(-85, -85, -8, 8.5), vm4(-85, -70, 0.6, 3), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...naLeakLoops, ...kLeaks, ...kLabel, naLeak, ...naLabel,
+      stage(2), svgItem(bars4(NORMAL)), vm4(-85, -85, -8, 8.5), vm4(-85, -70, 0.6, 3), ...g4.after, ...pumpLoops([G4.px], G4.top, G4.bot), ...kLeakLoops, ...naLeakLoops, ...kLeaks, ...kLabel, naLeak, ...naLabel,
       ...capBox4('Fewer Na⁺ channels, so only a little Na⁺ leaks IN:\nit settles at −70 mV, close to E K⁺. All working together.', NA_C, 0.6)] },
   ];
 
