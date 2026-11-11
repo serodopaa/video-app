@@ -463,13 +463,32 @@
   // gradients run down, the potential drifts toward 0, water follows Na⁺ in and the neuron swells.
   // Then a stimulus can no longer make an action potential.
   const SB5 = { x: 790, y: 112, w: 380, h: 360 };
-  const DOWN = { naOut: 82, naIn: 76, kOut: 70, kIn: 76 };
+  const DOWN = { naOut: 90, naIn: 70, kOut: 60, kIn: 82 };   // E Na⁺ ≈ +7, E K⁺ ≈ −8: the potential settles between them, near −5
   const bars5 = (v) => bars(SB5.x, SB5.y, SB5.w, SB5.h, v, { title: 'Concentration (mM)', compact: true });
   const sizeBox = (r) => `<rect x="790" y="490" width="380" height="370" rx="18" fill="#ffffff" stroke="#d9dce3" stroke-width="2"/>
     <text x="980" y="530" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="22" text-anchor="middle" fill="#1f2430">Neuron size</text>
     <circle cx="980" cy="700" r="${f1(r)}" fill="#efe6f8" stroke="#6b3c87" stroke-width="4"/>
     <circle cx="980" cy="700" r="70" fill="none" stroke="#8a8f98" stroke-width="2" stroke-dasharray="6 5"/>
     <text x="980" y="840" font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="16" text-anchor="middle" fill="#8a8f98">dashed = normal size</text>`;
+  // Equilibrium potentials from the concentrations (Nernst, body temperature): E = 61.5 × log10(out / in) mV.
+  // Drawn as dashed lines on the meter's graph (same scale: −100 to +80 mV) and listed underneath.
+  const nernst = (o, i) => 61.5 * Math.log10(o / i);
+  const mvTxt = (v) => `${v > 0.5 ? '+' : v < -0.5 ? '−' : ''}${Math.abs(Math.round(v))} mV`;
+  const eqSvg = (v) => {
+    const eK = nernst(v.kOut, v.kIn), eNa = nernst(v.naOut, v.naIn);
+    const gx = 1264, gw = 272, Y = (val) => 308 + ((80 - val) / 180) * 250;
+    const line = (e, c, name) => `<line x1="${gx}" y1="${f1(Y(e))}" x2="${gx + gw}" y2="${f1(Y(e))}" stroke="${c}" stroke-width="3" stroke-dasharray="3 5"/>
+      <text x="${gx + gw - 6}" y="${f1(Y(e) + (name === 'K' ? 18 : -8))}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="15" text-anchor="end" fill="${c}">E ${name}⁺</text>`;
+    const row = (y, ion, name, e, c) => `${ionSvg(ion, 1226, y)}
+      <text x="1252" y="${y + 7}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="21" fill="${c}">${name}</text>
+      <text x="1536" y="${y + 8}" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="23" text-anchor="end" fill="${c}">${mvTxt(e)}</text>`;
+    return line(eNa, NA_C, 'Na') + line(eK, K_C, 'K')
+      + `<text x="1375" y="612" font-family="Lexend, Arial, sans-serif" font-weight="700" font-size="21" text-anchor="middle" fill="#1f2430">Equilibrium potentials</text>`
+      + row(652, 'na', 'Sodium (Na⁺)', eNa, NA_C) + row(694, 'k', 'Potassium (K⁺)', eK, K_C)
+      + `<line x1="1214" y1="728" x2="1536" y2="728" stroke="#e3e6ec" stroke-width="2"/>
+      <text font-family="Lexend, Arial, sans-serif" font-weight="600" font-size="16" text-anchor="middle" fill="#5b6270">
+        <tspan x="1375" y="764">They depend on the concentration</tspan><tspan x="1375" y="786">gradients. As the gradients run</tspan><tspan x="1375" y="808">down, both drift toward 0 mV.</tspan></text>`;
+  };
   const STOP_T = 9;
   const vm5 = (from, to, at, duration) => ({ type: 'value', id: 'vm5', from, to, at, duration });
   const cross = txt('✕', G4.px, (G4.top + G4.bot) / 2 + 4, 120, RED, { align: 'center', bold: true });
@@ -501,8 +520,9 @@
     ...pumpLoops([G4.px], G4.top, G4.bot).map((it) => ({ ...it, hideDuring: ['stop5', 'try5'] })),
     { ...svgItem(bars5(NORMAL)), hideDuring: ['stop5', 'try5'] },
     { ...svgItem(sizeBox(70)), hideDuring: ['stop5', 'try5'] },
-    { type: 'meter', id: 'vm5', value: -70, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 40, title: 'Membrane potential',
-      fireText: 'Action potential!', threshold: 10, downText: 'Inside is negative', upText: 'Less negative than normal', marks: [{ v: -90, label: 'E K⁺ (−90)', color: K_C, dy: 16 }] },
+    { type: 'meter', id: 'vm5', value: -70, x: 1190, y: 112, w: 370, h: 748, graphH: 250, min: -100, max: 80, title: 'Membrane potential',
+      fireText: 'Action potential!', threshold: 10, downText: 'Inside is negative', upText: 'Less negative than normal', marks: [] },
+    { ...svgItem(eqSvg(NORMAL)), hideDuring: ['stop5', 'try5'] },
   ];
   const stimulus = (at) => [
     { type: 'flash', x: 465, y: 490, r: 80, color: '#ffd34d', duration: 0.6, at },
@@ -510,7 +530,7 @@
   ];
   const stoppedState = [
     cross, ...g4.before.map((it) => ({ ...it, solid: true, duration: 0.01 })), ...kLeakLoops, ...naLeakLoops,
-    svgItem(bars5(DOWN)), svgItem(sizeBox(92)),
+    svgItem(bars5(DOWN)), svgItem(sizeBox(92)), svgItem(eqSvg(DOWN)),
   ];
   const stopActions = [
     {
@@ -530,10 +550,11 @@
         ...leakMoves(0.6, STOP_T - 2), ...kLeakLoops, ...naLeakLoops,
         ...frames((t) => bars5(mixV(NORMAL, DOWN, t)), 0.5, STOP_T, 18, true, true),
         ...frames((t) => sizeBox(70 + 22 * t), 0.5, STOP_T, 18, true, true),
+        ...frames((t) => eqSvg(mixV(NORMAL, DOWN, t)), 0.5, STOP_T, 36, true, true),
         { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[860, 600], [930, 660]], duration: 1.4, at: 3 },
         { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[1100, 600], [1030, 660]], duration: 1.4, at: 5.5 },
         { type: 'mover', once: true, vanish: true, char: '💧', size: 30, path: [[980, 840], [980, 790]], duration: 1.4, at: 7.5 },
-        vm5(-70, -20, 0.5, STOP_T),
+        vm5(-70, -5, 0.5, STOP_T),
         ...capBox5('The leaks keep going but nothing pumps the ions back,\nso the gradients run down and the potential drifts up.', RED, 0.6, STOP_T - 0.3),
         ...capBox5('Water follows Na⁺ in and the neuron swells. This is what\nhappens in a stroke: no blood flow → no ATP → no pumping.', RED, STOP_T),
       ],
@@ -542,7 +563,7 @@
       id: 'try5', label: 'Try to fire again', group: 'p5', stay: true, drawn: false,
       items: [
         ...stoppedState,
-        vm5(-20, -20, -8, 8.4), ...stimulus(0.4), vm5(-20, -12, 0.45, 0.3), vm5(-12, -20, 0.75, 1.0),
+        vm5(-5, -5, -8, 8.4), ...stimulus(0.4), vm5(-5, 0, 0.45, 0.3), vm5(0, -5, 0.75, 1.0),
         ...capBox5('Without a Na⁺ gradient there is nothing to rush in:\nno action potential. The neuron can no longer signal.', RED, 0.9),
       ],
     },
