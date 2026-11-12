@@ -204,27 +204,56 @@
   const blobDock = { tri: -112, round: -127, square: -110 };
   // left: specific ligand (triangle) tries all three, binds only the target
   const specL = (i) => {
-    const x = RX.L[i], start = [x, 300];
+    const x = RX.L[i], start = [x, 506];
     if (i === 0) return [[0, ...start, 0], [1.2 + i, x, dockY('tri'), 0], [1.3 + i, x, dockY('tri'), 1], [9, x, dockY('tri'), 1]];
     const t = 1 + i * 1.6, hover = S4.top - 135 * 0.8 - 26;
-    return [[0, ...start, 0], [t, x, hover, 0], [t + 0.5, x, hover, 0], [t + 1.4, x + 60, 330, 0], [9, x + 60, 330, 0]];
+    return [[0, ...start, 0], [t, x, hover, 0], [t + 0.5, x, hover, 0], [t + 1.4, x + 82, 512, 0], [9, x + 82, 512, 0]];
   };
   const specR = (i) => {
     const x = RX.R[i], p = RECS[i][0], d = S4.top + blobDock[p] * 0.8;
-    return [[0, x, 300, 0], [1.2 + i * 0.5, x, d, 0], [1.3 + i * 0.5, x, d, 1], [9, x, d, 1]];
+    return [[0, x, 506, 0], [1.2 + i * 0.5, x, d, 0], [1.3 + i * 0.5, x, d, 1], [9, x, d, 1]];
   };
   const drawSpecL = (i) => ([x, y, b]) => ligand('tri', x, y, 'amber', 1, 0.8) + (b > 0.5 ? contacts(RX.L[i], S4.top, 'tri', 4, 0.8) : '');
   const drawSpecR = (i) => ([x, y, b]) => ligand('blob', x, y, 'teal', 1, 0.8) + (b > 0.5 ? contacts(RX.R[i], S4.top, RECS[i][0], 2, 0.8) : '');
+  // Affinity tables: how strongly each panel's ligand binds each of the three receptors.
+  // High specificity = a big contrast (high for the target, very low for the rest);
+  // low specificity = similar affinities for all three.
+  const AFF_ROWS = {
+    L: [[1.0, 'High'], [0.07, 'Very low'], [0.05, 'Very low']],
+    R: [[0.62, 'Medium'], [0.58, 'Medium'], [0.55, 'Medium']],
+  };
+  const AFF_FOOT = { L: ['Big contrast → highly specific', GOOD], R: ['Similar for all three → not specific', BAD] };
+  const affTable = (x0, side) => {
+    const x = x0 + 30, w = 660, y = 268, rowH = 38, col = [x + 16, x + 250, x + 560];
+    const swatch = ['#4f7fcf', '#62b067', '#e0607a'], names = ['Target', 'Other receptor 1', 'Other receptor 2'];
+    let out = `<rect x="${x}" y="${y}" width="${w}" height="${36 + 3 * rowH + 40}" rx="12" fill="#ffffff" stroke="#c9ced8" stroke-width="2"/>
+      <rect x="${x}" y="${y}" width="${w}" height="36" rx="12" fill="#f1f3f7"/><rect x="${x}" y="${y + 24}" width="${w}" height="12" fill="#f1f3f7"/>
+      ${T(col[0], y + 25, 18, '#3b4252', 700, 'start')('Receptor')}${T(col[1], y + 25, 18, '#3b4252', 700, 'start')('Affinity of this ligand for it')}`;
+    AFF_ROWS[side].forEach(([v, word], i) => {
+      const ry = y + 36 + i * rowH, barW = 290;
+      out += `<line x1="${x}" y1="${ry}" x2="${x + w}" y2="${ry}" stroke="#e3e6ec" stroke-width="1.5"/>
+        <rect x="${col[0]}" y="${ry + 11}" width="16" height="16" rx="4" fill="${swatch[i]}"/>
+        ${T(col[0] + 26, ry + 25, 18, '#1f2430', 700, 'start')(names[i])}
+        <rect x="${col[1]}" y="${ry + 10}" width="${barW}" height="18" rx="9" fill="#eef0f4"/>
+        <rect x="${col[1]}" y="${ry + 10}" width="${Math.max(8, barW * v)}" height="18" rx="9" fill="${side === 'L' ? (i ? '#c9ced8' : SPEC) : '#9b7bd9'}"/>
+        ${T(col[2], ry + 25, 18, side === 'L' && !i ? SPEC : '#3b4252', 700, 'start')(word)}`;
+    });
+    const fy = y + 36 + 3 * rowH;
+    out += `<line x1="${x}" y1="${fy}" x2="${x + w}" y2="${fy}" stroke="#c9ced8" stroke-width="2"/>
+      ${T(x + w / 2, fy + 27, 19, AFF_FOOT[side][1])(AFF_FOOT[side][0])}`;
+    return out;
+  };
   const specItems = [
     title('Specificity: how choosy is it?'),
     { type: 'rect', x: 60, y: 112, w: 1480, h: 80, color: SPEC, fill: '#f4eefe', fillOpacity: 1, width: 3, rough: false },
     txt('Specificity = how selectively a ligand binds its target rather than other receptors.', 800, 152, 26, SPEC, { align: 'center', bold: true }),
     specBase,
-    ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecL(i)([RX.L[i], 300, 0])), hideDuring: 'bind4' })),
-    ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecR(i)([RX.R[i], 300, 0])), hideDuring: 'bind4' })),
+    ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecL(i)([RX.L[i], 506, 0])), hideDuring: 'bind4' })),
+    ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecR(i)([RX.R[i], 506, 0])), hideDuring: 'bind4' })),
+    svgItem(affTable(60, 'L') + affTable(820, 'R')),
     txt('High specificity', 420, 245, 32, SPEC, { align: 'center', bold: true }),
     txt('Low specificity', 1180, 245, 32, '#8a8f98', { align: 'center', bold: true }),
-    ...[0, 1].flatMap((side) => (side ? RX.R : RX.L).map((x, i) => txt(RECS[i][2], x, 760, 19, i ? '#5b6270' : '#2c5a92', { align: 'center', bold: true }))),
+    ...[0, 1].flatMap((side) => (side ? RX.R : RX.L).map((x, i) => txt(i ? `Other\nreceptor ${i}` : 'Target', x, 760, 19, i ? '#5b6270' : '#2c5a92', { align: 'center', bold: true }))),
   ];
   const specActions = [{
     id: 'bind4', label: 'Watch them bind', stay: true, drawn: false,
