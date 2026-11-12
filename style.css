@@ -503,3 +503,5 @@ button, select {
 .rec-mode { height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; background: #fff; font-size: 13px; cursor: pointer; }
 .clip .vis-btn { display: block; width: calc(100% - 12px); margin: 4px 6px 0; height: 28px; border: 1px solid #2f6fde; border-radius: 7px; background: #eef3ff; color: #1d4fb0; font-size: 13px; font-weight: 600; cursor: pointer; }
 .clip .vis-btn:hover { background: #dfe9ff; }
+
+.speed-out { height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 4px; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }

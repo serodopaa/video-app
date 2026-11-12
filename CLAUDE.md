@@ -39,6 +39,9 @@ dependencies. Open `index.html` in a browser.
   instead of the mic; it stops by itself when the voice ends and replaces the take with a normal clip
   that keeps the take in `voice` (so 🎬 Redo visuals works). Pause suspends the AudioContext too.
   Preview and export leave voice-only takes out.
+  Speed (`#outSpeed`, saved as `wb-speed`: 1, 1.25, 1.5, 1.75, 2×) applies to Preview and Export. Videos play
+  at that `playbackRate` with `preservesPitch` (like YouTube). At 1× export uses the decoded-audio path;
+  faster, the sound comes from the video elements (fade gains, delayed fade-in at each join).
   Never change how existing clips are stored (only add optional fields).
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as

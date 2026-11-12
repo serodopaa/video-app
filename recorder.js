@@ -789,6 +789,16 @@
     g.gain.setValueAtTime(g.gain.value, t);
     g.gain.linearRampToValueAtTime(level, t + sec);
   }
+  // fade in after the video has actually started making sound (play() resolves a moment before it does)
+  function fadeInLate(v, delay = 0.04, sec = 0.04) {
+    const g = v && v._fade;
+    if (!g) return;
+    const t = v._fadeAc.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.setValueAtTime(0, t + delay);
+    g.gain.linearRampToValueAtTime(1, t + delay + sec);
+  }
   function silence(v) {
     const g = v && v._fade;
     if (!g) return;
@@ -812,6 +822,20 @@
   const showLoud = () => { $('loudVal').textContent = Math.round(loudness * 100) + '%'; };
   loudInput.value = loudness;
   showLoud();
+  // ---------- playback speed (preview + export), like YouTube's speed setting ----------
+  // The videos play faster with the browser's pitch-preserving playback (the same as YouTube in Chrome),
+  // so voices sound normal, just quicker. Export records them in real time, so the file comes out faster.
+  let speed = 1;
+  try { const v = parseFloat(localStorage.getItem('wb-speed')); if ([1, 1.25, 1.5, 1.75, 2].includes(v)) speed = v; } catch (_) { /* default */ }
+  const speedSel = $('outSpeed');
+  speedSel.value = String(speed);
+  const applySpeed = (v) => { v.defaultPlaybackRate = speed; v.playbackRate = speed; v.preservesPitch = true; };
+  speedSel.addEventListener('change', () => {
+    speed = parseFloat(speedSel.value) || 1;
+    try { localStorage.setItem('wb-speed', String(speed)); } catch (_) { /* not saved */ }
+    pv.vids.forEach(applySpeed); // a preview that's open speeds up right away
+    speedSel.blur();
+  });
   loudInput.addEventListener('input', () => {
     loudness = parseFloat(loudInput.value) || 1;
     try { localStorage.setItem('wb-loudness', String(loudness)); } catch (_) { /* not saved */ }
@@ -862,7 +886,7 @@
     const pct = pv.total ? (g / pv.total) * 100 : 0;
     $('pvHead').style.left = pct + '%';
     $('pvFill').style.width = pct + '%';
-    $('pvTime').textContent = `${fmt(g)} / ${fmt(pv.total)}${pv.idx >= 0 ? `  ·  Clip ${pv.list[pv.idx]._ci + 1} of ${clips.length}` : ''}`;
+    $('pvTime').textContent = `${fmt(g / speed)} / ${fmt(pv.total / speed)}${speed !== 1 ? `  (${speed}×)` : ''}${pv.idx >= 0 ? `  ·  Clip ${pv.list[pv.idx]._ci + 1} of ${clips.length}` : ''}`;
     $('pvPlay').textContent = pv.playing ? '⏸ Pause' : '▶ Play';
   }
   // Get the clip after the current one ready in the spare video element.
@@ -980,7 +1004,7 @@
     pv.total = acc;
     pv.idx = -1;
     pv.cur = 0;
-    pv.vids.forEach((v) => { v._clip = null; });
+    pv.vids.forEach((v) => { v._clip = null; applySpeed(v); });
     pv.active = true;
     pv.playing = true;
     const segs = $('pvSegs');
@@ -1029,6 +1053,8 @@
     // Two videos take turns (the next clip is parked while the current one plays),
     // and the recorder runs continuously, so cuts are seamless.
     const vids = [makeVideo(), makeVideo()];
+    vids.forEach(applySpeed);
+    const sp = speed; // fixed for this export
     const ac = new AudioContext();
     await ac.resume();
     const dest = ac.createMediaStreamDestination();
@@ -1109,7 +1135,9 @@
       for (let i = 0; i < list.length && !signal.aborted; i++) {
         const v = vids[i % 2], c = list[i];
         if (i > 0) await nextPrep;
-        const buf = await decode(c);
+        // At 1× the sound is decoded and scheduled exactly (no clicks). Faster, it comes from the video
+        // itself, which keeps the pitch natural; short fades at each join stop clicks there.
+        const buf = sp === 1 ? await decode(c) : null;
         if (i + 1 < list.length) decode(list[i + 1]); // get the next one ready
         // drop decoded sound that is no longer needed (keeps memory low on long videos)
         for (const k of [...decoded.keys()]) if (!list.slice(i).some((x) => (x._root || x) === k)) decoded.delete(k);
@@ -1122,7 +1150,7 @@
         await v.play();
         // (the decoded sound can be a little shorter than the clip's length: fade out where it really ends)
         if (buf) playPiece(buf, v.currentTime, Math.max(0.05, Math.min(c.out, buf.duration - 0.005) - v.currentTime));
-        else fadeTo(v, 1);
+        else fadeInLate(v);
         playingNow = true;
         if (i > 0) {
           const spare = vids[(i + 1) % 2];
@@ -1132,8 +1160,8 @@
         await new Promise((resolve) => {
           const check = () => {
             if (held) { requestAnimationFrame(check); return; }
-            if (!v._fadingOut && v.currentTime >= c.out - 0.05) { v._fadingOut = true; fadeTo(v, 0); }
-            if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02) return resolve();
+            if (!v._fadingOut && v.currentTime >= c.out - 0.05 * sp) { v._fadingOut = true; fadeTo(v, 0); }
+            if (signal.aborted || v.ended || v.currentTime >= c.out - 0.02 * sp) return resolve();
             btn.textContent = `⏳ ${Math.floor(((done + Math.max(0, v.currentTime - c.in)) / total) * 100)}% · Cancel`;
             requestAnimationFrame(check);
           };
@@ -1165,7 +1193,7 @@
     ac.close();
 
     if (ok && chunks.length) {
-      const blob = await withDuration(new Blob(chunks, { type: ((mr && mr.mimeType) || MIME || 'video/webm').split(';')[0] }), total);
+      const blob = await withDuration(new Blob(chunks, { type: ((mr && mr.mimeType) || MIME || 'video/webm').split(';')[0] }), total / sp);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       const stamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-');
