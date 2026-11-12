@@ -82,29 +82,67 @@
     txt(lines, 1050, 510, 19, '#3b4252', { bold: true }),
   ];
 
-  // ---------- slide 2: agonist ----------
-  const AG0 = [B.rx - 260, 260];
+  // ---------- slide 2: agonist (natural: serotonin, drug: triptan) ----------
+  // One serotonin receptor. Two molecules wait above it: serotonin (made by the body) and a triptan (a
+  // drug). Either one binds the same pocket and switches the receptor ON, which has an effect on the cell.
+  const R2 = { rx: 470, top: B.top, s: B.s };
+  const r2Dock = dockY(R2.top, R2.s);
+  const MOL = {
+    ser: { at: [215, 290], color: 'amber', name: 'Serotonin', sub: 'made by your body', c: '#a8640a' },
+    tri: { at: [745, 290], color: 'teal', name: 'Triptan', sub: 'a drug', c: '#0b6f7e' },
+  };
+  const molSvg = (k, x, y) => {
+    const m = MOL[k];
+    return ligand('tri', x, y, m.color, 1, R2.s)
+      + `<line x1="${f1(x)}" y1="${f1(y - 102)}" x2="${f1(x)}" y2="${f1(y - 70)}" stroke="${m.c}" stroke-width="2" stroke-dasharray="4 4"/>`
+      + `<rect x="${f1(x - 78)}" y="${f1(y - 152)}" width="156" height="50" rx="12" fill="#ffffff" stroke="${m.c}" stroke-width="2.5"/>`
+      + T(x, y - 130, 21, m.c)(m.name) + T(x, y - 110, 15, '#5b6270', 600)(m.sub);
+  };
+  const G2 = { x: 860, y: 430, w: 120, h: 400 };
+  const gauge2 = (v) => gauge(G2.x, G2.y, G2.w, G2.h, v, 'Effect');
+  // right column: definition + the two kinds of agonist (cards are clickable)
+  const CARD = { x: 1030, w: 510, ser: 380, tri: 610, h: 210 };
+  const cardItems = (k, head, body, tag) => [
+    { type: 'rect', x: CARD.x, y: CARD[k], w: CARD.w, h: CARD.h, color: MOL[k].c, fill: '#ffffff', fillOpacity: 1, width: 2.5, rough: false },
+    svgItem(ligand('tri', CARD.x + 52, CARD[k] + 62, MOL[k].color, 0.8)),
+    txt(tag, CARD.x + 100, CARD[k] + 34, 17, '#5b6270', { bold: true }),
+    txt(head, CARD.x + 100, CARD[k] + 66, 26, MOL[k].c, { bold: true }),
+    txt(body, CARD.x + 30, CARD[k] + 128, 19, '#1f2430', { bold: true }),
+    { type: 'hotspot', x: CARD.x, y: CARD[k], w: CARD.w, h: CARD.h, action: k === 'ser' ? 'a2s' : 'a2t' },
+  ];
+  const cardOn = (k) => ({ type: 'rect', x: CARD.x - 4, y: CARD[k] - 4, w: CARD.w + 8, h: CARD.h + 8, color: MOL[k].c, fill: MOL[k].c, fillOpacity: 0.07, width: 6, rough: false });
   const agoItems = [
     title('Agonist: binds AND activates'),
     bigBase(),
-    { ...svgItem(agonist(...AG0, B.s) + gauge(G.x, G.y, G.w, G.h, 0)), hideDuring: 'a2' },
-    ...label('Agonist', 170, 230, [190, 246], [AG0[0] - 30, AG0[1] - 10], 'center', 22).map((it) => ({ ...it, hideDuring: 'a2' })),
-    ...label('Receptor', 830, 500, [820, 510], [B.rx + 80, B.top - 70], 'left', 22),
-    txt('Outside the cell', 90, 145, 21, '#2c5a92', { bold: true }), txt('Inside the cell', 90, 835, 21, '#6b3c87', { bold: true }),
-    ...infoPanel('AGONIST', AGO, 'Binds the receptor AND\nswitches it ON, so the\ncell responds.\n\nIt mimics the body’s own\nsignal (neurotransmitter\nor hormone).',
-      'Examples\n\n• Neurotransmitters are\n  the body’s own agonists\n  (e.g. acetylcholine)\n\n• Morphine: activates\n  opioid receptors, like\n  the body’s endorphins'),
+    ...label('Serotonin receptor', 120, 520, [205, 520], [R2.rx - 92, R2.top - 70], 'center', 21),
+    txt('Outside the cell', 90, 585, 21, '#2c5a92', { bold: true }), txt('Inside the cell', 90, 835, 21, '#6b3c87', { bold: true }),
+    { ...svgItem(molSvg('ser', ...MOL.ser.at) + molSvg('tri', ...MOL.tri.at) + gauge2(0)), hideDuring: ['a2s', 'a2t'] },
+    { type: 'hotspot', x: MOL.ser.at[0] - 80, y: 130, w: 160, h: 200, action: 'a2s' },
+    { type: 'hotspot', x: MOL.tri.at[0] - 80, y: 130, w: 160, h: 200, action: 'a2t' },
+    { type: 'rect', x: CARD.x, y: 112, w: CARD.w, h: 250, color: AGO, fill: '#eefaf2', fillOpacity: 1, width: 3, rough: false },
+    txt('AGONIST', 1285, 150, 32, AGO, { align: 'center', bold: true }),
+    txt('Any molecule that BINDS a\nreceptor AND ACTIVATES it.\n\nActivated = the receptor has an\neffect on its cell.', 1285, 210, 21, '#1f2430', { align: 'center', bold: true }),
+    ...cardItems('ser', 'Serotonin (5-HT)', 'A neurotransmitter your body makes.\nIt binds serotonin receptors and\nactivates them.', 'NATURAL AGONIST'),
+    ...cardItems('tri', 'Triptans', 'Migraine drugs (e.g. sumatriptan).\nThey bind the SAME serotonin\nreceptors and activate them too.', 'DRUG AGONIST (most common use)'),
   ];
-  const agoActions = [{
-    id: 'a2', label: 'Agonist binds', stay: true, drawn: false,
-    items: [
-      ...track([[0, ...AG0], [1.4, B.rx, bigDock], [12, B.rx, bigDock]], ([x, y]) => agonist(x, y, B.s)),
-      { ...svgItem(contacts(B.rx, B.top, 'tri', 4, B.s) + onGlow(B.rx, B.top, B.s)), at: 1.5, duration: 0.3 },
-      { type: 'flash', x: B.rx, y: bigDock, r: 80, color: '#3ccf6e', duration: 0.6, at: 1.45 },
-      { ...sigPulse(B.rx, B.bot + 80, 1.7), r: 36 },
-      txt('Signal inside the cell', B.rx + 70, 760, 22, AGO, { align: 'center', bold: true, at: 1.9, anim: 'fade', duration: 0.4 }),
-      ...frameTrack([[0, 0], [1.6, 0], [3.2, 1], [12, 1]], ([v]) => gauge(G.x, G.y, G.w, G.h, v), 12),
-    ],
-  }];
+  // one molecule binds and activates; the other waits where it was
+  const bindView = (k) => {
+    const other = k === 'ser' ? 'tri' : 'ser';
+    return [
+      svgItem(molSvg(other, ...MOL[other].at)),
+      ...track([[0, ...MOL[k].at], [1.4, R2.rx, r2Dock], [12, R2.rx, r2Dock]], ([x, y]) => molSvg(k, x, y)),
+      { ...svgItem(contacts(R2.rx, R2.top, 'tri', 4, R2.s) + onGlow(R2.rx, R2.top, R2.s)), at: 1.5, duration: 0.3 },
+      { type: 'flash', x: R2.rx, y: r2Dock, r: 80, color: '#3ccf6e', duration: 0.6, at: 1.45 },
+      { ...sigPulse(R2.rx, B.bot + 80, 1.7), r: 36 },
+      txt('Activated → an effect\non the cell', R2.rx + 200, 770, 21, AGO, { align: 'center', bold: true, at: 1.9, anim: 'fade', duration: 0.4 }),
+      ...frameTrack([[0, 0], [1.6, 0], [3.2, 1], [12, 1]], ([v]) => gauge2(v), 12),
+      cardOn(k),
+    ];
+  };
+  const agoActions = [
+    { id: 'a2s', label: 'Serotonin binds (natural)', group: 'ag2', stay: true, drawn: false, items: bindView('ser') },
+    { id: 'a2t', label: 'Triptan binds (drug)', group: 'ag2', stay: true, drawn: false, items: bindView('tri') },
+  ];
 
   // ---------- slide 3: antagonist ----------
   const AN0 = [B.rx - 260, 260], AG1 = [B.rx + 260, 250];
@@ -250,7 +288,22 @@ The first is an agonist. The second is an antagonist. Let's see how each one wor
         items: hookItems,
       },
       // Slide 2: agonist.
-      { script: Qs('What is an agonist?', 'What happens to the receptor and the cell when an agonist binds?', 'What are some examples of agonists?'), say: 'An agonist binds the receptor and switches it on, so the cell responds.', clear: true, actions: agoActions, items: agoItems },
+      {
+        say: 'An agonist binds a receptor and activates it: serotonin is a natural agonist of serotonin receptors, and triptans are drug agonists of the same receptors.',
+        script: `[QUESTIONS THIS SLIDE ANSWERS]
+[• What does an agonist do?]
+[• Can the body make its own agonists?]
+[• How is the word usually used (drugs)?]
+
+So starting with agonists, what they do is activate the receptor that they bind to.
+
+It is important to note though that there are agonists for a given receptor that your body naturally makes. For example, the neurotransmitter serotonin is an agonist for serotonin receptors, because it binds to them and then activates them. [click "Serotonin binds" or the serotonin card]
+
+But the term agonist is most commonly used when talking about drugs that bind to a receptor. So for example, triptans are a class of drugs that are serotonin receptor agonists, because they also bind to serotonin receptors and activate them. [click "Triptan binds" or the triptan card]
+
+So basically, an agonist is any molecule that binds to a receptor and causes that receptor to be activated. [point to the AGONIST box] And being activated means it has some effect on the cell that the receptor is a part of, in most cases. [point to the Effect gauge]`,
+        clear: true, actions: agoActions, items: agoItems,
+      },
       // Slide 3: antagonist.
       { script: Qs('What is an antagonist?', 'If it binds, why is there no response?', 'How does it stop the agonist from working?', 'What is an example of an antagonist?'), say: 'An antagonist binds the receptor but does not switch it on, and it blocks the agonist from getting in.', clear: true, actions: antActions, items: antItems },
       // Slide 4: side by side (tabs).
