@@ -835,9 +835,15 @@
   // ---------- playback speed (preview + export), like YouTube's speed setting ----------
   // The videos play faster with the browser's pitch-preserving playback (the same as YouTube in Chrome),
   // so voices sound normal, just quicker. Export records them in real time, so the file comes out faster.
-  let speed = 1.25; // default (the user's choice); a saved choice overrides it
-  try { const v = parseFloat(localStorage.getItem('wb-speed')); if ([1, 1.25, 1.5, 1.75, 2].includes(v)) speed = v; } catch (_) { /* default */ }
+  let speed = 1.2; // default (the user's choice); a saved choice overrides it
+  try { const v = parseFloat(localStorage.getItem('wb-speed')); if (v >= 1 && v <= 2) speed = v; } catch (_) { /* default */ }
   const speedSel = $('outSpeed');
+  // a choice saved from the old list (e.g. 1.25×) that isn't in the new one still shows
+  if (![...speedSel.options].some((o) => parseFloat(o.value) === speed)) {
+    const o = new Option(`${speed}×`, String(speed));
+    const after = [...speedSel.options].find((x) => parseFloat(x.value) > speed);
+    speedSel.insertBefore(o, after || null);
+  }
   speedSel.value = String(speed);
   const applySpeed = (v) => { v.defaultPlaybackRate = speed; v.playbackRate = speed; v.preservesPitch = true; };
   speedSel.addEventListener('change', () => {
