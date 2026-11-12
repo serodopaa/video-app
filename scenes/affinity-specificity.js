@@ -167,11 +167,97 @@
   const loKeys = [[0, ...LO0, 0], [1.2, A2.R.rx, dockR, 0], [1.3, A2.R.rx, dockR, 1], [2.1, A2.R.rx, dockR, 1], [2.2, A2.R.rx, dockR, 0],
     [3.0, A2.R.rx + 170, 330, 0], [4.4, A2.R.rx + 170, 330, 0], [5.4, A2.R.rx, dockR, 0], [5.5, A2.R.rx, dockR, 1], [6.2, A2.R.rx, dockR, 1], [6.3, A2.R.rx, dockR, 0],
     [7.1, A2.R.rx - 180, 310, 0], [8.4, A2.R.rx - 180, 310, 0], [9.4, A2.R.rx, dockR, 0], [9.5, A2.R.rx, dockR, 1], [BIND_T, A2.R.rx, dockR, 1]];
+  // ---- tabs: Binding (the view above) / Why? (close-up of the bonds) ----
+  const AFF_TABS = [{ id: 'bind2', x: 1105, text: 'Binding' }, { id: 'why2', x: 1325, text: 'Why? The bonds' }];
+  const affTabs = (active) => AFF_TABS.flatMap((t) => [
+    { type: 'rect', x: t.x, y: 112, w: 215, h: 80, color: AFF, fill: t.id === active ? AFF : '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(t.text, t.x + 107, 152, 22, t.id === active ? '#ffffff' : AFF, { align: 'center', bold: true }),
+  ]);
+  // ---- close-up: the pocket, zoomed in, with each interaction between ligand and receptor drawn ----
+  // High affinity: snug fit, 5 interactions (ionic, H-bonds, hydrophobic). Low: loose fit, 1 weak H-bond.
+  const Z = { s: 3.0, top: 900 };
+  const zoomSide = (x0, x1) => {
+    const id = `zc${gid++}`;
+    return `<defs><clipPath id="${id}"><rect x="${x0}" y="205" width="${x1 - x0}" height="655" rx="16"/></clipPath></defs>
+      <g clip-path="url(#${id})"><rect x="${x0}" y="205" width="${x1 - x0}" height="655" fill="${OUT}"/>`;
+  };
+  const triPts = (cx, cy, k) => { const s2 = k * Z.s; return { A: [cx - 31 * s2, cy - 26 * s2], B: [cx + 31 * s2, cy - 26 * s2], C: [cx, cy + 27 * s2] }; };
+  const wallPts = (x) => ({ P1: [x - 37 * Z.s, Z.top - 131 * Z.s], P2: [x + 37 * Z.s, Z.top - 131 * Z.s], P3: [x, Z.top - 77 * Z.s] });
+  const lerpP = (p, q, f) => [lerp(p[0], q[0], f), lerp(p[1], q[1], f)];
+  // an interaction drawn between a point on the ligand (lp) and a point on the pocket wall (wp)
+  const BOND = {
+    ionic: { c: '#7b3fd0', name: 'Ionic bond', strong: true },
+    hbond: { c: '#2f6fde', name: 'H-bond' },
+    hydro: { c: '#c48a00', name: 'Hydrophobic' },
+  };
+  const bondSvg = (kind, lp, wp, side) => {
+    const c = BOND[kind].c, mx = (lp[0] + wp[0]) / 2, my = (lp[1] + wp[1]) / 2;
+    const tx = wp[0] + (side < 0 ? -95 : 95), ty = wp[1] + 4;
+    let g = '';
+    if (kind === 'hydro') g = `<ellipse cx="${f1(mx)}" cy="${f1(my)}" rx="30" ry="18" transform="rotate(${f1(Math.atan2(wp[1] - lp[1], wp[0] - lp[0]) * 180 / Math.PI)} ${f1(mx)} ${f1(my)})" fill="#ffd34d" fill-opacity="0.75" stroke="${c}" stroke-width="2.5"/>`;
+    else g = `<line x1="${f1(lp[0])}" y1="${f1(lp[1])}" x2="${f1(wp[0])}" y2="${f1(wp[1])}" stroke="${c}" stroke-width="${kind === 'ionic' ? 7 : 4.5}" stroke-dasharray="${kind === 'ionic' ? '10 6' : '7 6'}" stroke-linecap="round"/>`;
+    if (kind === 'ionic') g += `<circle cx="${f1(lp[0])}" cy="${f1(lp[1])}" r="12" fill="#2f6fde" stroke="#ffffff" stroke-width="2"/>${T(lp[0], lp[1] + 7, 18, '#ffffff')('+')}
+      <circle cx="${f1(wp[0])}" cy="${f1(wp[1])}" r="12" fill="#e0453a" stroke="#ffffff" stroke-width="2"/>${T(wp[0], wp[1] + 7, 20, '#ffffff')('−')}`;
+    g += `<line x1="${f1(wp[0])}" y1="${f1(wp[1])}" x2="${f1(tx)}" y2="${f1(ty)}" stroke="#ffffff" stroke-width="2.5" opacity="0.9"/>
+      <rect x="${f1(tx - 62)}" y="${f1(ty - 16)}" width="124" height="30" rx="8" fill="#ffffff" stroke="${c}" stroke-width="2.5"/>${T(tx, ty + 6, 16, c)(BOND[kind].name)}`;
+    return g;
+  };
+  const ZL = { x: 420, k: 0.84, gap: 24 }, ZR = { x: 1180, k: 0.6, gap: 80 };
+  const zCy = (z) => Z.top - 77 * Z.s - 27 * z.k * Z.s - z.gap;
+  const HI_BONDS = [['ionic', 'L', 0.2], ['hbond', 'R', 0.22], ['hbond', 'L', 0.62], ['hydro', 'R', 0.62], ['hydro', 'B', 0]];
+  const bondAt = (z, which, f) => {
+    const { A, B, C } = triPts(z.x, zCy(z), z.k), { P1, P2, P3 } = wallPts(z.x);
+    if (which === 'L') return [lerpP(A, C, f), lerpP(P1, P3, f), -1];
+    if (which === 'R') return [lerpP(B, C, f), lerpP(P2, P3, f), 1];
+    return [C, [P3[0], P3[1] - 2], 1]; // the tip, at the bottom of the pocket
+  };
+  const zoomBase = () => {
+    let out = '';
+    [[60, 780, ZL, 'amber'], [820, 1540, ZR, 'pale']].forEach(([x0, x1, z, col]) => {
+      out += zoomSide(x0, x1) + receptor(z.x, Z.top, 'tri', 'blue', Z.s) + ligand('tri', z.x, zCy(z), col, z.k, Z.s) + '</g>';
+    });
+    return out;
+  };
+  const strengthBar = (x0, v, word, c) => `<rect x="${x0 + 190}" y="292" width="340" height="24" rx="12" fill="#eef0f4" stroke="#c9ced8" stroke-width="2"/>
+    <rect x="${x0 + 190}" y="292" width="${f1(Math.max(12, 340 * v))}" height="24" rx="12" fill="${c}"/>
+    ${T(x0 + 180, 311, 18, '#3b4252', 700, 'end')('Binding strength')}${T(x0 + 540, 311, 18, c, 700, 'start')(word)}`;
+  const whyItems = () => {
+    const out = [
+      ...affTabs('why2'),
+      { type: 'rect', x: 50, y: 200, w: 1500, h: 668, color: '#fdfdfb', fill: '#fdfdfb', fillOpacity: 1, width: 0, rough: false },
+      svgItem(zoomBase()),
+      txt('🔍 Close-up of the binding pocket', 800, 224, 17, '#8a8f98', { align: 'center', bold: true }),
+      txt('High affinity: snug fit', 420, 245, 30, AFF, { align: 'center', bold: true }),
+      txt('Low affinity: loose fit', 1180, 245, 30, '#8a8f98', { align: 'center', bold: true }),
+    ];
+    HI_BONDS.forEach(([kind, which, f], i) => {
+      const [lp, wp, side] = bondAt(ZL, which, f), at = 0.5 + i * 0.6;
+      out.push({ ...svgItem(bondSvg(kind, lp, wp, side)), at, duration: 0.3 });
+      out.push({ type: 'flash', x: (lp[0] + wp[0]) / 2, y: (lp[1] + wp[1]) / 2, r: 34, color: BOND[kind].c, duration: 0.5, at });
+      out.push(txt(`Interactions: ${i + 1}`, 420, 352, 24, AFF, { align: 'center', bold: true, at, ...(i < HI_BONDS.length - 1 ? { until: 0.6 } : {}) }));
+    });
+    { // low affinity: the ligand is mostly too far from the walls; just one weak H-bond reaches
+      const [lp, wp, side] = bondAt(ZR, 'L', 0.45);
+      out.push({ ...svgItem(bondSvg('hbond', lp, wp, side)), at: 0.8, duration: 0.3 });
+      out.push(txt('Interactions: 1', 1180, 352, 24, '#8a8f98', { align: 'center', bold: true, at: 0.8 }));
+      out.push({ type: 'rect', x: ZR.x + 110, y: 600, w: 230, h: 58, color: BAD, fill: '#ffffff', fillOpacity: 0.95, width: 2.5, rough: false, at: 1.4 });
+      out.push(txt('Big gaps: most of it is\ntoo far away to bond', ZR.x + 225, 629, 17, BAD, { align: 'center', bold: true, at: 1.4, anim: 'fade', duration: 0.4 }));
+    }
+    const tb = 0.5 + HI_BONDS.length * 0.6;
+    out.push(...frameTrack([[0, 0, 0], [0.5, 0, 0], [tb, 1, 0.18], [12, 1, 0.18]], ([vh, vl]) => strengthBar(60, vh, vh > 0.9 ? 'Strong' : '', AFF) + strengthBar(820, vl, vl > 0.15 ? 'Weak' : '', '#8a8f98'), 10));
+    out.push(
+      { type: 'rect', x: 230, y: 786, w: 1140, h: 56, color: AFF, fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false, at: tb + 0.2 },
+      txt('More bonds (and stronger ones) + a snug fit = it holds on tighter = HIGH affinity', 800, 814, 22, AFF, { align: 'center', bold: true, at: tb + 0.2, anim: 'fade', duration: 0.4 }),
+    );
+    return out;
+  };
   const affItems = [
     title('Affinity: how tightly does it bind?'),
-    { type: 'rect', x: 60, y: 112, w: 1480, h: 80, color: AFF, fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
-    txt('Affinity = how strongly a ligand binds its receptor: how tightly it holds on once it’s there.', 800, 152, 26, AFF, { align: 'center', bold: true }),
+    { type: 'rect', x: 60, y: 112, w: 1030, h: 80, color: AFF, fill: '#eef3ff', fillOpacity: 1, width: 3, rough: false },
+    txt('Affinity = how strongly a ligand holds on to its receptor once it’s there.', 575, 152, 24, AFF, { align: 'center', bold: true }),
     affBase, ...affStatic,
+    ...affTabs(null).map((it) => ({ ...it, hideDuring: ['bind2', 'why2'] })),
+    ...AFF_TABS.map((t) => ({ type: 'hotspot', x: t.x, y: 112, w: 215, h: 80, action: t.id })),
     txt('High affinity', 420, 245, 32, AFF, { align: 'center', bold: true }),
     txt('Low affinity', 1180, 245, 32, '#8a8f98', { align: 'center', bold: true }),
     txt('Snug fit, many bonds', 420, 285, 21, '#3b4252', { align: 'center', bold: true }),
@@ -182,8 +268,9 @@
     txt('= an attractive interaction (bond) between ligand and receptor', 110, 838, 18, '#5b6270', { bold: true }),
   ];
   const affActions = [{
-    id: 'bind2', label: 'Watch them bind', stay: true, drawn: false,
+    id: 'bind2', label: 'Binding: watch them bind', group: 'aff', stay: true, drawn: false,
     items: [
+      ...affTabs('bind2'),
       ...track(hiKeys, ([x, y]) => hiDraw([x, y, 0]), () => contacts(A2.L.rx, A2.top, 'tri', 4)),
       ...track(loKeys, ([x, y]) => loDraw([x, y, 0]), () => contacts(A2.R.rx, A2.top, 'tri', 1)),
       { type: 'flash', x: A2.L.rx, y: dockL, r: 60, color: '#ffd34d', duration: 0.6, at: 1.25 },
@@ -192,6 +279,8 @@
       txt('Bound almost all the time', 420, 796, 20, '#3b4252', { align: 'center', at: BIND_T - 0.5, anim: 'fade', duration: 0.4 }),
       txt('Bound only part of the time', 1180, 796, 20, '#3b4252', { align: 'center', at: BIND_T - 0.5, anim: 'fade', duration: 0.4 }),
     ],
+  }, {
+    id: 'why2', label: 'Why? The bonds', group: 'aff', stay: true, drawn: false, items: whyItems(),
   }];
 
   // ====================================================================== slide 3: specificity
@@ -406,7 +495,7 @@ The first is affinity. The second is specificity. They sound similar, but they'r
         items: hookItems,
       },
       // Slide 2: affinity.
-      { script: Qs('What is affinity?', 'What makes a ligand bind tightly (fit and number of bonds)?', 'What does high vs low affinity look like at the receptor?'), say: 'A high-affinity ligand fits snugly and makes many bonds, so it stays bound; a low-affinity one keeps falling off.', clear: true, actions: affActions, items: affItems },
+      { script: Qs('What is affinity?', 'What does high vs low affinity look like at the receptor?', 'WHY does a high-affinity ligand hold on more tightly? (more and stronger bonds, snug fit: the "Why? The bonds" tab)'), say: 'A high-affinity ligand fits snugly and makes many bonds, so it stays bound; a low-affinity one keeps falling off.', clear: true, actions: affActions, items: affItems },
       // Slide 3: specificity.
       { script: Qs('What is specificity?', 'What does a specific vs a non-specific ligand do?', 'Why does low specificity cause side effects?'), say: 'A highly specific ligand binds only its target; a non-specific one binds other receptors too, causing side effects.', clear: true, actions: specActions, items: specItems },
       // Slide 4: independent.
