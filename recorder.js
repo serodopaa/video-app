@@ -1087,7 +1087,11 @@
     let vTrack = null, mr = null;
     const chunks = [];
     const startRecorder = () => {
-      vTrack = out.captureStream(FPS).getVideoTracks()[0];
+      // frames are pushed one by one (requestFrame) as each clip frame is drawn, so every frame of the
+      // clips lands in the file exactly once, at the right moment (a fixed-rate sampler beats against the
+      // clips' own frames and repeats / skips some, which makes moving things jump)
+      vTrack = out.captureStream(perFrame ? 0 : FPS).getVideoTracks()[0];
+      if (perFrame) vTrack.requestFrame();
       mr = new MediaRecorder(new MediaStream([vTrack, ...dest.stream.getAudioTracks()]), REC_OPTS);
       mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       mr.start(1000);
@@ -1117,12 +1121,28 @@
     };
     document.addEventListener('visibilitychange', onVisibility);
     let drawing = true;
-    const draw = () => {
-      if (!drawing) return;
-      if (active && active.readyState >= 2) octx.drawImage(active, 0, 0, RW, RH);
-      requestAnimationFrame(draw);
-    };
-    draw();
+    const perFrame = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+    if (perFrame) {
+      // draw each new frame of the playing clip as soon as it is decoded, and push it into the file
+      vids.forEach((v) => {
+        const onFrame = () => {
+          if (!drawing) return;
+          if (v === active && v.readyState >= 2) {
+            octx.drawImage(v, 0, 0, RW, RH);
+            if (vTrack && vTrack.requestFrame) vTrack.requestFrame();
+          }
+          v.requestVideoFrameCallback(onFrame);
+        };
+        v.requestVideoFrameCallback(onFrame);
+      });
+    } else {
+      const draw = () => {
+        if (!drawing) return;
+        if (active && active.readyState >= 2) octx.drawImage(active, 0, 0, RW, RH);
+        requestAnimationFrame(draw);
+      };
+      draw();
+    }
 
     const list = expand(clips.filter((c) => !c.voiceOnly)); // voice-only takes have no picture yet
     const total = list.reduce((s, c) => s + clipLen(c), 0);
@@ -1145,6 +1165,7 @@
         await whenVisible();
         active = v;
         octx.drawImage(v, 0, 0, RW, RH);
+        if (i > 0 && perFrame && vTrack) vTrack.requestFrame(); // the next clip's first frame, right at the cut
         if (i === 0) { startRecorder(); await sleep(150); } // let the recorder get going so the first sound isn't clipped
         silence(v);
         await v.play();
