@@ -264,6 +264,12 @@
     txt('Loose fit, few bonds', 1180, 285, 21, '#3b4252', { align: 'center', bold: true }),
     ...label('Receptor', 620, 560, [610, 570], [A2.L.rx + 70, A2.top - 60], 'left', 21),
     ...label('Ligand', 150, 330, [165, 318], [HI0[0] - 30, HI0[1] - 6], 'center', 21).map((it) => ({ ...it, hideDuring: 'bind2' })),
+    // ligand examples (bottom right; the "Why?" view covers it, so it only shows on the Binding view)
+    { type: 'rect', x: 1236, y: 720, w: 290, h: 128, color: '#c9ced8', fill: '#ffffff', fillOpacity: 1, width: 2, rough: false },
+    txt('Ligand examples', 1381, 742, 19, '#1f2430', { align: 'center', bold: true }),
+    txt('🧠 Neurotransmitters\n     e.g. dopamine, serotonin', 1252, 772, 15, '#3b4252', { bold: true }),
+    txt('🩸 Hormones  e.g. insulin', 1252, 808, 15, '#3b4252', { bold: true }),
+    txt('💊 Drugs  e.g. morphine, caffeine', 1252, 832, 15, '#3b4252', { bold: true }),
     { type: 'circle', x: 92, y: 838, r: 9, color: '#a87900', fill: '#f2b300', fillOpacity: 1, width: 2, rough: false },
     txt('= an attractive interaction (bond) between ligand and receptor', 110, 838, 18, '#5b6270', { bold: true }),
   ];
@@ -275,9 +281,9 @@
       ...track(loKeys, ([x, y]) => loDraw([x, y, 0]), () => contacts(A2.R.rx, A2.top, 'tri', 1)),
       { type: 'flash', x: A2.L.rx, y: dockL, r: 60, color: '#ffd34d', duration: 0.6, at: 1.25 },
       txt('Stays bound', 420, 760, 26, AFF, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.4 }),
-      txt('Keeps falling off', 1180, 760, 26, BAD, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.4 }),
+      txt('Keeps falling off', 1050, 760, 26, BAD, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.4 }),
       txt('Bound almost all the time', 420, 796, 20, '#3b4252', { align: 'center', at: BIND_T - 0.5, anim: 'fade', duration: 0.4 }),
-      txt('Bound only part of the time', 1180, 796, 20, '#3b4252', { align: 'center', at: BIND_T - 0.5, anim: 'fade', duration: 0.4 }),
+      txt('Bound only part of the time', 1050, 796, 20, '#3b4252', { align: 'center', at: BIND_T - 0.5, anim: 'fade', duration: 0.4 }),
     ],
   }, {
     id: 'why2', label: 'Why? The bonds', group: 'aff', stay: true, drawn: false, items: whyItems(),
