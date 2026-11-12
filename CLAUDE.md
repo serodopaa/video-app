@@ -43,6 +43,14 @@ dependencies. Open `index.html` in a browser.
   at that `playbackRate` with `preservesPitch` (like YouTube). At 1× export uses the decoded-audio path;
   faster, the sound comes from the video elements (fade gains, delayed fade-in at each join).
   Never change how existing clips are stored (only add optional fields).
+- `exporter.js` – frame-exact export (`window.WB_EXACT_EXPORT`, used first by recorder.js when WebCodecs
+  H.264 + AAC/Opus encoding exist; else the old real-time export runs). Sound: each kept piece is decoded,
+  sped up with pitch-preserving WSOLA if speed ≠ 1, faded (15 ms) and mixed, then the volume + limiter
+  chain is applied in an OfflineAudioContext. Picture: each piece plays muted and every decoded frame
+  (`requestVideoFrameCallback`) is encoded with its exact clip time mapped to the output; a skipped frame
+  makes it seek back and play slower. Output: MP4 via `vendor/mp4-muxer.js` (MIT, Vanilagy).
+  Recording pushes frames itself (`captureStream(0)` + `requestFrame` every other screen refresh): a
+  fixed-rate capture timer drifts against the screen and repeats/skips frames (stutter).
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as
   `window.WB_BRAIN_MID`; `brain-art.js` uses it for the medial view and the midsagittal cut face. Load it first.

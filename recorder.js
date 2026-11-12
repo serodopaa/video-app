@@ -143,8 +143,18 @@
     drawPointer();
   }
 
+  // Frames go into the recording on the screen's own beat: every other screen refresh (30 fps on a
+  // 60 Hz screen), pushed with requestFrame right after drawing. A separate 30 fps timer would drift
+  // against the screen and repeat or skip frames now and then, which makes motion stutter.
+  let lastPush = 0;
   WB.onFrame = (t) => {
-    if (rec.state === 'recording' || rec.state === 'paused') renderRecFrame(t);
+    if (rec.state !== 'recording' && rec.state !== 'paused') return;
+    renderRecFrame(t);
+    const tr = performance.now();
+    if (rec.videoTrack && rec.videoTrack.requestFrame && tr - lastPush >= 1000 / FPS - 8) {
+      lastPush = tr;
+      rec.videoTrack.requestFrame();
+    }
   };
 
   function makeThumb() {
@@ -292,7 +302,7 @@
       rec.videoTrack = null;
       rec.recorder = new MediaRecorder(new MediaStream(audioTracks), AUDIO_OPTS);
     } else {
-      const stream = recCanvas.captureStream(FPS);
+      const stream = recCanvas.captureStream(0); // frames are pushed by WB.onFrame
       rec.videoTrack = stream.getVideoTracks()[0];
       rec.recorder = new MediaRecorder(new MediaStream([rec.videoTrack, ...audioTracks]), REC_OPTS);
     }
@@ -1042,6 +1052,35 @@
     updateRecUI();
     btn.disabled = false;
     btn.textContent = '⏳ 0% · Cancel';
+
+    // Frame-exact export (exporter.js): every clip frame encoded with its exact time, so the video is
+    // smooth however busy the computer is. Falls back to the real-time export below on older browsers.
+    if (window.WB_EXACT_EXPORT) {
+      let res = null;
+      try {
+        res = await window.WB_EXACT_EXPORT({
+          list: expand(clips.filter((c) => !c.voiceOnly)), speed, loudness, urlOf, signal: exportAbort.signal,
+          progress: (f) => { btn.textContent = `⏳ ${Math.min(99, Math.floor(f * 100))}% · Cancel`; },
+        });
+      } catch (err) { console.warn(err); }
+      if (res && (res.blob || res.aborted)) {
+        if (res.blob) {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(res.blob);
+          a.download = `explainer-${new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-')}.mp4`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+        }
+        exporting = false;
+        exportAbort = null;
+        btn.textContent = '⬇ Export';
+        updateRecUI();
+        return;
+      }
+      btn.textContent = '⏳ 0% · Cancel'; // not possible here: real-time export
+    }
 
     const out = document.createElement('canvas');
     out.width = RW;
