@@ -313,29 +313,47 @@
   // Affinity tables: how strongly each panel's ligand binds each of the three receptors.
   // High specificity = a big contrast (high for the target, very low for the rest);
   // low specificity = similar affinities for all three.
-  const AFF_ROWS = {
-    L: [[1.0, 'High'], [0.07, 'Very low'], [0.05, 'Very low']],
-    R: [[0.62, 'Medium'], [0.58, 'Medium'], [0.55, 'Medium']],
+  // Several examples per side (chips above each table switch between them): specificity is about the
+  // CONTRAST between the target and the others, not about how high the affinities are.
+  const AFF_OPTS = {
+    L: [
+      { chip: 'High vs low', rows: [[1.0, 'High'], [0.1, 'Low'], [0.08, 'Low']], foot: 'Big contrast → highly specific' },
+      { chip: 'Med vs v. low', rows: [[0.55, 'Medium'], [0.04, 'Very low'], [0.03, 'Very low']], foot: 'Still a big contrast → highly specific' },
+      { chip: 'Low vs zero', rows: [[0.25, 'Low'], [0, 'None'], [0, 'None']], foot: 'Weak, but ONLY its target → specific' },
+    ],
+    R: [
+      { chip: 'All high', rows: [[0.95, 'High'], [0.92, 'High'], [0.9, 'High']], foot: 'Strong, but for all three → not specific' },
+      { chip: 'All medium', rows: [[0.62, 'Medium'], [0.58, 'Medium'], [0.55, 'Medium']], foot: 'Similar for all three → not specific' },
+      { chip: 'All low', rows: [[0.22, 'Low'], [0.2, 'Low'], [0.18, 'Low']], foot: 'Weak for all three → not specific' },
+    ],
   };
-  const AFF_FOOT = { L: ['Big contrast → highly specific', GOOD], R: ['Similar for all three → not specific', BAD] };
-  const affTable = (x0, side) => {
+  const AFF_FOOT_C = { L: GOOD, R: BAD };
+  const CHIP = { w: 112, h: 32, y: 229, x: { L: 424, R: 1184 } };
+  const tblId = (side, k) => `tbl${side}${k}`;
+  const chips = (side, active) => `<g>${AFF_OPTS[side].map((o, k) => {
+    const x = CHIP.x[side] + k * (CHIP.w + 6), on = k === active;
+    return `<rect x="${x}" y="${CHIP.y}" width="${CHIP.w}" height="${CHIP.h}" rx="16" fill="${on ? SPEC : '#ffffff'}" stroke="${SPEC}" stroke-width="2"/>
+      ${T(x + CHIP.w / 2, CHIP.y + 21, 14, on ? '#ffffff' : SPEC)(o.chip)}`;
+  }).join('')}</g>`;
+  const affTable = (x0, side, k = 0) => {
+    const opt = AFF_OPTS[side][k];
     const x = x0 + 30, w = 660, y = 268, rowH = 38, col = [x + 16, x + 250, x + 560];
     const swatch = ['#4f7fcf', '#62b067', '#e0607a'], names = ['Target', 'Other receptor 1', 'Other receptor 2'];
     let out = `<rect x="${x}" y="${y}" width="${w}" height="${36 + 3 * rowH + 40}" rx="12" fill="#ffffff" stroke="#c9ced8" stroke-width="2"/>
       <rect x="${x}" y="${y}" width="${w}" height="36" rx="12" fill="#f1f3f7"/><rect x="${x}" y="${y + 24}" width="${w}" height="12" fill="#f1f3f7"/>
       ${T(col[0], y + 25, 18, '#3b4252', 700, 'start')('Receptor')}${T(col[1], y + 25, 18, '#3b4252', 700, 'start')('Affinity of this ligand for it')}`;
-    AFF_ROWS[side].forEach(([v, word], i) => {
+    opt.rows.forEach(([v, word], i) => {
       const ry = y + 36 + i * rowH, barW = 290;
       out += `<line x1="${x}" y1="${ry}" x2="${x + w}" y2="${ry}" stroke="#e3e6ec" stroke-width="1.5"/>
         <rect x="${col[0]}" y="${ry + 11}" width="16" height="16" rx="4" fill="${swatch[i]}"/>
         ${T(col[0] + 26, ry + 25, 18, '#1f2430', 700, 'start')(names[i])}
         <rect x="${col[1]}" y="${ry + 10}" width="${barW}" height="18" rx="9" fill="#eef0f4"/>
-        <rect x="${col[1]}" y="${ry + 10}" width="${Math.max(8, barW * v)}" height="18" rx="9" fill="${side === 'L' ? (i ? '#c9ced8' : SPEC) : '#9b7bd9'}"/>
+        <rect x="${col[1]}" y="${ry + 10}" width="${v > 0 ? Math.max(8, barW * v) : 0}" height="18" rx="9" fill="${side === 'L' ? (i ? '#c9ced8' : SPEC) : '#9b7bd9'}"/>
         ${T(col[2], ry + 25, 18, side === 'L' && !i ? SPEC : '#3b4252', 700, 'start')(word)}`;
     });
     const fy = y + 36 + 3 * rowH;
     out += `<line x1="${x}" y1="${fy}" x2="${x + w}" y2="${fy}" stroke="#c9ced8" stroke-width="2"/>
-      ${T(x + w / 2, fy + 27, 19, AFF_FOOT[side][1])(AFF_FOOT[side][0])}`;
+      ${T(x + w / 2, fy + 27, 19, AFF_FOOT_C[side])(opt.foot)}`;
     return out;
   };
   const specItems = [
@@ -345,21 +363,27 @@
     specBase,
     ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecL(i)([RX.L[i], 506, 0])), hideDuring: 'bind4' })),
     ...[0, 1, 2].map((i) => ({ ...svgItem(drawSpecR(i)([RX.R[i], 506, 0])), hideDuring: 'bind4' })),
-    svgItem(affTable(60, 'L') + affTable(820, 'R')),
-    txt('High specificity', 420, 245, 32, SPEC, { align: 'center', bold: true }),
-    txt('Low specificity', 1180, 245, 32, '#8a8f98', { align: 'center', bold: true }),
+    { ...svgItem(affTable(60, 'L') + chips('L', 0)), hideDuring: [0, 1, 2].map((k) => tblId('L', k)) },
+    { ...svgItem(affTable(820, 'R') + chips('R', 0)), hideDuring: [0, 1, 2].map((k) => tblId('R', k)) },
+    ...['L', 'R'].flatMap((side) => [0, 1, 2].map((k) => ({ type: 'hotspot', x: CHIP.x[side] + k * (CHIP.w + 6), y: CHIP.y, w: CHIP.w, h: CHIP.h, action: tblId(side, k) }))),
+    txt('High specificity', 90, 245, 30, SPEC, { bold: true }),
+    txt('Low specificity', 850, 245, 30, '#8a8f98', { bold: true }),
     ...[0, 1].flatMap((side) => (side ? RX.R : RX.L).map((x, i) => txt(i ? `Other\nreceptor ${i}` : 'Target', x, 760, 19, i ? '#5b6270' : '#2c5a92', { align: 'center', bold: true }))),
   ];
+  const tableActions = ['L', 'R'].flatMap((side) => AFF_OPTS[side].map((o, k) => ({
+    id: tblId(side, k), label: `${side === 'L' ? 'High' : 'Low'} spec: ${o.chip}`, group: `tbl${side}`, stay: true, drawn: false,
+    items: [svgItem(affTable(side === 'L' ? 60 : 820, side, k) + chips(side, k))],
+  })));
   const specActions = [{
     id: 'bind4', label: 'Watch them bind', stay: true, drawn: false,
     items: [
       ...[0, 1, 2].flatMap((i) => track(specL(i), ([x, y]) => drawSpecL(i)([x, y, 0]), () => contacts(RX.L[i], S4.top, 'tri', 4, 0.8))),
       ...[0, 1, 2].flatMap((i) => track(specR(i), ([x, y]) => drawSpecR(i)([x, y, 0]), () => contacts(RX.R[i], S4.top, RECS[i][0], 2, 0.8))),
-      ...[1, 2].map((i) => txt('✕', RX.L[i], S4.top - 190, 40, BAD, { align: 'center', bold: true, at: 1.4 + i * 1.6, until: 1.6, anim: 'pop', duration: 0.3 })),
+      ...[1, 2].map((i) => txt('✕', RX.L[i] - 62, S4.top - 120, 40, BAD, { align: 'center', bold: true, at: 1.4 + i * 1.6, until: 1.6, anim: 'pop', duration: 0.3 })),
       txt('Only its target: fewer side effects', 420, 830, 22, GOOD, { align: 'center', bold: true, at: 5.5, anim: 'fade', duration: 0.4 }),
       txt('Binds other receptors too: side effects', 1180, 830, 22, BAD, { align: 'center', bold: true, at: 3.0, anim: 'fade', duration: 0.4 }),
     ],
-  }];
+  }, ...tableActions];
 
   // ====================================================================== slide 4: independent (tabs, one combination at a time)
   // Four tabs across the top. The chosen combination fills the slide: three big receptors (target + two
