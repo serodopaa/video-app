@@ -94,9 +94,11 @@
       }
     });
   }
-  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created, keep: c.keep, voiceOnly: c.voiceOnly, voice: c.voice }));
+  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created, keep: c.keep, voiceOnly: c.voiceOnly, voice: c.voice, gain: c.gain }));
   const unpersist = (id) => dbDo('readwrite', (s) => s.delete(id));
   const curScene = () => WB.sceneId();
+  // per-clip volume (1 = 100%); the overall 🔊 Volume is applied on top of it
+  const clipGain = (c) => { const g = c && (c._root || c).gain; return g > 0 ? g : 1; };
   const saveOrder = () => clips.forEach((c, i) => { c.order = i; persist(c); });
 
   // ---------- state ----------
@@ -495,6 +497,7 @@
     const clip = {
       ...(kind === 'voice' ? { voiceOnly: true } : {}),
       // a clip made over a voice take remembers that take, so its visuals can be redone
+      ...(kind === 'visual' && vis.voice.gain ? { gain: vis.voice.gain } : {}),
       ...(kind === 'visual' ? { voice: { blob: vis.voice.blob, mime: vis.voice.mime, duration: vis.voice.duration, in: vis.voice.in, out: vis.voice.out, keep: vis.voice.keep } } : {}),
       keep: whole ? undefined : keep,
       id: 'clip-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
@@ -566,6 +569,9 @@
       card.innerHTML = `
         <img alt="Clip ${i + 1}" title="${c.voiceOnly ? 'Open to listen and trim' : 'Open to watch and trim'}" />
         <div class="meta"><b>Clip ${i + 1}${c.voiceOnly ? ' 🎙' : c.voice ? ' 🎙🎬' : ''}</b><span>${trimmed ? '✂ ' : ''}${fmt(clipLen(c))}</span></div>
+        <label class="clip-gain" title="This clip's volume. The overall 🔊 Volume is applied on top (e.g. 125% here × 200% overall)."><span>🔊</span><select data-g>${
+          [...Array(56)].map((_, k) => 25 + k * 5).map((p) => `<option value="${p / 100}" ${Math.round(clipGain(c) * 100) === p ? 'selected' : ''}>${p}%</option>`).join('')
+        }</select></label>
         ${c.voiceOnly || c.voice ? `<button class="vis-btn" data-a="visuals" title="${c.voiceOnly ? 'Play this voice take and record the board along with it' : 'Record the board again over the same voice'}">🎬 ${c.voiceOnly ? 'Add visuals' : 'Redo visuals'}</button>` : ''}
         <div class="acts">
           <button data-a="left" title="Move earlier" ${i === 0 ? 'disabled' : ''}>◀</button>
@@ -577,6 +583,12 @@
       card.querySelector('img').src = c.thumb || '';
       card.querySelector('img').addEventListener('click', () => openClip(c));
       card.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => clipAction(b.dataset.a, c)));
+      card.querySelector('[data-g]').addEventListener('change', (e) => {
+        const g = parseFloat(e.target.value) || 1;
+        if (g === 1) delete c.gain; else c.gain = g;
+        persist(c);
+        e.target.blur();
+      });
       tl.appendChild(card);
     });
     if (replaceId) {
@@ -683,7 +695,7 @@
         const next = c.keep.find(([a]) => a > t);
         vid._fadingOut = false;
         silence(vid);
-        if (next) { vid.currentTime = next[0]; vid.addEventListener('seeked', () => fadeTo(vid, 1), { once: true }); } else vid.pause();
+        if (next) { vid.currentTime = next[0]; vid.addEventListener('seeked', () => fadeTo(vid, clipGain(trim.clip)), { once: true }); } else vid.pause();
       }
     }
     requestAnimationFrame(skipCuts);
@@ -723,11 +735,11 @@
   });
   $('dlgPlay').addEventListener('click', () => {
     stopAt = null;
-    if (vid.paused) { vid._fadingOut = false; fadeTo(vid, 1, 0.005); }
+    if (vid.paused) { vid._fadingOut = false; fadeTo(vid, clipGain(trim.clip), 0.005); }
     vid.paused ? vid.play() : vid.pause();
   });
   $('dlgPlayTrim').addEventListener('click', () => {
-    vid._fadingOut = false; fadeTo(vid, 1, 0.005);
+    vid._fadingOut = false; fadeTo(vid, clipGain(trim.clip), 0.005);
     vid.currentTime = trim.in;
     stopAt = trim.out;
     vid.play();
@@ -800,14 +812,14 @@
     g.gain.linearRampToValueAtTime(level, t + sec);
   }
   // fade in after the video has actually started making sound (play() resolves a moment before it does)
-  function fadeInLate(v, delay = 0.04, sec = 0.04) {
+  function fadeInLate(v, delay = 0.04, sec = 0.04, level = 1) {
     const g = v && v._fade;
     if (!g) return;
     const t = v._fadeAc.currentTime;
     g.gain.cancelScheduledValues(t);
     g.gain.setValueAtTime(0, t);
     g.gain.setValueAtTime(0, t + delay);
-    g.gain.linearRampToValueAtTime(1, t + delay + sec);
+    g.gain.linearRampToValueAtTime(level, t + delay + sec);
   }
   function silence(v) {
     const g = v && v._fade;
@@ -927,13 +939,13 @@
     if (token !== pv.token) return;
     pv.idx = i;
     pvPreloadNext();
-    if (pv.playing && !pv.dragging) { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, 1)).catch(() => {}); }
+    if (pv.playing && !pv.dragging) { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, clipGain(pv.list[pv.idx]))).catch(() => {}); }
   }
   function pvSetPlaying(on) {
     pv.playing = on;
     if (on) {
       if (pvGlobal() >= pv.total - 0.1) pvSeek(0);
-      else { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, 1)).catch(() => {}); }
+      else { const nv = pvVid(); silence(nv); nv.play().then(() => fadeTo(nv, clipGain(pv.list[pv.idx]))).catch(() => {}); }
     } else pvVid().pause();
     pvDraw();
   }
@@ -952,7 +964,7 @@
           pv.cur = 1 - pv.cur;
           pv.idx++;
           silence(pvVid());
-          pvVid().play().then(() => fadeTo(pvVid(), 1)).catch(() => {});
+          pvVid().play().then(() => fadeTo(pvVid(), clipGain(pv.list[pv.idx]))).catch(() => {});
           pvCtx.drawImage(pvVid(), 0, 0, pvCanvas.width, pvCanvas.height);
           pvPreloadNext();
         } else {
@@ -1114,13 +1126,13 @@
       if (!decoded.has(root)) decoded.set(root, root.blob.arrayBuffer().then((ab) => ac.decodeAudioData(ab)).catch(() => null));
       return decoded.get(root);
     };
-    const playPiece = (buf, offset, dur) => {
+    const playPiece = (buf, offset, dur, level = 1) => {
       const t = ac.currentTime + 0.005, F = Math.min(FADE, dur / 4);
       const src = ac.createBufferSource(), g = ac.createGain();
       src.buffer = buf;
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(1, t + F);
-      g.gain.setValueAtTime(1, t + dur - F);
+      g.gain.linearRampToValueAtTime(level, t + F);
+      g.gain.setValueAtTime(level, t + dur - F);
       g.gain.linearRampToValueAtTime(0, t + dur);
       src.connect(g).connect(boost);
       src.start(t, Math.max(0, offset), dur);
@@ -1161,7 +1173,7 @@
         held = false;
         ac.resume();
         if (mr && mr.state === 'paused') mr.resume();
-        if (active && playingNow) { if (!active.muted) silence(active); active.play().then(() => { if (!active.muted) fadeTo(active, 1); }).catch(() => {}); }
+        if (active && playingNow) { if (!active.muted) silence(active); active.play().then(() => { if (!active.muted) fadeTo(active, clipGain(active._clip)); }).catch(() => {}); }
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -1215,8 +1227,8 @@
         silence(v);
         await v.play();
         // (the decoded sound can be a little shorter than the clip's length: fade out where it really ends)
-        if (buf) playPiece(buf, v.currentTime, Math.max(0.05, Math.min(c.out, buf.duration - 0.005) - v.currentTime));
-        else fadeInLate(v);
+        if (buf) playPiece(buf, v.currentTime, Math.max(0.05, Math.min(c.out, buf.duration - 0.005) - v.currentTime), clipGain(c));
+        else fadeInLate(v, 0.04, 0.04, clipGain(c));
         playingNow = true;
         if (i > 0) {
           const spare = vids[(i + 1) % 2];

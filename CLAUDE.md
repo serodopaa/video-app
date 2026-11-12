@@ -42,6 +42,8 @@ dependencies. Open `index.html` in a browser.
   Speed (`#outSpeed`, saved as `wb-speed`: 1× to 2× in 0.1 steps, default 1.2×) applies to Preview and Export. Videos play
   at that `playbackRate` with `preservesPitch` (like YouTube). At 1× export uses the decoded-audio path;
   faster, the sound comes from the video elements (fade gains, delayed fade-in at each join).
+  Per-clip volume: optional `gain` on a clip (25–300%, select on each timeline card; missing = 100%),
+  applied before the overall 🔊 Volume in export (both paths), Preview and the clip dialog (`clipGain`).
   Never change how existing clips are stored (only add optional fields).
 - `exporter.js` – frame-exact export (`window.WB_EXACT_EXPORT`, used first by recorder.js when WebCodecs
   H.264 + AAC/Opus encoding exist; else the old real-time export runs). Sound: each kept piece is decoded,

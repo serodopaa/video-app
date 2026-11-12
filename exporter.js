@@ -90,11 +90,12 @@
           let chs = [0, 1].map((c) => buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)).subarray(a, b));
           if (speed !== 1) chs = await wsola(chs, speed);
           const start = Math.round(at * SR), m = Math.min(chs[0].length, n - start), F = Math.min(Math.round(FADE * SR), m >> 2);
+          const lvl = root.gain > 0 ? root.gain : 1; // this clip's own volume (the overall volume comes later)
           for (let c = 0; c < 2; c++) {
             const src = chs[c], dst = mix[c];
             for (let j = 0; j < m; j++) {
               const g = j < F ? j / F : j > m - F ? (m - j) / F : 1; // short fades: no clicks at joins
-              dst[start + j] += src[j] * g;
+              dst[start + j] += src[j] * g * lvl;
             }
           }
         }
