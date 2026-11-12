@@ -1893,7 +1893,7 @@
 
   // Draw one of your strokes. f (0..1) is how much of it to show (for replay).
   function drawStroke(s, f = 1) {
-    if (f <= 0) return;
+    if (f <= 0 || s._editing) return;
     ctx.save();
     if (s.kind === 'text') {
       ctx.globalAlpha = f;
@@ -2112,7 +2112,9 @@
     if (state.tool !== 'text') return;
     const [x, y] = toBoard(e);
     if (hotspotAt(x, y)) return;
-    openTextEntry(x, y);
+    // clicking text that's already there opens it for editing; anywhere else starts new text
+    const i = inkAt(x, y);
+    openTextEntry(x, y, i >= 0 && strokes[i].kind === 'text' ? strokes[i] : null);
   });
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -2142,23 +2144,43 @@
   canvas.addEventListener('pointerup', finishStroke);
   canvas.addEventListener('pointercancel', finishStroke);
 
-  function openTextEntry(x, y) {
+  // `edit`: an existing text to change (opens filled in, in its own size and colour; emptying it deletes it)
+  function openTextEntry(x, y, edit = null) {
     const r = canvas.getBoundingClientRect();
     const sr = stage.getBoundingClientRect();
-    const size = (state.size * 4 + 12) / view.z; // ~24 / 36 / 60 px for thin / medium / thick
+    if (edit) [x, y] = edit.pts[0];
+    const size = edit ? edit.size : (state.size * 4 + 12) / view.z; // ~24 / 36 / 60 px for thin / medium / thick
     const input = document.createElement('input');
     input.className = 'text-entry';
     input.placeholder = 'Type, then Enter';
+    if (edit) {
+      input.value = edit.text;
+      input.size = Math.max(8, edit.text.length + 2);
+      edit._editing = true; // hidden on the board while its edit box is open
+    }
     input.style.left = r.left - sr.left + (((x - view.x) * view.z) / W) * r.width + 'px';
     input.style.top = r.top - sr.top + (((y - view.y) * view.z) / H) * r.height + 'px';
     input.style.fontSize = ((size * view.z) / W) * r.width + 'px';
-    input.style.color = col(state.color);
+    input.style.color = col(edit ? edit.color : state.color);
     stage.appendChild(input);
     input.focus();
     let done = false;
     const commit = (keep) => {
       if (done) return;
       done = true;
+      if (edit) {
+        delete edit._editing;
+        const v = input.value;
+        if (keep && v !== edit.text) {
+          snapshot();
+          // a new object (not changed in place), so Undo still has the old wording
+          if (v.trim()) strokes = strokes.map((st) => (st === edit ? { ...edit, text: v } : st));
+          else strokes = strokes.filter((st) => st !== edit); // emptied: remove it
+          saveInk();
+        }
+        input.remove();
+        return;
+      }
       if (keep && input.value.trim()) {
         snapshot();
         strokes.push({ kind: 'text', font: 'sans', color: state.color, size, text: input.value, pts: [[x, y]], dur: 0.6 });
@@ -2166,6 +2188,8 @@
       }
       input.remove();
     };
+    if (edit) input.setSelectionRange(input.value.length, input.value.length);
+    input.addEventListener('input', () => { if (edit) input.size = Math.max(8, input.value.length + 2); });
     input.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter') commit(true);
       if (ev.key === 'Escape') commit(false);
