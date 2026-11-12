@@ -498,3 +498,8 @@ button, select {
 .replay-foot { padding: 6px 2px 0; }
 .replay-head span, .replay-note { color: var(--muted); flex: 1; }
 .replay-head button, .replay-foot button { border: 1px solid #d6dae2; background: #fff; border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; }
+
+/* record mode picker and the "Add visuals" button on voice takes */
+.rec-mode { height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; background: #fff; font-size: 13px; cursor: pointer; }
+.clip .vis-btn { display: block; width: calc(100% - 12px); margin: 4px 6px 0; height: 28px; border: 1px solid #2f6fde; border-radius: 7px; background: #eef3ff; color: #1d4fb0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.clip .vis-btn:hover { background: #dfe9ff; }

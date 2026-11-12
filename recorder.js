@@ -30,6 +30,9 @@
   const MIME = window.MediaRecorder ? MIME_TYPES.find((t) => MediaRecorder.isTypeSupported(t)) || '' : null;
   const EXT = MIME && MIME.startsWith('video/mp4') ? 'mp4' : 'webm';
   const REC_OPTS = { videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 160_000 };
+  // voice-only takes (record your voice first, add the visuals later)
+  const AUDIO_MIME = window.MediaRecorder ? ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t)) || '' : null;
+  const AUDIO_OPTS = { audioBitsPerSecond: 160_000, ...(AUDIO_MIME ? { mimeType: AUDIO_MIME } : {}) };
   if (MIME) REC_OPTS.mimeType = MIME;
 
   const fmt = (s) => {
@@ -91,7 +94,7 @@
       }
     });
   }
-  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created, keep: c.keep }));
+  const persist = (c) => dbDo('readwrite', (s) => s.put({ id: c.id, scene: c.scene, blob: c.blob, duration: c.duration, in: c.in, out: c.out, thumb: c.thumb, order: c.order, mime: c.mime, created: c.created, keep: c.keep, voiceOnly: c.voiceOnly, voice: c.voice }));
   const unpersist = (id) => dbDo('readwrite', (s) => s.delete(id));
   const curScene = () => WB.sceneId();
   const saveOrder = () => clips.forEach((c, i) => { c.order = i; persist(c); });
@@ -107,6 +110,8 @@
     segStart: 0,
     thumb: null,
     videoTrack: null,
+    kind: 'av',     // av (board + mic) | voice (mic only) | visual (board over a voice take)
+    vis: null,      // while adding visuals: { ac, end, voice }
     parts: [],      // kept [start, end] ranges of this recording (file time)
     partStart: 0,   // file time where the part being recorded now started
   };
@@ -204,7 +209,9 @@
     const busy = rec.state !== 'idle';
     const replacing = replaceId && clips.find((c) => c.id === replaceId);
     ui.rec.disabled = busy || MIME === null;
-    ui.rec.textContent = replacing ? `⏺ Re-record clip ${clips.indexOf(replacing) + 1}` : '⏺ Record';
+    const voiceMode = recMode() === 'voice';
+    ui.rec.textContent = replacing ? `⏺ Re-record clip ${clips.indexOf(replacing) + 1}${voiceMode ? ' (voice)' : ''}` : voiceMode ? '🎙 Record voice' : '⏺ Record';
+    $('recMode').disabled = busy;
     ui.rec.classList.toggle('replacing', !!replacing);
     ui.pause.disabled = !(rec.state === 'recording' || rec.state === 'paused');
     ui.pause.textContent = rec.state === 'paused' ? '⏵ Resume' : '⏸ Pause';
@@ -212,13 +219,13 @@
     const canCut = rec.state === 'paused' && rec.parts.length > 0;
     $('cutPartBtn').disabled = !canCut;
     $('cut5Btn').disabled = !canCut;
-    $('cutPartBtn').hidden = $('cut5Btn').hidden = $('replayBtn').hidden = !(rec.state === 'recording' || rec.state === 'paused'); // only while a clip is being recorded
+    $('cutPartBtn').hidden = $('cut5Btn').hidden = $('replayBtn').hidden = !(rec.state === 'recording' || rec.state === 'paused') || rec.kind === 'visual'; // only while a clip is being recorded (not over a voice take)
     $('replayBtn').disabled = !(rec.state === 'recording' || canCut);
     const last = rec.parts[rec.parts.length - 1];
     $('cutPartBtn').textContent = canCut ? `✂ Cut part (${fmt(last[1] - last[0])})` : '✂ Cut part';
     ui.badge.hidden = !(rec.state === 'recording' || rec.state === 'paused');
     ui.badge.classList.toggle('paused', rec.state === 'paused');
-    ui.badge.lastChild.textContent = rec.state === 'paused' ? ' PAUSED' : ' REC';
+    ui.badge.lastChild.textContent = (rec.state === 'paused' ? ' PAUSED' : ' REC') + (rec.kind === 'voice' ? ' (voice only)' : rec.kind === 'visual' ? ' (adding visuals)' : '');
     // Switching topics mid-recording/export would mix clips up, so lock the picker.
     ['sceneSelect', 'newTopic', 'deleteTopic'].forEach((id) => { $(id).disabled = busy || exporting; });
     $('exportBtn').disabled = busy || !clips.length || exporting;
@@ -230,17 +237,44 @@
     if (rec.state === 'recording' || rec.state === 'paused') ui.time.textContent = fmt(keptTime()) + (rec.parts.length > 1 || (rec.parts.length && rec.state === 'recording') ? ` · ${rec.parts.length + (rec.state === 'recording' ? 1 : 0)} parts` : '');
   }, 250);
 
-  async function startRecording() {
+  // Record mode (saved): 'av' = voice + board together, 'voice' = voice only (add visuals later)
+  const recMode = () => $('recMode').value;
+  try { const m = localStorage.getItem('wb-recmode'); if (m === 'voice' || m === 'av') $('recMode').value = m; } catch (_) { /* default */ }
+  $('recMode').addEventListener('change', () => { try { localStorage.setItem('wb-recmode', recMode()); } catch (_) { /* not saved */ } updateRecUI(); $('recMode').blur(); });
+
+  // kind: 'av' = board + microphone (default), 'voice' = microphone only, 'visual' = record the board while
+  // a voice take plays (its sound goes into the clip instead of the microphone)
+  async function startRecording(kind = recMode() === 'voice' ? 'voice' : 'av', voice = null) {
     if (MIME === null) {
       alert('This browser cannot record video. Please use a recent version of Chrome.');
       return;
     }
-    let audioTracks = [];
-    try {
-      audioTracks = (await getMic()).getAudioTracks();
-    } catch (err) {
-      if (!confirm('The microphone could not be used (' + (err.message || err.name) + ').\n\nRecord without sound?')) return;
+    let audioTracks = [], vis = null;
+    if (kind === 'visual') {
+      // decode the voice take and get it ready to play on the audio clock
+      try {
+        const ac = new AudioContext();
+        await ac.resume();
+        const buf = voice._buf || (voice._buf = await ac.decodeAudioData(await voice.blob.arrayBuffer()));
+        const dest = ac.createMediaStreamDestination();
+        const gain = ac.createGain();
+        gain.connect(dest);
+        gain.connect(ac.destination); // you hear it too (use headphones)
+        vis = { ac, buf, gain, voice };
+        audioTracks = dest.stream.getAudioTracks();
+      } catch (err) {
+        alert('This voice take could not be played (' + (err.message || err) + ').');
+        return;
+      }
+    } else {
+      try {
+        audioTracks = (await getMic()).getAudioTracks();
+      } catch (err) {
+        if (kind === 'voice') { alert('The microphone could not be used (' + (err.message || err.name) + ').'); return; }
+        if (!confirm('The microphone could not be used (' + (err.message || err.name) + ').\n\nRecord without sound?')) return;
+      }
     }
+    rec.kind = kind;
 
     rec.state = 'countdown';
     updateRecUI();
@@ -252,29 +286,71 @@
     ui.countdown.hidden = true;
 
     rec.state = 'recording';
-    rec.thumb = makeThumb();
-    const stream = recCanvas.captureStream(FPS);
-    rec.videoTrack = stream.getVideoTracks()[0];
-    const mixed = new MediaStream([rec.videoTrack, ...audioTracks]);
+    rec.thumb = kind === 'voice' ? voiceThumb() : makeThumb();
     rec.chunks = [];
-    rec.recorder = new MediaRecorder(mixed, REC_OPTS);
+    if (kind === 'voice') {
+      rec.videoTrack = null;
+      rec.recorder = new MediaRecorder(new MediaStream(audioTracks), AUDIO_OPTS);
+    } else {
+      const stream = recCanvas.captureStream(FPS);
+      rec.videoTrack = stream.getVideoTracks()[0];
+      rec.recorder = new MediaRecorder(new MediaStream([rec.videoTrack, ...audioTracks]), REC_OPTS);
+    }
     rec.recorder.ondataavailable = (e) => { if (e.data && e.data.size) rec.chunks.push(e.data); };
     rec.recorder.start(1000);
     rec.elapsed = 0;
     rec.segStart = performance.now();
     rec.parts = [];
     rec.partStart = 0;
+    rec.vis = vis;
+    if (vis) {
+      // play the kept parts of the voice take back to back, with short fades at each join
+      let t = vis.ac.currentTime + 0.3; // a moment for the recorder to get going, so the first word isn't clipped
+      const pieces = piecesOf(voice);
+      for (let [a, b] of pieces) {
+        // where a part was cut out, Chrome's recording splices the sound: keep a few hundredths of a
+        // second away from each join so the splice falls inside the silent part of the fade
+        if (a > 0.05) a += 0.03;
+        if (b < voice.duration - 0.05) b -= 0.03;
+        const len = Math.min(b, vis.buf.duration) - a;
+        if (len <= 0.02) continue;
+        const src = vis.ac.createBufferSource(), g = vis.ac.createGain(), F = Math.min(0.012, len / 4);
+        src.buffer = vis.buf;
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + F);
+        g.gain.setValueAtTime(1, t + len - F); g.gain.linearRampToValueAtTime(0, t + len);
+        src.connect(g).connect(vis.gain);
+        src.start(t, a, len);
+        t += len;
+      }
+      vis.end = t;
+      // stop by itself shortly after the voice ends
+      vis.timer = setInterval(() => { if (rec.state === 'recording' && vis.ac.currentTime > vis.end + 0.4) stopRecording(); }, 100);
+    }
     updateRecUI();
+  }
+  // picture for a voice-only take in the timeline
+  function voiceThumb() {
+    const c = document.createElement('canvas');
+    c.width = 320; c.height = 180;
+    const x = c.getContext('2d');
+    x.fillStyle = '#eef3ff'; x.fillRect(0, 0, 320, 180);
+    x.strokeStyle = '#2f6fde'; x.lineWidth = 3;
+    for (let i = 0; i < 40; i++) { const h = 10 + 46 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.6)); x.beginPath(); x.moveTo(40 + i * 6, 112 - h / 2); x.lineTo(40 + i * 6, 112 + h / 2); x.stroke(); }
+    x.fillStyle = '#1d4fb0'; x.font = '700 26px Lexend, Arial, sans-serif'; x.textAlign = 'center';
+    x.fillText('🎙 Voice only', 160, 46);
+    return c.toDataURL('image/jpeg', 0.8);
   }
 
   function togglePause() {
     if (rec.state === 'recording') {
       rec.recorder.pause();
+      if (rec.vis) rec.vis.ac.suspend(); // the voice take pauses with the picture, so they stay in sync
       rec.elapsed += (performance.now() - rec.segStart) / 1000;
       if (rec.elapsed - rec.partStart > 0.05) rec.parts.push([rec.partStart, rec.elapsed]);
       rec.state = 'paused';
     } else if (rec.state === 'paused') {
       closeReplay();
+      if (rec.vis) rec.vis.ac.resume();
       rec.recorder.resume();
       rec.segStart = performance.now();
       rec.partStart = rec.elapsed;
@@ -389,7 +465,10 @@
     const stopped = once(recorder, 'stop');
     recorder.stop();
     await stopped;
-    rec.videoTrack.stop(); // keep the microphone open for the next clip
+    if (rec.videoTrack) rec.videoTrack.stop(); // keep the microphone open for the next clip
+    const kind = rec.kind, vis = rec.vis;
+    if (vis) { clearInterval(vis.timer); vis.ac.close(); rec.vis = null; }
+    rec.kind = 'av';
     rec.state = 'idle';
     ui.time.textContent = '0:00';
 
@@ -402,8 +481,11 @@
       return;
     }
     const whole = keep.length === 1 && keep[0][0] < 0.1 && keep[0][1] > duration - 0.1;
-    const blob = await withDuration(new Blob(rec.chunks, { type: (recorder.mimeType || MIME || 'video/webm').split(';')[0] }), duration);
+    const blob = await withDuration(new Blob(rec.chunks, { type: (recorder.mimeType || (kind === 'voice' ? AUDIO_MIME : MIME) || 'video/webm').split(';')[0] }), duration);
     const clip = {
+      ...(kind === 'voice' ? { voiceOnly: true } : {}),
+      // a clip made over a voice take remembers that take, so its visuals can be redone
+      ...(kind === 'visual' ? { voice: { blob: vis.voice.blob, mime: vis.voice.mime, duration: vis.voice.duration, in: vis.voice.in, out: vis.voice.out, keep: vis.voice.keep } } : {}),
       keep: whole ? undefined : keep,
       id: 'clip-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       blob,
@@ -431,7 +513,7 @@
     updateRecUI();
   }
 
-  ui.rec.addEventListener('click', startRecording);
+  ui.rec.addEventListener('click', () => startRecording());
   ui.pause.addEventListener('click', togglePause);
   ui.stop.addEventListener('click', stopRecording);
   // The A key pauses / resumes while a clip is recording (otherwise A is the arrow tool).
@@ -472,8 +554,9 @@
       card.className = 'clip' + (c.id === replaceId ? ' replace' : '');
       const trimmed = c.in > 0.05 || c.out < c.duration - 0.05 || (c.keep && c.keep.length > 0);
       card.innerHTML = `
-        <img alt="Clip ${i + 1}" title="Open to watch and trim" />
-        <div class="meta"><b>Clip ${i + 1}</b><span>${trimmed ? '✂ ' : ''}${fmt(clipLen(c))}</span></div>
+        <img alt="Clip ${i + 1}" title="${c.voiceOnly ? 'Open to listen and trim' : 'Open to watch and trim'}" />
+        <div class="meta"><b>Clip ${i + 1}${c.voiceOnly ? ' 🎙' : c.voice ? ' 🎙🎬' : ''}</b><span>${trimmed ? '✂ ' : ''}${fmt(clipLen(c))}</span></div>
+        ${c.voiceOnly || c.voice ? `<button class="vis-btn" data-a="visuals" title="${c.voiceOnly ? 'Play this voice take and record the board along with it' : 'Record the board again over the same voice'}">🎬 ${c.voiceOnly ? 'Add visuals' : 'Redo visuals'}</button>` : ''}
         <div class="acts">
           <button data-a="left" title="Move earlier" ${i === 0 ? 'disabled' : ''}>◀</button>
           <button data-a="trim" title="Watch and trim">✂️</button>
@@ -501,6 +584,14 @@
     if (action === 'left' && i > 0) [clips[i - 1], clips[i]] = [clips[i], clips[i - 1]];
     if (action === 'right' && i < clips.length - 1) [clips[i + 1], clips[i]] = [clips[i], clips[i + 1]];
     if (action === 'trim') return openClip(c);
+    if (action === 'visuals') {
+      // the voice to record over: the take itself, or the one this clip was made from
+      const voice = c.voiceOnly ? c : c.voice;
+      replaceId = c.id; // the finished clip takes this one's place in the timeline
+      renderTimeline();
+      startRecording('visual', voice).then(() => { if (rec.state === 'idle') { replaceId = null; renderTimeline(); } });
+      return;
+    }
     if (action === 'redo') replaceId = replaceId === c.id ? null : c.id;
     if (action === 'del') {
       if (!confirm(`Delete clip ${i + 1}? This cannot be undone.`)) return;
@@ -873,7 +964,7 @@
   }
 
   $('previewAll').addEventListener('click', async () => {
-    if (!clips.length) return;
+    if (!clips.some((c) => !c.voiceOnly)) { if (clips.length) alert('There are only voice takes so far. Press 🎬 Add visuals on one first.'); return; }
     trim.clip = null;
     $('dlgTitle').textContent = 'Preview: all clips in order';
     $('trimUI').hidden = true;
@@ -882,7 +973,7 @@
     vid.hidden = true;
     pvCanvas.hidden = false;
     ensureMonitor();
-    pv.list = expand(clips);
+    pv.list = expand(clips.filter((c) => !c.voiceOnly)); // voice-only takes have no picture yet
     pv.starts = [];
     let acc = 0;
     for (const c of pv.list) { pv.starts.push(acc); acc += clipLen(c); }
@@ -895,6 +986,7 @@
     const segs = $('pvSegs');
     segs.innerHTML = '';
     clips.forEach((c, i) => {
+      if (c.voiceOnly) return;
       const d = document.createElement('div');
       d.style.width = (pv.total ? (clipLen(c) / pv.total) * 100 : 0) + '%';
       d.textContent = `Clip ${i + 1}`;
@@ -917,6 +1009,9 @@
       return;
     }
     if (!clips.length) return;
+    const voiceOnly = clips.filter((c) => c.voiceOnly).length;
+    if (voiceOnly === clips.length) { alert('There are only voice takes so far. Press 🎬 Add visuals on one first.'); return; }
+    if (voiceOnly && !confirm(`${voiceOnly} voice take${voiceOnly > 1 ? 's have' : ' has'} no visuals yet and will be left out of the video.\n\nExport anyway?`)) return;
     exporting = true;
     exportAbort = new AbortController();
     const btn = $('exportBtn');
@@ -1003,7 +1098,7 @@
     };
     draw();
 
-    const list = expand(clips);
+    const list = expand(clips.filter((c) => !c.voiceOnly)); // voice-only takes have no picture yet
     const total = list.reduce((s, c) => s + clipLen(c), 0);
     const signal = exportAbort.signal;
     let ok = false;

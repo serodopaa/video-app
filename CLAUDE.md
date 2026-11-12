@@ -33,7 +33,13 @@ dependencies. Open `index.html` in a browser.
   with a limiter (+ ~2 dB headroom trim) so it never distorts. Export decodes each clip's audio
   (`decodeAudioData`) and schedules every kept piece on the AudioContext clock with 12 ms fades, so
   joins and cut parts never click; video elements are muted then and only give the picture.
-  Never change how existing clips are stored.
+  Record mode (`#recMode`, saved as `wb-recmode`): 🎥 Voice + board (default) or 🎙 Voice only. A voice
+  take is an audio-only clip (`voiceOnly: true`); its card has 🎬 Add visuals, which plays the kept
+  parts of the take on an AudioContext (also to the speakers) and records the board with that sound
+  instead of the mic; it stops by itself when the voice ends and replaces the take with a normal clip
+  that keeps the take in `voice` (so 🎬 Redo visuals works). Pause suspends the AudioContext too.
+  Preview and export leave voice-only takes out.
+  Never change how existing clips are stored (only add optional fields).
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
 - `scenes/brain-midsagittal.js` – the user-supplied midsagittal brain drawing (vector, 190 paths) as
   `window.WB_BRAIN_MID`; `brain-art.js` uses it for the medial view and the midsagittal cut face. Load it first.
