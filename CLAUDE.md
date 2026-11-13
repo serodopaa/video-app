@@ -64,6 +64,8 @@ dependencies. Open `index.html` in a browser.
   things that change shape, e.g. gauges); `agonist-antagonist.js` uses them (load it after).
 - `scenes/pharmacology-pd.js` – part 2 (pharmacodynamics) of the `pharmacology-essentials` topic: it appends its slides to
   that scene (one video) and reuses `window.WB_PHARM_ART` from `pharmacology-essentials.js`; load it right after that file.
+- `scenes/pharmacology-pk.js` – part 3 (pharmacokinetics, slides 18–32) of the same topic; reuses `window.WB_PHARM_PD`
+  (cards, tabs, graph helpers) shared by `pharmacology-pd.js`; load it right after that file.
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**

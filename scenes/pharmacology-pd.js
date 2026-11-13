@@ -675,6 +675,9 @@
     ] },
   ];
 
+  // shared with part 3 (pharmacology-pk.js)
+  window.WB_PHARM_PD = { glow, gauge, card, tabsOf, plot, axes, sCurve, sig, dash, tagOver, chip, ball };
+
   // ---------------------------------------------------------------- the slides (added after part 1)
   scene.steps.push(
     // Slide 6: part 2 intro.
