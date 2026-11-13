@@ -531,48 +531,91 @@
   ];
 
   // ---------------------------------------------------------------- slide: other drug targets
+  // Two views via tabs: "Normally (no drug)" shows what each target does on its own; "With the drug" shows the drug
+  // blocking or switching it (the base view). Cards: 730 x 330; picture area x+20..x+330, y+70..y+318.
+  const TCARDS = [[60, 190], [810, 190], [60, 530], [810, 530]];
   const tcard = (x, y, c, head, body, art) => [
-    box(x, y, 730, 360, c), { type: 'rect', x, y, w: 730, h: 58, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
-    txt(head, x + 365, y + 29, 26, '#ffffff', { align: 'center', bold: true }),
+    box(x, y, 730, 330, c), { type: 'rect', x, y, w: 730, h: 54, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
+    txt(head, x + 365, y + 27, 25, '#ffffff', { align: 'center', bold: true }),
     svgItem(art(x, y)),
-    txt(body, x + 355, y + 105, 20, INK, { bold: true }),
+    txt(body, x + 355, y + 100, 20, INK, { bold: true }),
   ];
-  const artRec = (x, y) => {
-    const cx = x + 175, top = y + 255;
-    return `<defs><clipPath id="t1"><rect x="${x + 20}" y="${y + 75}" width="310" height="268" rx="12"/></clipPath></defs><g clip-path="url(#t1)">${panel(x + 20, x + 330, y + 75, top, top + 40, y + 343)}${receptor(cx, top, 'tri', 'blue', 0.85)}${ligand('tri', cx, dockY(top, 0.85), 'amber', 1, 0.85)}${contacts(cx, top, 'tri', 4, 0.85)}${glow(cx, top, 0.85)}</g>`;
+  const clipArt = (id, x, y, inner) => `<defs><clipPath id="${id}"><rect x="${x + 20}" y="${y + 70}" width="310" height="248" rx="12"/></clipPath></defs><g clip-path="url(#${id})">${inner}</g>`;
+  const recArt = (x, y, natural) => {
+    const cx = x + 175, top = y + 232;
+    return clipArt(`t1${natural ? 'n' : ''}`, x, y, `${panel(x + 20, x + 330, y + 70, top, top + 38, y + 318)}${receptor(cx, top, 'tri', 'blue', 0.82)}${ligand('tri', cx, dockY(top, 0.82), natural ? 'pale' : 'amber', 1, 0.82)}${contacts(cx, top, 'tri', 4, 0.82)}${glow(cx, top, 0.82)}`)
+      + T(x + 265, y + 286, 14, natural ? '#a8640a' : ANT)(natural ? 'your own' : 'a drug, e.g.') + T(x + 265, y + 304, 14, natural ? '#a8640a' : ANT)(natural ? 'messenger' : 'morphine');
   };
-  const artEnz = (x, y) => {
-    const cx = x + 150, cy = y + 225;
-    return `<ellipse cx="${cx}" cy="${cy}" rx="112" ry="82" fill="#f4c995" stroke="#b67d3c" stroke-width="4"/>
+  const artRec = (x, y) => recArt(x, y, false);
+  const enzBody = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="112" ry="82" fill="#f4c995" stroke="#b67d3c" stroke-width="4"/>
       <circle cx="${cx + 108}" cy="${cy}" r="32" fill="#ffffff" stroke="#b67d3c" stroke-width="4"/><rect x="${cx + 112}" y="${cy - 40}" width="40" height="80" fill="#ffffff"/>
-      ${T(cx - 20, cy - 4, 22, '#8a5a22')('COX')}${T(cx - 20, cy + 22, 16, '#8a5a22', 600)('enzyme')}
-      ${capsule(cx + 112, cy, 0.42, 0)}${T(cx + 112, cy + 52, 17, ANT)('aspirin')}
-      ${T(cx + 20, y + 112, 18, ANT)('✕ no pain signals made')}`;
+      ${T(cx - 20, cy - 4, 22, '#8a5a22')('COX')}${T(cx - 20, cy + 22, 16, '#8a5a22', 600)('enzyme')}`;
+  const ENZ_C = (x, y) => [x + 150, y + 205];
+  const artEnz = (x, y) => {
+    const [cx, cy] = ENZ_C(x, y);
+    return `${enzBody(cx, cy)}${capsule(cx + 112, cy, 0.42, 0)}${T(cx + 112, cy + 52, 17, ANT)('aspirin')}${T(cx + 20, y + 100, 17, ANT)('✕ no pain signals made')}`;
   };
-  const artTrans = (x, y) => {
-    const top = y + 215, cx = x + 175;
-    return `<defs><clipPath id="t3"><rect x="${x + 20}" y="${y + 75}" width="310" height="268" rx="12"/></clipPath></defs><g clip-path="url(#t3)">${panel(x + 20, x + 330, y + 75, top, top + 40, y + 343)}
-      <rect x="${cx - 40}" y="${top - 30}" width="80" height="100" rx="20" fill="#c9a8f2" stroke="#4a1f8a" stroke-width="4"/><rect x="${cx - 9}" y="${top - 30}" width="18" height="100" fill="#eef6fd" stroke="#4a1f8a" stroke-width="3"/>
-      ${[[cx - 110, top - 90], [cx - 60, top - 120], [cx + 80, top - 100], [cx + 120, top - 60], [cx - 120, top - 40], [cx + 40, top - 125]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="11" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>`).join('')}
-      ${capsule(cx, top - 52, 0.36, 0)}
-      ${curve(`M ${cx + 60} ${top + 80} L ${cx + 60} ${top + 120}`, '#9aa1ad', 4)}
-      <line x1="${cx + 40}" y1="${top + 88}" x2="${cx + 80}" y2="${top + 112}" stroke="${ANT}" stroke-width="5"/><line x1="${cx + 40}" y1="${top + 112}" x2="${cx + 80}" y2="${top + 88}" stroke="${ANT}" stroke-width="5"/>
-      ${T(cx - 100, top - 150, 16, GREY)('serotonin')}</g>`;
+  const TR_C = (x, y) => [x + 175, y + 200];
+  const transBody = (x, y) => {
+    const [cx, top] = TR_C(x, y);
+    return `${panel(x + 20, x + 330, y + 70, top, top + 38, y + 318)}
+      <rect x="${cx - 40}" y="${top - 30}" width="80" height="98" rx="20" fill="#c9a8f2" stroke="#4a1f8a" stroke-width="4"/><rect x="${cx - 9}" y="${top - 30}" width="18" height="98" fill="#eef6fd" stroke="#4a1f8a" stroke-width="3"/>
+      <circle cx="${x + 44}" cy="${y + 294}" r="8" fill="#f6c45a" stroke="#a8640a" stroke-width="2.5"/>${T(x + 58, y + 300, 15, GREY, 700, 'start')('serotonin')}${T(cx + 70, top + 95, 15, GREY, 700, 'start')('back into')}${T(cx + 70, top + 113, 15, GREY, 700, 'start')('the nerve')}`;
   };
-  const artChan = (x, y) => {
-    const top = y + 205, cx = x + 175;
-    return `<defs><clipPath id="t4"><rect x="${x + 20}" y="${y + 75}" width="310" height="268" rx="12"/></clipPath></defs><g clip-path="url(#t4)">${panel(x + 20, x + 330, y + 75, top, top + 40, y + 343)}
-      <rect x="${cx - 62}" y="${top - 34}" width="46" height="110" rx="16" fill="#9fd9ae" stroke="#2e7d32" stroke-width="4"/><rect x="${cx + 16}" y="${top - 34}" width="46" height="110" rx="16" fill="#9fd9ae" stroke="#2e7d32" stroke-width="4"/>
-      <rect x="${cx - 20}" y="${top - 14}" width="40" height="40" rx="10" fill="#d9534f" stroke="#8e1d14" stroke-width="3"/>${T(cx, top + 13, 14, '#ffffff')('drug')}
-      ${[[cx - 80, top - 90], [cx - 20, top - 70], [cx + 60, top - 100], [cx + 110, top - 70]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="15" fill="#f6d04d" stroke="#a87900" stroke-width="3"/>${T(a, b + 5, 13, '#5c4400')('Na⁺')}`).join('')}
-      ${T(cx, top + 120, 17, GREY)('ions can\'t get through')}</g>`;
+  const SER = (x, y) => { const [cx, top] = TR_C(x, y); return [[cx - 110, top - 80], [cx - 60, top - 110], [cx + 80, top - 92], [cx + 120, top - 52], [cx - 120, top - 34], [cx + 40, top - 118]]; };
+  const serDots = (x, y) => SER(x, y).map(([a, b]) => `<circle cx="${a}" cy="${b}" r="11" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>`).join('');
+  const artTrans = (x, y) => { const [cx, top] = TR_C(x, y); return clipArt('t3', x, y, `${transBody(x, y)}${serDots(x, y)}${capsule(cx, top - 50, 0.36, 0)}`); };
+  const CH_C = (x, y) => [x + 175, y + 195];
+  const chanBody = (x, y, plug) => {
+    const [cx, top] = CH_C(x, y);
+    return `${panel(x + 20, x + 330, y + 70, top, top + 38, y + 318)}
+      <rect x="${cx - 62}" y="${top - 34}" width="46" height="106" rx="16" fill="#9fd9ae" stroke="#2e7d32" stroke-width="4"/><rect x="${cx + 16}" y="${top - 34}" width="46" height="106" rx="16" fill="#9fd9ae" stroke="#2e7d32" stroke-width="4"/>
+      ${plug ? `<rect x="${cx - 20}" y="${top - 14}" width="40" height="40" rx="10" fill="#d9534f" stroke="#8e1d14" stroke-width="3"/>${T(cx, top + 13, 14, '#ffffff')('drug')}` : ''}
+      ${T(cx, top + 105, 16, GREY)(plug ? 'ions can\'t get through' : 'ions flow in → nerve signal')}`;
   };
+  const naDot = (a, b) => `<circle cx="${a}" cy="${b}" r="15" fill="#f6d04d" stroke="#a87900" stroke-width="3"/>${T(a, b + 5, 13, '#5c4400')('Na⁺')}`;
+  const NA = (x, y) => { const [cx, top] = CH_C(x, y); return [[cx - 80, top - 85], [cx + 60, top - 95], [cx + 110, top - 65]]; };
+  const artChan = (x, y) => clipArt('t4', x, y, `${chanBody(x, y, true)}${NA(x, y).map(([a, b]) => naDot(a, b)).join('')}${naDot(CH_C(x, y)[0] - 20, CH_C(x, y)[1] - 70)}`);
+  const TG = tabsOf([{ id: 'norm7', text: 'Normally (no drug)', c: ENDO }, { id: 'drug7', text: 'With the drug', c: ANT }], 230, 560);
   const targetItems = [
-    title('Drug targets: not just receptors'),
-    ...tcard(60, 112, AFF, 'RECEPTORS', 'The MOST common target. The\ndrug switches it ON (agonist) or\nblocks it (antagonist).\n(more on these next)\n\ne.g. morphine at opioid receptors', artRec),
-    ...tcard(810, 112, EXO, 'ENZYMES', 'The drug blocks an enzyme, so\nit can\'t make its product.\n\ne.g. aspirin and ibuprofen\nblock COX, which makes pain\nand inflammation signals', artEnz),
-    ...tcard(60, 495, PD, 'TRANSPORTERS', 'The drug blocks a pump that\nclears a chemical away, so more\nof it stays around.\n\ne.g. SSRIs (like fluoxetine)\nblock serotonin reuptake', artTrans),
-    ...tcard(810, 495, ENDO, 'ION CHANNELS', 'The drug plugs a channel, so\nions can\'t flow through.\n\ne.g. lidocaine blocks Na⁺\nchannels in nerves → numbness', artChan),
+    title('Drug targets: where drugs act'),
+    ...TG.bar(null),
+    ...tcard(...TCARDS[0], AFF, 'RECEPTORS', 'The MOST common target. The\ndrug switches it ON (agonist) or\nblocks it (antagonist).\n(more on these next)\n\ne.g. morphine at opioid receptors', artRec),
+    ...tcard(...TCARDS[1], EXO, 'ENZYMES', 'The drug blocks an enzyme, so\nit can\'t make its product.\n\ne.g. aspirin and ibuprofen\nblock COX, which makes pain\nand inflammation signals', artEnz),
+    ...tcard(...TCARDS[2], PD, 'TRANSPORTERS', 'The drug blocks a pump that\nclears a chemical away, so more\nof it stays around.\n\ne.g. SSRIs (like fluoxetine)\nblock serotonin reuptake', artTrans),
+    ...tcard(...TCARDS[3], ENDO, 'ION CHANNELS', 'The drug plugs a channel, so\nions can\'t flow through.\n\ne.g. lidocaine blocks Na⁺\nchannels in nerves → numbness', artChan),
+    ...TG.hot,
+  ];
+  // "normally": cover each picture and text with the no-drug version, plus the natural flow
+  const coverCard = (x, y, art, body) => [
+    svgItem(`<rect x="${x + 4}" y="${y + 58}" width="722" height="268" fill="#ffffff"/>${art}`, { solid: true }),
+    { ...txt(body, x + 355, y + 100, 20, ENDO, { bold: true }), solid: true },
+  ];
+  const [E0, E1] = ENZ_C(...TCARDS[1]), [R0, R1] = TR_C(...TCARDS[2]), [C0, C1] = CH_C(...TCARDS[3]);
+  const normItems = [
+    ...coverCard(...TCARDS[0], recArt(...TCARDS[0], true), 'NORMALLY: your body\'s own\nmessengers (neurotransmitters,\nhormones) bind and switch\nit ON.'),
+    ...coverCard(...TCARDS[1], enzBody(E0, E1) + T(E0 + 20, TCARDS[1][1] + 100, 17, ENDO)('✓ pain signals made'), 'NORMALLY: the enzyme turns a\nstarting molecule into a\nproduct, e.g. COX makes\nprostaglandins (pain and\ninflammation signals).'),
+    ...coverCard(...TCARDS[2], clipArt('t3n', ...TCARDS[2], transBody(...TCARDS[2])), 'NORMALLY: a pump pulls a\nchemical back into the nerve\n(reuptake), clearing it away\nso the signal stops.'),
+    ...coverCard(...TCARDS[3], clipArt('t4n', ...TCARDS[3], chanBody(...TCARDS[3], false)), 'NORMALLY: the channel opens\nand ions (e.g. Na⁺) flow in,\nsending a nerve signal.'),
+    // enzyme: starting molecules go in, products (pain signals) come out
+    ...[0, 1, 2].flatMap((k) => [
+      { type: 'mover', path: [[E0 + 150 + k * 10, E1 - 115], [E0 + 112, E1]], r: 9, color: '#f0a12e', count: 1, speed: 1.4 + k * 0.35 },
+      { type: 'mover', path: [[E0 + 112, E1], [E0 + 165 - k * 10, E1 + 100]], r: 7, color: ANT, count: 1, speed: 1.2 + k * 0.35 },
+    ]),
+    // transporter: serotonin pulled back into the nerve
+    ...SER(...TCARDS[2]).slice(0, 4).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [R0, R1 - 40], [R0, R1 + 60], [R0 + 30, R1 + 110]], r: 11, color: '#f0a12e', count: 1, speed: 2.2 + k * 0.3 })),
+    // channel: ions flow through
+    ...NA(...TCARDS[3]).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [C0, C1 - 40], [C0, C1 + 70], [C0 + 20 - k * 20, C1 + 100]], r: 13, color: '#f6d04d', count: 1, speed: 1.8 + k * 0.3 })),
+  ];
+  // "with the drug": the same flows get stuck
+  const drugItems = [
+    ...[0, 1].map((k) => ({ type: 'mover', path: [[E0 + 150 + k * 14, E1 - 115], [E0 + 128 + k * 10, E1 - 48], [E0 + 160 + k * 14, E1 - 120]], r: 9, color: '#f0a12e', count: 1, speed: 1.6 + k * 0.4 })),
+    ...SER(...TCARDS[2]).slice(0, 3).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [R0 + (k - 1) * 20, R1 - 72], [a + 10, b - 6]], r: 11, color: '#f0a12e', count: 1, speed: 2.0 + k * 0.3 })),
+    ...NA(...TCARDS[3]).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [C0 + (k - 1) * 14, C1 - 26], [a, b]], r: 13, color: '#f6d04d', count: 1, speed: 1.8 + k * 0.3 })),
+  ];
+  const targetActions = [
+    { id: 'norm7', label: 'Normally (no drug)', group: 'tg', stay: true, drawn: false, items: [...TG.bar('norm7').map((it) => ({ ...it, solid: true })), ...normItems] },
+    { id: 'drug7', label: 'With the drug', group: 'tg', stay: true, drawn: false, items: [...TG.bar('drug7').map((it) => ({ ...it, solid: true })), ...drugItems] },
   ];
 
   // ---------------------------------------------------------------- slide: receptor types
@@ -762,14 +805,15 @@
 • Goal: understand how drugs actually produce their effects
 • Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
-    // Slide 7: other drug targets.
-    { script: `${Qs('Do all drugs act on receptors?', 'What are the other main drug targets?', 'Examples of each')}`,
+    // Slide 7: drug targets.
+    { script: `${Qs('Where do drugs act?', 'What are the four main drug targets?', 'What does each target do normally, and what does the drug change?')}
+[tabs: Normally (no drug) → With the drug]`,
       notes: `• First, the big picture: drugs act on 4 main types of target (receptors are the most common, but not the only one)
 • Receptors: switched on or blocked (morphine at opioid receptors)
 • Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
 • Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
 • Ion channels: plugged so ions can't flow (lidocaine blocks Na⁺ channels → numbness)`,
-      say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, items: targetItems },
+      say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, actions: targetActions, items: targetItems },
     // Slide 8: receptors and binding.
     { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
 [click the left side to bind]`,

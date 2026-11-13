@@ -140,11 +140,17 @@
     txt(head, x + 272, y + 44, 24, c, { bold: true }),
     txt(body, x + 272, y + 100, 18, INK, { bold: true }),
   ];
-  const artAdd = (cx, cy) => `<line x1="${cx - 90}" y1="${cy - 70}" x2="${cx + 90}" y2="${cy - 70}" stroke="${RED}" stroke-width="3" stroke-dasharray="7 5"/>${T(cx + 90, cy - 80, 14, RED, 700, 'end')('danger')}
-    <rect x="${cx - 80}" y="${cy + 10}" width="50" height="90" rx="6" fill="${PK}"/>${T(cx - 55, cy + 128, 14, GREY)('A')}
-    <rect x="${cx - 15}" y="${cy + 40}" width="50" height="60" rx="6" fill="${DDI}"/>${T(cx + 10, cy + 128, 14, GREY)('B')}
-    <rect x="${cx + 50}" y="${cy - 50}" width="50" height="90" rx="6" fill="${PK}"/><rect x="${cx + 50}" y="${cy + 40}" width="50" height="60" rx="6" fill="${DDI}"/>${T(cx + 75, cy + 128, 14, GREY)('A + B')}
+  // u = 0..1 builds it up: drug A's bar, then drug B's, then both together crossing the danger line
+  const artAdd = (cx, cy, u = 1) => {
+    const k = (i) => Math.max(0, Math.min(1, u * 3 - i));
+    const a = 90 * k(0), b = 60 * k(1), ab = k(2);
+    return `<line x1="${cx - 90}" y1="${cy - 30}" x2="${cx + 90}" y2="${cy - 30}" stroke="${RED}" stroke-width="3" stroke-dasharray="7 5"/>${T(cx - 90, cy - 40, 14, RED, 700, 'start')('danger')}
+    <rect x="${cx - 80}" y="${f1(cy + 100 - a)}" width="50" height="${f1(a)}" rx="6" fill="${PK}"/>${T(cx - 55, cy + 128, 14, GREY)('A')}
+    <rect x="${cx - 15}" y="${f1(cy + 100 - b)}" width="50" height="${f1(b)}" rx="6" fill="${DDI}"/>${T(cx + 10, cy + 128, 14, GREY)('B')}
+    <rect x="${cx + 50}" y="${f1(cy + 100 - 60 * ab)}" width="50" height="${f1(60 * ab)}" rx="6" fill="${DDI}"/><rect x="${cx + 50}" y="${f1(cy + 100 - 60 * ab - 90 * ab)}" width="50" height="${f1(90 * ab)}" rx="6" fill="${PK}"/>${T(cx + 75, cy + 128, 14, GREY)('A + B')}
+    ${ab >= 1 ? `<circle cx="${cx + 75}" cy="${cy - 30}" r="18" fill="none" stroke="${RED}" stroke-width="4"/>${T(cx + 75, cy - 66, 15, RED)('⚠')}` : ''}
     <line x1="${cx - 100}" y1="${cy + 100}" x2="${cx + 110}" y2="${cy + 100}" stroke="${DARK}" stroke-width="3"/>`;
+  };
   const artOpp = (cx, cy) => `${curve(`M ${cx - 70} ${cy + 60} L ${cx - 70} ${cy - 60}`, PK, 8)}${T(cx - 70, cy + 90, 16, PK)('drug A')}
     ${curve(`M ${cx + 70} ${cy - 60} L ${cx + 70} ${cy + 60}`, DDI, 8)}${T(cx + 70, cy - 76, 16, DDI)('drug B')}
     ${T(cx, cy + 8, 30, GREY)('=')}${T(cx, cy + 128, 17, DARK)('little or no effect')}`;
@@ -166,8 +172,13 @@
     ...icard(60, 200, PD, 'Adding up', 'Two drugs with the same effect add\nup (sometimes to more than the sum).\n\ne.g. alcohol + opioids or\nbenzodiazepines → dangerous\ndrowsiness, slowed breathing', artAdd),
     ...icard(60, 540, PD, 'Cancelling out', 'One drug blocks the other\'s effect.\n\ne.g. a beta-blocker can stop an\nasthma inhaler (salbutamol) working\n\nUseful too: naloxone vs opioids', artOpp),
     ...icard(820, 200, PK, 'Metabolism (most common)', 'One drug speeds up or slows down\nthe other\'s breakdown (CYP450).\n\nInhibitor → level UP → toxic\n(grapefruit juice + statins)\nInducer → level DOWN → fails\n(rifampicin + the pill)', artMet),
+    { type: 'hotspot', x: 78, y: 218, w: 230, h: 284, action: 'add38' },
     ...icard(820, 540, PK, 'Absorption, binding, excretion', 'Absorb: antacids block some\nantibiotics\nBind: pushed off blood proteins\n(warfarin)\nExcrete: NSAIDs slow lithium\nremoval → lithium builds up', artOther),
   ];
+
+  const ddiActions = [{ id: 'add38', label: 'Adding up: build it', stay: true, drawn: false, items: [
+    ...frameTrack([[0, 0], [3.2, 1], [30, 1]], ([u]) => `${rr(78, 218, 230, 284, '#e4e7ee', '#f7f8fb', 2, 14)}${artAdd(193, 360, u)}`, 12),
+  ] }];
 
   // ================================================================ slide 39: tolerance and dependence
   const GD = { x0: 170, x1: 940, y0: 300, y1: 740 };
@@ -286,7 +297,8 @@
 • Most at risk: narrow therapeutic index drugs (warfarin, lithium, digoxin) → blood levels are monitored`,
       say: 'Toxicity happens when the drug level rises above the therapeutic window: too much taken, too little cleared, or another drug.', clear: true, actions: toxActions, items: toxItems },
     // Slide 38: drug–drug interactions.
-    { script: Qs('What is a drug–drug interaction?', 'Pharmacodynamic vs pharmacokinetic interactions?', 'Examples of each'),
+    { script: `${Qs('What is a drug–drug interaction?', 'Pharmacodynamic vs pharmacokinetic interactions?', 'Examples of each')}
+[click the "Adding up" picture to build it]`,
       notes: `• Drug–drug interaction = one drug changes what another drug does
 • Pharmacodynamic: they change each other's EFFECT
 • Adding up: same effect → bigger (sometimes more than the sum): alcohol + opioids / benzodiazepines → dangerous drowsiness, slowed breathing
@@ -295,7 +307,7 @@
 • Metabolism (most common): inhibitors raise levels (grapefruit juice + statins), inducers lower them (rifampicin + the pill)
 • Absorption (antacids + some antibiotics), protein binding (warfarin), excretion (NSAIDs → lithium builds up)
 • Herbal remedies, alcohol and food can interact too`,
-      say: 'Drug interactions either change each other’s effect (pharmacodynamic) or each other’s level (pharmacokinetic).', clear: true, items: ddiItems },
+      say: 'Drug interactions either change each other’s effect (pharmacodynamic) or each other’s level (pharmacokinetic).', clear: true, actions: ddiActions, items: ddiItems },
     // Slide 39: tolerance and dependence.
     { script: `${Qs('What is tolerance?', 'What is physical dependence and withdrawal?', 'What is addiction, and is it the same as dependence?')}
 [tabs: Tolerance → Physical dependence → Psychological (addiction)]`,

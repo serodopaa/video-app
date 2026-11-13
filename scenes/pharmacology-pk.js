@@ -97,7 +97,7 @@
       ['Transdermal', 'skin patch: slow and steady\n(e.g. nicotine patch)', [302, 402]],
     ], ys: [215, 335, 455, 575, 695] },
   };
-  const RT = tabsOf([{ id: 'ent19', text: 'Enteral (through the gut)', c: ABS }, { id: 'par19', text: 'Parenteral (everything else)', c: PK }], 230, 560);
+  const RT = tabsOf([{ id: 'ent19', text: 'Enteral (through the gut)', c: ABS }, { id: 'par19', text: 'Parenteral (everything else)', c: PK }, { id: 'spd19', text: 'Compare the speed', c: DARK }], 170, 400);
   const routeView = (key) => {
     const R = ROUTES[key];
     return [
@@ -110,11 +110,36 @@
       ...R.rows.map(([, , [mx, my]]) => ({ type: 'pulse', x: mx, y: my, r: 22, color: R.c, speed: 1.4 })),
     ];
   };
+  // compare the speed: drug level over time after the same dose by different routes
+  const GR = { x0: 170, x1: 940, y0: 260, y1: 760 };
+  const pR = plot(GR);
+  const KEL = 0.3, TR = 12;
+  const routeLevel = {
+    iv: (t) => Math.exp(-KEL * t),
+    inh: (t) => 0.9 * bateman(t, KEL, 5),
+    im: (t) => 0.95 * bateman(t, KEL, 1.6),
+    oral: (t) => 0.55 * bateman(t, KEL, 0.7),
+    patch: (t) => 0.32 * (1 - Math.exp(-0.45 * t)),
+  };
+  const SPD = [['iv', 'IV', PK], ['inh', 'Inhaled', DIS], ['im', 'IM', MET], ['oral', 'Oral', ABS], ['patch', 'Patch', '#8a8f98']];
+  const speedGraph = (u) => {
+    const tN = TR * u;
+    const lines = SPD.map(([k, , c]) => { const pts = []; for (let t = 0; t <= tN + 1e-6; t += 0.08) pts.push([pR.x(t / TR), pR.y(routeLevel[k](t))]); return polyline(pts, c, 5); }).join('');
+    const legend = SPD.map(([, n, c], i) => `<rect x="${GR.x0 + 20 + i * 150}" y="${GR.y0 - 52}" width="24" height="9" rx="4" fill="${c}"/>${T(GR.x0 + 52 + i * 150, GR.y0 - 42, 18, c, 700, 'start')(n)}`).join('');
+    return `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>${axes(GR, 'Time after the dose →', 'Drug level in the blood →', false)}${legend}${lines}`;
+  };
+  const speedItems = [
+    ...frameTrack([[0, 0], [3.5, 1], [30, 1]], ([u]) => speedGraph(u), 12),
+    txt('IV: instant, all of it', pR.x(0.02) + 12, pR.y(1) + 6, 17, PK, { bold: true, at: 3.5, anim: 'fade', duration: 0.3 }),
+    txt('Oral: slower, and less gets in', pR.x(0.42), pR.y(0.42), 17, ABS, { bold: true, at: 3.7, anim: 'fade', duration: 0.3 }),
+    { ...svgItem(`<line x1="${f1(pR.x(0.42) - 6)}" y1="${f1(pR.y(0.42) + 8)}" x2="${f1(pR.x(0.2) + 8)}" y2="${f1(pR.y(0.31) - 6)}" stroke="${ABS}" stroke-width="2.5" stroke-dasharray="6 5"/>`), at: 3.7, duration: 0.3 },
+    txt('Patch: slow, steady, long-lasting', pR.x(0.62), pR.y(0.36), 17, '#6b7280', { bold: true, at: 3.9, anim: 'fade', duration: 0.3 }),
+  ];
   const routeItems = [
     title('Routes of administration'),
     ...RT.bar(null),
     svgItem(rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2) + person(...BODY, BS, '#e3ecfb', '#8aa3cc')),
-    txt('Pick a group above →\nto see the routes', 760, 470, 22, '#9aa1ad', { align: 'center', bold: true, hideDuring: ['ent19', 'par19'] }),
+    txt('Pick a group above →\nto see the routes', 760, 470, 22, '#9aa1ad', { align: 'center', bold: true, hideDuring: ['ent19', 'par19', 'spd19'] }),
     ...card(1030, 190, 510, 670, DARK, 'HOW THE DRUG GETS IN', 'The ROUTE decides how FAST and\nhow MUCH of a drug gets in.\n\nENTERAL: through the gut\n(enteron = intestine)\n\nPARENTERAL: any other way\n(para = beside the gut)', 22),
     ...RT.hot,
   ];
@@ -126,6 +151,10 @@
     { id: 'par19', label: 'Parenteral routes', group: 'rt', stay: true, drawn: false, items: [
       ...RT.bar('par19'), ...routeView('par'),
       ...card(1030, 190, 510, 670, PK, 'PARENTERAL', 'Any route that skips the gut.\n\n✓ Faster and more reliable\n✓ Skips the liver\'s first pass\n✓ Works if someone can\'t swallow\n\n✗ Often needs a needle (and\n   training), and is harder to\n   undo if something goes wrong', 22),
+    ] },
+    { id: 'spd19', label: 'Compare the speed', group: 'rt', stay: true, drawn: false, items: [
+      ...RT.bar('spd19').map((it) => ({ ...it, solid: true })), ...speedItems,
+      ...card(1030, 190, 510, 670, DARK, 'SAME DOSE, DIFFERENT ROUTE', 'The route changes how FAST the\nlevel rises, how HIGH it gets and\nhow LONG it lasts.\n\nIV: instant, 100% gets in\nInhaled: very fast\nIM: within minutes\nOral: slowest, and less gets in\n(first-pass, next slides)\nPatch: slow, low and steady\nfor a long time', 21),
     ] },
   ];
 
@@ -673,7 +702,7 @@
       say: 'Part 3: pharmacokinetics, what the body does to the drug.', clear: true, items: introItems },
     // Slide 20: routes of administration.
     { script: `${Qs('What are the routes of administration?', 'Enteral vs parenteral?', 'Which routes are fast and which are slow?')}
-[tabs: Enteral → Parenteral]`,
+[tabs: Enteral → Parenteral → Compare the speed]`,
       notes: `• Route = how the drug gets into the body; it decides how FAST and how MUCH gets in
 • Enteral = through the gut (enteron = intestine): oral, sublingual, rectal
 • Oral: easy, cheap, painless, but slow, affected by food and acid, and loses some to first-pass
@@ -681,7 +710,8 @@
 • Rectal: useful if vomiting or unconscious
 • Parenteral = any other way: IV, IM, subcutaneous, inhaled, transdermal
 • IV: fastest, 100% reaches the blood; IM: minutes (vaccines); subcutaneous: slower and steady (insulin)
-• Inhaled: very fast (asthma inhalers); transdermal patch: slow and steady (nicotine patch)`,
+• Inhaled: very fast (asthma inhalers); transdermal patch: slow and steady (nicotine patch)
+• Compare the speed: same dose, the route changes how fast the level rises, how high it gets and how long it lasts (IV instant; oral slow and lower; patch low and steady)`,
       say: 'Drugs can be given through the gut (enteral) or any other way (parenteral), and the route decides how fast and how much gets in.', clear: true, actions: routeActions, items: routeItems },
     // Slide 21: getting absorbed.
     { script: `${Qs('How do drugs cross into the body?', 'What affects how well a drug is absorbed?')}
