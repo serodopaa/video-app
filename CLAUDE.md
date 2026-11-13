@@ -99,6 +99,7 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
   steps: [
     {
       say: 'Caption shown (and read aloud if Narrate is on).',
+      notes: 'Optional default 📝 Notes for this slide (on its first step); the user\'s own saved notes (wb-notes-<id>-<n>) win.',
       script: 'Optional teleprompter script for this slide (see Teleprompter). [stage directions] show in amber.',
       hold: 1.5,              // seconds to wait after the step during Play (default 1.5)
       clear: false,           // true = start a new slide (hides earlier steps)

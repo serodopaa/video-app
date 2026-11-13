@@ -1523,7 +1523,10 @@
     flushNotes();
     const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
     notes.key = 'wb-notes-' + player.scene.id + '-' + n;
-    notes.text.value = lsGet(notes.key) || '';
+    // a slide can bring default notes (`notes` on its first step); the user's own saved notes win
+    const first = n ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
+    const saved = lsGet(notes.key);
+    notes.text.value = saved !== null ? saved : (first && first.notes) || '';
     notes.title.textContent = n ? `Notes: slide ${n}` : 'Notes';
     notes.saved.textContent = '';
   }

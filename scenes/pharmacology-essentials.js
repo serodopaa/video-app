@@ -311,18 +311,16 @@
     drawn: false,
     steps: [
       // Slide 1: title.
-      { script: `${Qs('What is this course?', 'What does part 1 cover?')}
-
-Hey everyone, so welcome to Pharmacology Essentials, the full course. In this video we're going to work through the core ideas of pharmacology, and we're going to start right at the beginning with an introduction to pharmacology.
+      { script: `${Qs('What is this course?', 'What does part 1 cover?')}`,
+        notes: `Hey everyone, so welcome to Pharmacology Essentials, the full course. In this video we're going to work through the core ideas of pharmacology, and we're going to start right at the beginning with an introduction to pharmacology.
 
 So in this first part, we'll go over four things. [point to the cards] First, what pharmacology actually is. Then, what a drug is. Then we'll look at the difference between endogenous and exogenous substances. And then lastly, the difference between pharmacokinetics and pharmacodynamics, which sound really similar but are actually two pretty different ideas.
 
 So let's jump right in.`,
       say: 'Pharmacology essentials, part 1: an introduction to pharmacology.', clear: true, thumbnail: true, items: titleItems },
       // Slide 2: what is pharmacology?
-      { script: `${Qs('What is pharmacology?', 'Where does the word come from?', 'What does pharmacology cover?', 'It works both ways: drug → body and body → drug')}
-
-Ok, so first things first, what is pharmacology? So pharmacology is basically just the study of drugs and how they interact with living things. [point to the definition]
+      { script: `${Qs('What is pharmacology?', 'Where does the word come from?', 'What does pharmacology cover?', 'It works both ways: drug → body and body → drug')}`,
+        notes: `Ok, so first things first, what is pharmacology? So pharmacology is basically just the study of drugs and how they interact with living things. [point to the definition]
 
 And the word itself actually tells you this. So it comes from the Greek word pharmakon, which means drug or medicine, but interestingly it could also mean poison. [point to pharmakon] And that actually makes a lot of sense, because pretty much any drug can become harmful if you take too much of it. And then -logy just means the study of. So put them together and you get the study of drugs.
 
@@ -332,8 +330,8 @@ Now the really important thing I want you to take away from this slide is that t
         say: 'Pharmacology is the study of drugs and how they interact with living things, in both directions.', clear: true, items: pharmItems },
       // Slide 3: what is a drug?
       { script: `${Qs('What is a drug?', 'What does a drug actually do? (chemical → interacts with the body → changes how it works)', 'Is every drug a medicine?')}
-
-So now that we know what pharmacology is, we need to understand what a drug actually is. So a drug is any chemical substance that changes how the body works when it gets into the body. [point to the definition]
+[click the boxes to build the definition step by step]`,
+        notes: `So now that we know what pharmacology is, we need to understand what a drug actually is. So a drug is any chemical substance that changes how the body works when it gets into the body. [point to the definition]
 
 So let's break this down a little bit. [click the boxes] So first, a drug is a chemical substance. So this could be a medicine, but it could also be something like caffeine or alcohol.
 
@@ -347,8 +345,8 @@ So basically, every medicine is a drug, but not every drug is a medicine.`,
       say: 'A drug is any chemical that changes how the body works; medicines are drugs used to treat or prevent disease.', clear: true, actions: drugActions, items: drugItems },
       // Slide 4: endogenous vs exogenous.
       { script: `${Qs('What does endogenous mean?', 'What does exogenous mean?', 'Examples of each', 'Can an endogenous substance be a drug? (insulin, adrenaline)')}
-
-Ok, so when we talk about drugs and the substances that affect our body, there are two terms you're going to hear a lot, and that's endogenous and exogenous.
+[click the green side, then the orange side, then the key point]`,
+        notes: `Ok, so when we talk about drugs and the substances that affect our body, there are two terms you're going to hear a lot, and that's endogenous and exogenous.
 
 So endogenous [click the green side] means made inside the body. So endo means within, and genous means produced, so produced within. And these are things your body naturally makes on its own. So examples of this would be hormones, like insulin, adrenaline or cortisol, neurotransmitters, like serotonin and dopamine, and endorphins, which are basically your body's own natural painkillers.
 
@@ -358,8 +356,8 @@ Now here's the key point. [click the key point] So most drugs are exogenous, but
       say: 'Endogenous substances are made by the body; exogenous ones come from outside, like most drugs.', clear: true, actions: endoExoActions, items: endoExoItems },
       // Slide 5: pharmacokinetics vs pharmacodynamics.
       { script: `${Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?', 'What are A-D-M-E?')}
-
-So lastly, we need to understand the difference between pharmacokinetics and pharmacodynamics. So these two words sound really similar, which is why they get mixed up so often, but they're actually looking at things from opposite directions. So remember earlier when I said pharmacology works both ways? Well, this is exactly what that was about.
+[tabs: Side by side → Pharmacokinetics → Pharmacodynamics]`,
+        notes: `So lastly, we need to understand the difference between pharmacokinetics and pharmacodynamics. So these two words sound really similar, which is why they get mixed up so often, but they're actually looking at things from opposite directions. So remember earlier when I said pharmacology works both ways? Well, this is exactly what that was about.
 
 So pharmacokinetics is what the body does to the drug. [point to the left side] And kinetics means movement, so it's all about how the drug moves through the body. And we can break this down into four steps, which you can remember with ADME. So absorption, distribution, metabolism and excretion.
 
