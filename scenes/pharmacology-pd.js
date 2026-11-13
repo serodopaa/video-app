@@ -104,14 +104,14 @@
   const S2 = 0.42;
   const miniRec = (cx, cy, extra = '') => receptor(cx, cy + 46, 'tri', 'blue', S2) + extra;
   const INTRO = [
-    ['Receptors &\nbinding', AFF, (cx, cy) => miniRec(cx, cy, ligand('tri', cx, cy + 46 + DOCK.tri * S2, 'amber', 1, S2) + ligand('tri', cx - 70, cy - 4, 'amber', 1, S2))],
+    ['Drug targets', EXO, (cx, cy) => [[-40, -22, AFF], [12, -22, EXO], [-40, 28, PD], [12, 28, ENDO]].map(([dx, dy, c]) => `<rect x="${cx + dx}" y="${cy + dy - 18}" width="44" height="40" rx="10" fill="${c}" opacity="0.85"/>`).join('')],
+    ['Receptors, binding\n& receptor types', AFF, (cx, cy) => miniRec(cx, cy, ligand('tri', cx, cy + 46 + DOCK.tri * S2, 'amber', 1, S2) + ligand('tri', cx - 70, cy - 4, 'amber', 1, S2))],
     ['Agonists\n(full & partial)', AGO, (cx, cy) => miniRec(cx, cy, ligand('tri', cx, cy + 46 + DOCK.tri * S2, 'amber', 1, S2) + glow(cx, cy + 46, S2))],
     ['Antagonists &\nmodulators', ANT, (cx, cy) => miniRec(cx, cy, antag(cx, cy + 46 + DOCK.tri * S2, S2) + sideSite(cx, cy + 46, S2) + ball(...sideAt(cx, cy + 46, S2), S2))],
     ['Dose–response\ncurves', PK, (cx, cy) => miniAxes(cx - 55, cy + 40, 110, 80) + miniS(cx - 55, cy + 40, 110, 76, PK)],
     ['Potency vs\nefficacy', PD, (cx, cy) => miniAxes(cx - 55, cy + 40, 110, 80) + miniS(cx - 55, cy + 40, 110, 76, PK, 0.35) + miniS(cx - 55, cy + 40, 110, 76, EXO, 0.45, 0.5)],
     ['Therapeutic\nindex', ENDO, (cx, cy) => miniAxes(cx - 55, cy + 40, 110, 80) + miniS(cx - 55, cy + 40, 110, 76, ENDO, 0.3) + miniS(cx - 55, cy + 40, 110, 76, ANT, 0.75)],
-    ['Drug targets &\nreceptor types', EXO, (cx, cy) => [[-40, -22, AFF], [12, -22, EXO], [-40, 28, PD], [12, 28, ENDO]].map(([dx, dy, c]) => `<rect x="${cx + dx}" y="${cy + dy - 18}" width="44" height="40" rx="10" fill="${c}" opacity="0.85"/>`).join('')],
-    ['Tolerance and\nthe placebo effect', DARK, (cx, cy) => [0, 1, 2].map((i) => receptor(cx - 52 + i * 52, cy + 40, 'tri', 'blue', 0.3).replace('<g ', `<g opacity="${1 - i * 0.33}" `)).join('') + curve(`M ${cx + 82} ${cy - 30} L ${cx + 82} ${cy + 40}`, ANT, 4)],
+    ['Receptor regulation\n& the placebo effect', DARK, (cx, cy) => [0, 1, 2].map((i) => receptor(cx - 52 + i * 52, cy + 40, 'tri', 'blue', 0.3).replace('<g ', `<g opacity="${1 - i * 0.33}" `)).join('') + curve(`M ${cx + 82} ${cy - 30} L ${cx + 82} ${cy + 40}`, ANT, 4)],
   ];
   const IC = { w: 352, h: 205, x: (i) => 60 + (i % 4) * 372, y: (i) => 400 + Math.floor(i / 4) * 228 };
   const introItems = [
@@ -569,7 +569,7 @@
   };
   const targetItems = [
     title('Drug targets: not just receptors'),
-    ...tcard(60, 112, AFF, 'RECEPTORS', 'The drug binds a receptor and\nswitches it ON (agonist) or\nblocks it (antagonist).\n\ne.g. morphine at opioid\nreceptors', artRec),
+    ...tcard(60, 112, AFF, 'RECEPTORS', 'The MOST common target. The\ndrug switches it ON (agonist) or\nblocks it (antagonist).\n(more on these next)\n\ne.g. morphine at opioid receptors', artRec),
     ...tcard(810, 112, EXO, 'ENZYMES', 'The drug blocks an enzyme, so\nit can\'t make its product.\n\ne.g. aspirin and ibuprofen\nblock COX, which makes pain\nand inflammation signals', artEnz),
     ...tcard(60, 495, PD, 'TRANSPORTERS', 'The drug blocks a pump that\nclears a chemical away, so more\nof it stays around.\n\ne.g. SSRIs (like fluoxetine)\nblock serotonin reuptake', artTrans),
     ...tcard(810, 495, ENDO, 'ION CHANNELS', 'The drug plugs a channel, so\nions can\'t flow through.\n\ne.g. lidocaine blocks Na⁺\nchannels in nerves → numbness', artChan),
@@ -644,10 +644,10 @@
   const counter = (n, c) => `<rect x="340" y="770" width="320" height="64" rx="32" fill="${c}"/>` + T(500, 812, 28, '#ffffff')(`${n} receptors`);
   const tolBase = (inner) => svgItem(panel(60, 1000, 190, TS.top, TS.top + 50, 860) + inner);
   const tolItems = [
-    title('Tolerance: receptors adjust'),
+    title('Receptor regulation: up and down'),
     ...TL.bar(null),
     tolBase(NORMAL.map((i) => rec(i)).join('') + counter(6, DARK)),
-    ...card(1030, 190, 510, 670, DARK, 'TOLERANCE', 'When you need MORE of a drug to\nget the same effect.\n\nA big reason: cells adjust how\nmany receptors they have (and how\nstrongly they respond) to keep\nthings balanced.\n\nClick the tabs to see how →', 22),
+    ...card(1030, 190, 510, 670, DARK, 'RECEPTOR REGULATION', 'Cells adjust how many receptors\nthey have (and how strongly they\nrespond) to keep things balanced.\n\nToo much stimulation → DOWN\nToo little stimulation → UP\n\nThis is a big reason for tolerance\nand withdrawal (more in part 4).\n\nClick the tabs to see how →', 21),
     ...TL.hot,
   ];
   const tolActions = [
@@ -760,9 +760,17 @@
     { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `• Part 2 = pharmacodynamics: what the drug does to the body
 • Goal: understand how drugs actually produce their effects
-• Roadmap: receptors & binding → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → drug targets & receptor types → tolerance → the placebo effect`,
+• Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
-    // Slide 7: receptors and binding.
+    // Slide 7: other drug targets.
+    { script: `${Qs('Do all drugs act on receptors?', 'What are the other main drug targets?', 'Examples of each')}`,
+      notes: `• First, the big picture: drugs act on 4 main types of target (receptors are the most common, but not the only one)
+• Receptors: switched on or blocked (morphine at opioid receptors)
+• Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
+• Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
+• Ion channels: plugged so ions can't flow (lidocaine blocks Na⁺ channels → numbness)`,
+      say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, items: targetItems },
+    // Slide 8: receptors and binding.
     { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
 [click the left side to bind]`,
       notes: `• Receptor = a protein (usually on the cell surface) with a pocket only the right molecule fits (lock and key)
@@ -771,7 +779,16 @@
 • The shape change switches it ON → a message is passed into the cell
 • This is the basis for agonists and antagonists`,
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
-    // Slide 8: affinity and selectivity.
+    // Slide 9: receptor types.
+    { script: `${Qs('What are the four main receptor types?', 'How does each one pass on its signal?', 'Which is fastest and which is slowest?')}
+[optional: press "Show the signals"]`,
+      notes: `• 4 receptor types differ in how they pass the signal on, and how fast
+• Ligand-gated ion channel: channel opens, ions rush in; milliseconds (nicotinic ACh, GABA-A)
+• GPCR: G-protein passes the signal on via messengers (cAMP); seconds; most common drug target (β receptors, opioid receptors)
+• Enzyme-linked: receptor's own enzyme switches on; minutes–hours (insulin receptor)
+• Intracellular: ligand crosses the membrane, changes which genes are on; hours–days (steroids: cortisol, oestrogen)`,
+      say: 'The four receptor types pass signals in different ways, from millisecond ion channels to slow intracellular receptors.', clear: true, actions: typeActions, items: typeItems },
+    // Slide 10: affinity and selectivity.
     { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
 [▶ Watch them bind · Specificity: Low → High dose · Selectivity grid: high sel. low → high dose, then low sel. low → high dose]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
@@ -786,7 +803,7 @@
 • Most drugs are selective, not truly specific
 • Ideal drug: high affinity AND high selectivity`,
       say: 'Affinity is how tightly a drug binds; specificity and selectivity are how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
-    // Slide 9: agonists.
+    // Slide 11: agonists.
     { script: `${Qs('What is a full agonist?', 'What is a partial agonist?', 'What happens when a partial and a full agonist are both around?')}
 [tabs: Full agonist → Partial agonist → Partial + full together]`,
       notes: `• Agonist = binds AND activates a receptor
@@ -795,7 +812,7 @@
 • Partial + full together: the partial agonist takes the spot → response capped at the partial level
 • So a partial agonist can block a full agonist → why buprenorphine is used for opioid addiction`,
       say: 'Full agonists switch a receptor fully on; partial agonists only partly, and can even block full agonists.', clear: true, actions: agoActions, items: agoItems },
-    // Slide 10: antagonists.
+    // Slide 12: antagonists.
     { script: `${Qs('What is an antagonist?', 'Competitive vs noncompetitive: what is the difference?', 'Reversible vs irreversible')}
 [tabs: Competitive → Noncompetitive]`,
       notes: `• Antagonist = binds but does NOT activate → blocks agonists
@@ -805,7 +822,7 @@
 • Example: ketamine (NMDA receptors)
 • Reversible (lets go, most drugs) vs irreversible (binds for good → cell must make new receptors)`,
       say: 'Antagonists bind without switching the receptor on; competitive ones can be outcompeted, noncompetitive ones cannot.', clear: true, actions: antActions, items: antItems },
-    // Slide 11: allosteric modulators.
+    // Slide 13: allosteric modulators.
     { script: `${Qs('What is an allosteric modulator?', 'Positive vs negative modulators', 'Example: benzodiazepines and GABA')}
 [tabs: GABA alone → GABA + benzodiazepine → Benzodiazepine alone]`,
       notes: `• Allosteric modulator = binds a DIFFERENT site (allo = other) and turns the response up or down
@@ -815,7 +832,7 @@
 • GABA + benzodiazepine → same GABA, much bigger effect
 • Benzodiazepine alone → almost no effect (it only boosts what's already there)`,
       say: 'Allosteric modulators bind a different site and turn the response up or down, like benzodiazepines boosting GABA.', clear: true, actions: modActions, items: modItems },
-    // Slide 12: dose–response curves.
+    // Slide 14: dose–response curves.
     { script: `${Qs('What is a dose-response curve?', 'Why is it S-shaped?', 'How does it link to receptors being bound?')}
 [click the graph to raise the dose]`,
       notes: `• Dose–response curve = how the effect changes as the dose goes up
@@ -824,7 +841,7 @@
 • High dose: nearly all receptors bound → effect levels off (maximum)
 • Dose axis is usually a log scale (each step = 10× more) → S-shaped curve`,
       say: 'A dose-response curve shows the effect rising with dose until nearly every receptor is bound.', clear: true, actions: drActions, items: drItems },
-    // Slide 13: potency vs efficacy.
+    // Slide 15: potency vs efficacy.
     { script: `${Qs('What is potency? (EC50)', 'What is efficacy? (Emax)', 'Which matters more?')}
 [tabs: Potency → Efficacy]`,
       notes: `• Two different ways to compare drugs (often confused)
@@ -835,7 +852,7 @@
 • A vs C: C can never reach A's effect (like a partial agonist)
 • Efficacy usually matters more than potency; more potent ≠ stronger`,
       say: 'Potency is how much drug you need (EC50); efficacy is the biggest effect it can give (Emax).', clear: true, actions: pvActions, items: pvItems },
-    // Slide 14: therapeutic index.
+    // Slide 16: therapeutic index.
     { script: `${Qs('What is the therapeutic index?', 'How is it calculated? (TD50 ÷ ED50)', 'Wide vs narrow: why does it matter?')}
 [tabs: Wide → Narrow]`,
       notes: `• Therapeutic index = how SAFE a drug is (gap between the helpful and the harmful dose)
@@ -844,34 +861,19 @@
 • Narrow TI → easy to overdose (warfarin, lithium, digoxin) → blood levels monitored
 • Bigger TI = safer drug`,
       say: 'The therapeutic index compares the toxic dose to the helpful dose; the wider it is, the safer the drug.', clear: true, actions: tiActions, items: tiItems },
-    // Slide 15: other drug targets.
-    { script: `${Qs('Do all drugs act on receptors?', 'What are the other main drug targets?', 'Examples of each')}`,
-      notes: `• Not every drug works on a receptor: 4 main targets
-• Receptors: switched on or blocked (morphine at opioid receptors)
-• Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
-• Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
-• Ion channels: plugged so ions can't flow (lidocaine blocks Na⁺ channels → numbness)`,
-      say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, items: targetItems },
-    // Slide 16: receptor types.
-    { script: `${Qs('What are the four main receptor types?', 'How does each one pass on its signal?', 'Which is fastest and which is slowest?')}
-[optional: press "Show the signals"]`,
-      notes: `• 4 receptor types differ in how they pass the signal on, and how fast
-• Ligand-gated ion channel: channel opens, ions rush in; milliseconds (nicotinic ACh, GABA-A)
-• GPCR: G-protein passes the signal on via messengers (cAMP); seconds; most common drug target (β receptors, opioid receptors)
-• Enzyme-linked: receptor's own enzyme switches on; minutes–hours (insulin receptor)
-• Intracellular: ligand crosses the membrane, changes which genes are on; hours–days (steroids: cortisol, oestrogen)`,
-      say: 'The four receptor types pass signals in different ways, from millisecond ion channels to slow intracellular receptors.', clear: true, actions: typeActions, items: typeItems },
-    // Slide 17: tolerance.
+    // Slide 17: receptor regulation (up and down).
     { script: `${Qs('What is tolerance?', 'What is downregulation (and desensitisation)?', 'What is upregulation?', 'Why do withdrawal and rebound effects happen?')}
 [tabs: Normal → Too much stimulation → Too little stimulation]`,
-      notes: `• Tolerance = needing more drug for the same effect
+      notes: `• Receptor regulation = cells adjust how many receptors they have (and how strongly they respond) to stay balanced
+• (This is a big reason for tolerance and withdrawal, covered properly in part 4)
+• Tolerance = needing more drug for the same effect
 • Big reason: cells adjust their receptors to stay balanced
 • Too much stimulation (e.g. daily opioids) → downregulation: receptors pulled inside, fewer made
 • Remaining receptors respond less = desensitisation
 • Same dose, less effect = tolerance; stop suddenly → too few receptors → withdrawal
 • Too little stimulation (e.g. daily beta-blocker) → upregulation: more receptors → extra sensitive
 • Stop suddenly → rebound (e.g. racing heart)`,
-      say: 'Cells adjust their receptors: too much stimulation means fewer receptors (tolerance), too little means more.', clear: true, actions: tolActions, items: tolItems },
+      say: 'Cells regulate their receptors: too much stimulation means fewer receptors, too little means more.', clear: true, actions: tolActions, items: tolItems },
     // Slide 18: the placebo effect.
     { script: `${Qs('What is a placebo?', 'What is the placebo effect?', 'How do we know a drug really works?', 'Why does a placebo work, and what can it not do?')}
 [tabs: What is a placebo? → A fair test → Why does it work?]`,

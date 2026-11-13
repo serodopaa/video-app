@@ -1277,7 +1277,7 @@
   const scenes = [{ id: 'blank', title: '✏️ Blank board', steps: [] }, ...(window.WB_SCENES || [])];
   // ---------- slide renumbering (slides inserted in the middle of a built-in topic) ----------
   // A scene can list `renumber: [{ key, before: [old slide numbers…] }]`: one new slide was inserted before each
-  // of those (old, 1-based) slides. Once per key, the user's saved per-slide data (drawings, notes, prompter)
+  // of those (old, 1-based) slides; or `move: { old: new }` for slides that changed places (applied in list order). Once per key, the user's saved per-slide data (drawings, notes, prompter)
   // moves to the new slide numbers so it stays with its slide.
   (function applyRenumbers() {
     for (const sc of scenes) {
@@ -1285,7 +1285,7 @@
         try {
           const flag = `wb-renum-${sc.id}-${r.key}`;
           if (localStorage.getItem(flag)) continue;
-          const nn = (n) => n + r.before.filter((p) => p <= n).length;
+          const nn = (n) => (r.move && r.move[n]) || n + (r.before || []).filter((p) => p <= n).length;
           const id = sc.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const pats = [
             [new RegExp(`^wb-ink-${id}-s(\\d+)$`), (i) => `wb-ink-${sc.id}-s${nn(i + 1) - 1}`],
