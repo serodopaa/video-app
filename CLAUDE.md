@@ -79,6 +79,9 @@ dependencies. Open `index.html` in a browser.
 Every local `<link>`/`<script>` in `index.html` has a `?v=` stamp so browsers fetch
 updates. **Bump it (all of them) whenever any file changes.**
 
+Slide jump: clicking "Slide N / M" (`#stepLabel`) shows a number box (`#slideJump`); Enter goes to the first step of
+that slide, Esc / clicking away cancels.
+
 ## Topics
 Every scene in the menu is a **topic**, and topics are isolated: ink (`wb-ink-<id>`), notes
 (📝 panel, two boxes: 📜 Key points = the slide's `notes` (bullets get a blank line between them) + the user's

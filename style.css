@@ -224,7 +224,10 @@ button, select {
   padding: 0 14px;
   font-weight: 600;
 }
-.step-label { color: var(--muted); font-size: 14px; min-width: 80px; }
+.step-label { color: var(--muted); font-size: 14px; min-width: 80px; cursor: pointer; border-radius: 6px; padding: 2px 4px; }
+.step-label:hover { background: #f1f3f7; color: var(--ink); text-decoration: underline dotted; }
+.slide-jump { width: 70px; height: 30px; font-size: 14px; padding: 0 6px; border: 1px solid #f0b46a; border-radius: 8px; }
+.slide-jump[hidden] { display: none; }
 .narrate { font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
 
 .caption[hidden] { display: none; }

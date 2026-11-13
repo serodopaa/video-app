@@ -1885,6 +1885,32 @@
   });
   els.prev.addEventListener('click', () => { player.playing = false; goTo(player.step - 1, false); });
   els.next.addEventListener('click', () => { player.playing = false; goTo(player.step + 1); });
+  // Jump straight to a slide: click "Slide N / M" and type a number (Enter = go, Esc = cancel).
+  const jumpEl = document.getElementById('slideJump');
+  if (jumpEl) {
+    const closeJump = () => { jumpEl.hidden = true; els.label.hidden = false; };
+    const openJump = () => {
+      if (!player.scene.steps.length) return;
+      jumpEl.max = String(slideCount());
+      jumpEl.value = String(player.step < 0 ? 0 : slideOf(player.step) + 1);
+      els.label.hidden = true; jumpEl.hidden = false;
+      jumpEl.focus(); jumpEl.select();
+    };
+    const goToSlide = (n) => {
+      player.playing = false;
+      if (n <= 0) { goTo(-1); return; }
+      const steps = player.scene.steps, want = Math.min(n, slideCount()) - 1;
+      const idx = steps.findIndex((_, i) => slideOf(i) === want);
+      if (idx >= 0) goTo(idx);
+    };
+    els.label.addEventListener('click', openJump);
+    jumpEl.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // typing must not trigger board shortcuts
+      if (e.key === 'Enter') { const n = parseInt(jumpEl.value, 10); closeJump(); if (Number.isFinite(n)) goToSlide(n); }
+      else if (e.key === 'Escape') closeJump();
+    });
+    jumpEl.addEventListener('blur', closeJump);
+  }
   els.play.addEventListener('click', () => setPlaying(!player.playing));
 
   function tickPlayer(t) {
