@@ -341,64 +341,48 @@
     steps: [
       // Slide 1: title.
       { script: `${Qs('What is this course?', 'What does part 1 cover?')}`,
-        notes: `Hey everyone, so welcome to Pharmacology Essentials, the full course. In this video we're going to work through the core ideas of pharmacology, and we're going to start right at the beginning with an introduction to pharmacology.
-
-So in this first part, we'll go over four things. [point to the cards] First, what pharmacology actually is. Then, what a drug is. Then we'll look at the difference between endogenous and exogenous substances. And then lastly, the difference between pharmacokinetics and pharmacodynamics, which sound really similar but are actually two pretty different ideas.
-
-So let's jump right in.`,
+        notes: `• Welcome: Pharmacology Essentials, the full course
+• Part 1 = introduction to pharmacology
+• Preview the 4 topics: what pharmacology is, what a drug is, endogenous vs exogenous, PK vs PD`,
       say: 'Pharmacology essentials, part 1: an introduction to pharmacology.', clear: true, thumbnail: true, items: titleItems },
       // Slide 2: what is pharmacology?
       { script: `${Qs('What is pharmacology?', 'Where does the word come from?', 'What does pharmacology cover?', 'It works both ways: drug → body and body → drug')}`,
-        notes: `Ok, so first things first, what is pharmacology? So pharmacology is basically just the study of drugs and how they interact with living things. [point to the definition]
-
-And the word itself actually tells you this. So it comes from the Greek word pharmakon, which means drug or medicine, but interestingly it could also mean poison. [point to pharmakon] And that actually makes a lot of sense, because pretty much any drug can become harmful if you take too much of it. And then -logy just means the study of. So put them together and you get the study of drugs.
-
-So what does pharmacology actually cover? [point to the list] Well, it looks at how drugs work in the body, how the body handles drugs, what drugs are used for, their side effects and toxicity, and how much of a drug to give, so the dosing.
-
-Now the really important thing I want you to take away from this slide is that this works both ways. [point to the top arrow] So the drug acts on the body, meaning it causes some kind of change. But also, [point to the bottom arrow] the body acts on the drug, meaning it absorbs it, moves it around, breaks it down and gets rid of it. So keep these two directions in mind, because we're going to come back to them at the end of this section when we talk about pharmacokinetics and pharmacodynamics.`,
+        notes: `• Definition: the study of drugs and how they interact with living things
+• Word origin: pharmakon (Greek) = drug / medicine / poison + -logy = study of
+• Poison link: almost any drug becomes harmful at a high enough dose
+• What it covers: how drugs work, how the body handles them, uses, side effects / toxicity, dosing
+• It works BOTH ways: drug → body and body → drug (sets up PK vs PD later)`,
         say: 'Pharmacology is the study of drugs and how they interact with living things, in both directions.', clear: true, items: pharmItems },
       // Slide 3: what is a drug?
       { script: `${Qs('What is a drug?', 'What does a drug actually do? (chemical → interacts with the body → changes how it works)', 'Is every drug a medicine?')}
 [click the boxes to build the definition step by step]`,
-        notes: `So now that we know what pharmacology is, we need to understand what a drug actually is. So a drug is any chemical substance that changes how the body works when it gets into the body. [point to the definition]
-
-So let's break this down a little bit. [click the boxes] So first, a drug is a chemical substance. So this could be a medicine, but it could also be something like caffeine or alcohol.
-
-Then, it interacts with the body. So in most cases this means it binds to some kind of target, like a receptor, which you can see here.
-
-And then because of that interaction, it changes how the body works. So for example, a drug might speed up your heart rate, it might reduce pain, or it might make you more alert.
-
-Now one thing that a lot of people mix up is the difference between a drug and a medicine. [point to the examples] So medicines are drugs that we use to prevent, diagnose or treat a disease, so things like ibuprofen, antibiotics, or insulin. But then there are also things like caffeine, alcohol and nicotine, which aren't medicines, but they still change how the body works, so they're still drugs.
-
-So basically, every medicine is a drug, but not every drug is a medicine.`,
+        notes: `• Definition: any chemical that changes how the body works once it gets in
+• Break it down: 1) a chemical 2) interacts with the body (usually binds a target, e.g. a receptor) 3) changes how it works
+• Examples of the change: heart rate, pain, alertness
+• Medicine = a drug used to prevent, diagnose or treat disease
+• Caffeine, alcohol, nicotine: drugs, but not medicines
+• Every medicine is a drug; not every drug is a medicine`,
       say: 'A drug is any chemical that changes how the body works; medicines are drugs used to treat or prevent disease.', clear: true, actions: drugActions, items: drugItems },
       // Slide 4: endogenous vs exogenous.
       { script: `${Qs('What does endogenous mean?', 'What does exogenous mean?', 'Examples of each', 'Can an endogenous substance be a drug? (insulin, adrenaline)')}
 [click the green side, then the orange side, then the key point]`,
-        notes: `Ok, so when we talk about drugs and the substances that affect our body, there are two terms you're going to hear a lot, and that's endogenous and exogenous.
-
-So endogenous [click the green side] means made inside the body. So endo means within, and genous means produced, so produced within. And these are things your body naturally makes on its own. So examples of this would be hormones, like insulin, adrenaline or cortisol, neurotransmitters, like serotonin and dopamine, and endorphins, which are basically your body's own natural painkillers.
-
-Then on the other side we have exogenous. [click the orange side] So exo means outside, so these are substances that come from outside the body. So this is where most drugs fall. So things like most medicines, like ibuprofen or antibiotics, everyday drugs like caffeine, alcohol and nicotine, and also substances that come from plants or are made in a lab, like morphine, which comes from the poppy plant, or aspirin.
-
-Now here's the key point. [click the key point] So most drugs are exogenous, but the body's own substances can actually be given as drugs too. So for example, people with diabetes take insulin, and someone having a severe allergic reaction might use an EpiPen, which is adrenaline. So in these cases it's the exact same molecule your body makes, but now it's coming from outside the body, so it's exogenous.`,
+        notes: `• Endogenous = made inside the body (endo = within)
+• Examples: hormones (insulin, adrenaline, cortisol), neurotransmitters (serotonin, dopamine), endorphins
+• Exogenous = comes from outside the body (exo = outside)
+• Examples: most medicines, caffeine / alcohol / nicotine, plant- or lab-made (morphine, aspirin)
+• Key point: endogenous substances can be given as drugs (insulin for diabetes, adrenaline in an EpiPen)
+• Same molecule, but given from outside = exogenous`,
       say: 'Endogenous substances are made by the body; exogenous ones come from outside, like most drugs.', clear: true, actions: endoExoActions, items: endoExoItems },
       // Slide 5: pharmacokinetics vs pharmacodynamics.
       { script: `${Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?', 'What are A-D-M-E?')}
 [tabs: Side by side → Pharmacokinetics → Pharmacodynamics]`,
-        notes: `So lastly, we need to understand the difference between pharmacokinetics and pharmacodynamics. So these two words sound really similar, which is why they get mixed up so often, but they're actually looking at things from opposite directions. So remember earlier when I said pharmacology works both ways? Well, this is exactly what that was about.
-
-So pharmacokinetics is what the body does to the drug. [point to the left side] And kinetics means movement, so it's all about how the drug moves through the body. And we can break this down into four steps, which you can remember with ADME. So absorption, distribution, metabolism and excretion.
-
-So let's look at this a bit closer. [click the Pharmacokinetics tab] So first we have absorption, which is the drug getting from wherever it was given into the blood. Then distribution, which is the drug travelling in the blood to the different tissues of the body. Then metabolism, which is the drug being broken down, and this mostly happens in the liver. And then lastly excretion, which is the drug being removed from the body, and this mostly happens through the kidneys.
-
-And we can see this on the graph here. [point to the graph] So after you take a dose, the drug level in the blood rises, because of absorption and distribution, and then it falls, because of metabolism and excretion. So pharmacokinetics is really what decides how fast a drug starts working, how high the level gets, and how long it lasts.
-
-Ok, so then on the other side, we have pharmacodynamics. [click the Pharmacodynamics tab] So pharmacodynamics is what the drug does to the body. And dynamics comes from the Greek word dynamis, which means power, so it's about the effect the drug has. So here we can see the drug binds to its target, which in this case is a receptor, and that switches the receptor on, which then has an effect on the cell.
-
-And then on the right we have something called a dose-response curve. [point to the curve] So basically, as you give more of the drug, more receptors get bound, so you get a bigger effect, up until a point where pretty much all the receptors are being used, and then the effect levels off at its maximum.
-
-So to sum this up, [click Side by side] pharmacokinetics is what the body does to the drug, and pharmacodynamics is what the drug does to the body.`,
+        notes: `• PK = what the BODY does to the drug (kinetics = movement)
+• ADME: absorption, distribution, metabolism (mostly liver), excretion (mostly kidneys)
+• Drug level in the blood rises (A + D) then falls (M + E)
+• PK decides how fast a drug works, how high the level gets, how long it lasts
+• PD = what the DRUG does to the body (dynamis = power)
+• Drug binds its target → effect; dose–response: more drug → bigger effect up to a maximum
+• Link back to "it works both ways" from slide 2`,
       say: 'Pharmacokinetics is what the body does to the drug; pharmacodynamics is what the drug does to the body.', clear: true, actions: pkpdActions, items: pkpdItems },
     ],
   });
