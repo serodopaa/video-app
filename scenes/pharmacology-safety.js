@@ -270,7 +270,7 @@
   // ================================================================ the slides (added after part 3)
   scene.steps.push(
     // Slide 41: part 4 intro.
-    { script: Qs('What is part 4 about?'),
+    { chapter: 'Part 4: Drug safety', script: Qs('What is part 4 about?'),
       notes: `• Part 4 = drug safety and interactions: when drugs cause harm
 • Adverse drug reactions: predictable (type A) vs unpredictable (type B)
 • Drug toxicity: when the level gets too high, and the main reasons why

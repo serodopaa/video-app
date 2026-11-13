@@ -299,6 +299,7 @@
 
     rec.state = 'recording';
     rec.thumb = kind === 'voice' ? voiceThumb() : makeThumb();
+    try { rec.slide = WB.slideInfo(); } catch (_) { rec.slide = null; } // for chapter timestamps
     rec.chunks = [];
     if (kind === 'voice') {
       rec.videoTrack = null;
@@ -507,6 +508,7 @@
       in: 0,
       out: duration,
       thumb: rec.thumb,
+      ...(rec.slide ? { slide: rec.slide.n, slideTitle: rec.slide.title } : {}),
       created: Date.now(),
       scene: curScene(),
       order: clips.length,
@@ -1067,6 +1069,39 @@
     requestAnimationFrame(pvTick);
     await pvSeek(0);
   });
+
+  // ---------- YouTube chapter timestamps ----------
+  // One line per clip that starts on a new slide: "m:ss Slide title", timed like the export (trims, cuts, speed).
+  const tsTime = (sec) => {
+    const t = Math.floor(sec + 1e-6), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s2 = String(t % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s2}` : `${m}:${s2}`;
+  };
+  $('chaptersBtn').addEventListener('click', () => {
+    const list = clips.filter((c) => !c.voiceOnly);
+    if (!list.length) { alert('Record some clips first.'); return; }
+    const lines = [], times = [];
+    let t = 0, prev = null, unknown = 0;
+    list.forEach((c) => {
+      const title = c.slideTitle || (unknown++, `Clip ${clips.indexOf(c) + 1} (type the slide title)`);
+      if (title !== prev) { lines.push(`${tsTime(t / speed)} ${title}`); times.push(t / speed); prev = title; }
+      t += clipLen(c);
+    });
+    const warn = [];
+    if (unknown) warn.push(`${unknown} older clip(s) were recorded before chapters existed, so their slide isn't known: type the title in, or delete the line if it isn't a new section.`);
+    if (lines.length < 3) warn.push('YouTube needs at least 3 chapters for them to show up.');
+    if (times.some((x, i) => i && x - times[i - 1] < 10)) warn.push('YouTube needs every chapter to be at least 10 seconds long: merge or delete the short ones.');
+    $('tsText').value = lines.join('\n');
+    $('tsWarn').textContent = warn.join(' ');
+    $('tsCopy').textContent = '📋 Copy';
+    $('tsDialog').showModal();
+  });
+  $('tsCopy').addEventListener('click', async () => {
+    const ta = $('tsText');
+    try { await navigator.clipboard.writeText(ta.value); } catch (_) { ta.select(); document.execCommand('copy'); }
+    $('tsCopy').textContent = '✓ Copied';
+  });
+  $('tsClose').addEventListener('click', () => $('tsDialog').close());
+  $('tsText').addEventListener('keydown', (e) => e.stopPropagation()); // typing must not trigger board shortcuts
 
   // ---------- export ----------
   let exporting = false;

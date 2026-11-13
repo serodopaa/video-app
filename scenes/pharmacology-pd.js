@@ -1054,7 +1054,7 @@
   // ---------------------------------------------------------------- the slides (added after part 1)
   scene.steps.push(
     // Slide 8: part 2 intro.
-    { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
+    { chapter: 'Part 2: Pharmacodynamics', script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `• Part 2 = pharmacodynamics: what the drug does to the body
 • Goal: understand how drugs actually produce their effects
 • Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → enzymes, transporters, ion channels → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,

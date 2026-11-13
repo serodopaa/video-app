@@ -346,7 +346,7 @@
     drawn: false,
     steps: [
       // Slide 1: title.
-      { script: `${Qs('What is this course?', 'What does part 1 cover?')}`,
+      { chapter: 'Introduction to pharmacology', script: `${Qs('What is this course?', 'What does part 1 cover?')}`,
         notes: `• Welcome: Pharmacology Essentials, the full course
 • Part 1 = introduction to pharmacology
 • Preview the 4 topics: what pharmacology is, what a drug is, endogenous vs exogenous, PK vs PD`,

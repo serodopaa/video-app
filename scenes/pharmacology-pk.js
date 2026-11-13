@@ -778,7 +778,7 @@
   // ================================================================ the slides (added after part 2)
   scene.steps.push(
     // Slide 24: part 3 intro.
-    { script: Qs('What is part 3 about?', 'What does ADME stand for?'),
+    { chapter: 'Part 3: Pharmacokinetics', script: Qs('What is part 3 about?', 'What does ADME stand for?'),
       notes: `• Part 3 = pharmacokinetics: what the BODY does to the DRUG
 • Structure: ADME = absorption, distribution, metabolism, excretion
 • Then drug levels over time: the concentration curve, half-life and clearance, first- vs zero-order, steady state and dosing

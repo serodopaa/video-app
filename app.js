@@ -2588,7 +2588,19 @@
   const startIndex = fromHash >= 0 ? fromHash : fromLast >= 0 ? fromLast : scenes.length > 1 ? 1 : 0;
   els.select.value = startIndex;
   // Hooks used by recorder.js.
-  window.WB = { W, H, renderTo, animNow, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id };
+  // The title of the slide on screen (for chapter timestamps): a step's `chapter`, else its big title text
+  function slideInfo() {
+    const steps = player.scene.steps;
+    if (player.step < 0 || !steps.length) return { n: 0, title: player.scene.title.replace(/^\W+\s*/, '') };
+    let first = player.step;
+    while (first > 0 && !steps[first].clear) first--;
+    const st = steps[first];
+    const texts = (st.items || []).filter((it) => it.type === 'text' && it.text);
+    const big = texts.filter((it) => (it.size || 48) >= 50).sort((a, b) => (a.y || 0) - (b.y || 0))[0];
+    const title = st.chapter || (big ? big.text.replace(/\s*\n\s*/g, ' ') : `Slide ${slideOf(first) + 1}`);
+    return { n: slideOf(first) + 1, title };
+  }
+  window.WB = { W, H, renderTo, animNow, view, viewMatrix, onFrame: null, pointer: null, now, sceneId: () => player.scene.id, slideInfo };
 
   resize();
   loadScene(startIndex);

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611131156" />
+  <link rel="stylesheet" href="style.css?v=202611131205" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -131,6 +131,7 @@
         <option value="1">1×</option><option value="1.1">1.1×</option><option value="1.2">1.2×</option><option value="1.3">1.3×</option><option value="1.4">1.4×</option><option value="1.5">1.5×</option><option value="1.6">1.6×</option><option value="1.7">1.7×</option><option value="1.8">1.8×</option><option value="1.9">1.9×</option><option value="2">2×</option>
       </select>
       <label class="opt loud" title="How loud your voice is in the exported video (previews play at this loudness too). A limiter stops loud bits from distorting.">🔊 <input type="range" id="loudness" min="1" max="4" step="0.25" value="1" /> <b id="loudVal">100%</b></label>
+      <button id="chaptersBtn" title="YouTube chapter timestamps for the video, from the slide each clip starts on (ready to copy)">🕒 Chapters</button>
       <button id="exportBtn" class="primary" title="Join all clips into one video file">⬇ Export</button>
       <button id="deleteAllClips" title="Delete every clip in this topic (asks first)">🗑️ All clips</button>
       <button id="tlToggle" title="Show or hide the timeline">▾ Timeline</button>
@@ -159,6 +160,13 @@
     <div id="timeline" class="timeline"></div>
   </section>
 
+  <dialog id="tsDialog" class="clip-dialog ts-dialog">
+    <h3>🕒 YouTube chapters</h3>
+    <p class="ts-hint">One line per clip that starts on a new slide, timed for the current speed. You can edit the text before copying.</p>
+    <textarea id="tsText" spellcheck="false"></textarea>
+    <p id="tsWarn" class="ts-hint ts-warn"></p>
+    <div class="ts-foot"><button id="tsCopy" class="primary">📋 Copy</button><button id="tsClose">Close</button></div>
+  </dialog>
   <dialog id="clipDialog" class="clip-dialog">
     <h3 id="dlgTitle">Clip</h3>
     <video id="dlgVideo" playsinline></video>
@@ -202,25 +210,25 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611131156"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611131156"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611131156"></script>
-  <script src="scenes/brain-art.js?v=202611131156"></script>
-  <script src="scenes/brain-views.js?v=202611131156"></script>
-  <script src="scenes/protein-structure.js?v=202611131156"></script>
-  <script src="scenes/na-k-pump.js?v=202611131156"></script>
-  <script src="scenes/affinity-specificity.js?v=202611131156"></script>
-  <script src="scenes/agonist-antagonist.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-essentials.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-pd.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-pk.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-safety.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-recap.js?v=202611131156"></script>
-  <script src="scenes/pharmacology-extra.js?v=202611131156"></script>
-  <script src="app.js?v=202611131156"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611131156"></script>
-  <script src="vendor/mp4-muxer.js?v=202611131156"></script>
-  <script src="exporter.js?v=202611131156"></script>
-  <script src="recorder.js?v=202611131156"></script>
+  <script src="scenes/neuron.js?v=202611131205"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611131205"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611131205"></script>
+  <script src="scenes/brain-art.js?v=202611131205"></script>
+  <script src="scenes/brain-views.js?v=202611131205"></script>
+  <script src="scenes/protein-structure.js?v=202611131205"></script>
+  <script src="scenes/na-k-pump.js?v=202611131205"></script>
+  <script src="scenes/affinity-specificity.js?v=202611131205"></script>
+  <script src="scenes/agonist-antagonist.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-essentials.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-pd.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-pk.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-safety.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-recap.js?v=202611131205"></script>
+  <script src="scenes/pharmacology-extra.js?v=202611131205"></script>
+  <script src="app.js?v=202611131205"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611131205"></script>
+  <script src="vendor/mp4-muxer.js?v=202611131205"></script>
+  <script src="exporter.js?v=202611131205"></script>
+  <script src="recorder.js?v=202611131205"></script>
 </body>
 </html>
