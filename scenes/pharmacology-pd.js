@@ -170,8 +170,11 @@
     txt(label, x + w / 2, y + 23, 20, on ? '#ffffff' : c, { align: 'center', bold: true }),
   ];
   const AFF_START = [[AL.xs[0] - 120, 380], [AL.xs[1] - 120, 380]];
+  const SCH = { spec: [850, 210, 'Specific'], sel: [1072, 210, 'Selective'], non: [1294, 216, 'Non-selective'] };
+  const schip = (k, on = false) => chip(SCH[k][0], 230, SCH[k][1], SCH[k][2], SEL, on);
+
   const affSelItems = [
-    title('Affinity and selectivity'),
+    title('Affinity, specificity and selectivity'),
     // affinity half
     box(60, 112, 720, 748, AFF), { type: 'rect', x: 60, y: 112, w: 720, h: 62, color: AFF, fill: AFF, fillOpacity: 1, width: 3, rough: false },
     txt('AFFINITY', 420, 143, 30, '#ffffff', { align: 'center', bold: true }),
@@ -183,10 +186,10 @@
     { ...svgItem(ligand('tri', ...AFF_START[0], 'amber') + ligand('tri', ...AFF_START[1], 'pale', 0.82)), hideDuring: 'aff8' },
     // selectivity half
     box(820, 112, 720, 748, SEL), { type: 'rect', x: 820, y: 112, w: 720, h: 62, color: SEL, fill: SEL, fillOpacity: 1, width: 3, rough: false },
-    txt('SELECTIVITY', 1180, 143, 30, '#ffffff', { align: 'center', bold: true }),
+    txt('SPECIFICITY & SELECTIVITY', 1180, 143, 28, '#ffffff', { align: 'center', bold: true }),
     txt('How CHOOSY a drug is about which receptors it binds', 1180, 205, 22, SEL, { align: 'center', bold: true }),
-    ...chip(860, 230, 300, 'Selective drug', SEL), ...chip(1180, 230, 320, 'Non-selective drug', SEL),
-    { type: 'hotspot', x: 860, y: 230, w: 300, h: 46, action: 'sel8' }, { type: 'hotspot', x: 1180, y: 230, w: 320, h: 46, action: 'non8' },
+    ...schip('spec'), ...schip('sel'), ...schip('non'),
+    ...[['spec', 'spec8'], ['sel', 'sel8'], ['non', 'non8']].map(([k, a]) => ({ type: 'hotspot', x: SCH[k][0], y: 230, w: SCH[k][1], h: 46, action: a })),
     svgItem(panel(SR.x0, SR.x1, SR.y0, SR.top, SR.bot, SR.y1) + SR.xs.map((x, i) => receptor(x, SR.top, RECS[i][0], RECS[i][1], SR.s)).join('')
       + T(SR.xs[0], 800, 21, '#2c5a92')('Target') + T(SR.xs[1], 800, 21, GREY)('Other receptor') + T(SR.xs[2], 800, 21, GREY)('Other receptor')),
   ];
@@ -204,17 +207,28 @@
       txt('Snug fit, many bonds:\nstays bound', AL.xs[0], 805, 19, AFF, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.4 }),
       txt('Loose fit, few bonds:\nkeeps falling off', AL.xs[1], 805, 19, GREY, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
     ] },
-    { id: 'sel8', label: 'Selective drug', group: 'sel', stay: true, drawn: false, items: [
-      ...chip(860, 230, 300, 'Selective drug', SEL, true),
+    { id: 'spec8', label: 'Specific drug', group: 'sel', stay: true, drawn: false, items: [
+      ...schip('spec', true),
       ...track([[0, ...selStart(0), 0], [1.3, SR.xs[0], dockY(SR.top, SR.s), 0], [1.35, SR.xs[0], dockY(SR.top, SR.s), 1], [30, SR.xs[0], dockY(SR.top, SR.s), 1]], ([x, y]) => ligand('tri', x, y, 'amber', 1, SR.s), () => contacts(SR.xs[0], SR.top, 'tri', 4, SR.s)),
       ...[1, 2].flatMap((i) => {
         const hover = SR.top - 131 * SR.s - 46, x = SR.xs[i];
         return track([[0, ...selStart(i)], [1.2 + i * 0.3, x, hover], [1.8 + i * 0.3, x, hover], [2.7 + i * 0.3, x + 60, 360], [30, x + 60, 360]], ([px, py]) => ligand('tri', px, py, 'amber', 1, SR.s));
       }),
-      txt('Only binds its target', 1180, 840 - 6, 21, SEL, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
+      txt('Fits ONLY its target, at any dose', 1180, 834, 21, SEL, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
+    ] },
+    { id: 'sel8', label: 'Selective drug', group: 'sel', stay: true, drawn: false, items: [
+      ...schip('sel', true),
+      ...[0, 1, 2].flatMap((i) => {
+        const x = SR.xs[i], d = SR.top + blobDock[RECS[i][0]] * SR.s, t = i ? 3.4 + i * 0.3 : 0;
+        return track([[0, ...selStart(i), 0], [t, ...selStart(i), 0], [t + 1.2, x, d, 0], [t + 1.25, x, d, 1], [30, x, d, 1]], ([px, py]) => ligand('blob', px, py, 'amber', 1, SR.s), () => contacts(x, SR.top, RECS[i][0], i ? 1 : 4, SR.s));
+      }),
+      txt('Normal dose: just its target', 1180, 470, 20, SEL, { align: 'center', bold: true, at: 1.5, anim: 'fade', duration: 0.3, until: 1.6 }),
+      txt('Raise the dose…', 1180, 470, 20, ANT, { align: 'center', bold: true, at: 3.1, anim: 'fade', duration: 0.3, until: 1.7 }),
+      ...[1, 2].map((i) => txt('⚠ side effect', SR.xs[i], 470, 20, ANT, { align: 'center', bold: true, at: 5.0, anim: 'pop', duration: 0.3 })),
+      txt('PREFERS its target, but at high doses binds others too', 1180, 834, 20, SEL, { align: 'center', bold: true, at: 5.2, anim: 'fade', duration: 0.4 }),
     ] },
     { id: 'non8', label: 'Non-selective drug', group: 'sel', stay: true, drawn: false, items: [
-      ...chip(1180, 230, 320, 'Non-selective drug', SEL, true),
+      ...schip('non', true),
       ...[0, 1, 2].flatMap((i) => {
         const x = SR.xs[i], d = SR.top + blobDock[RECS[i][0]] * SR.s;
         return track([[0, ...selStart(i), 0], [1.2 + i * 0.25, x, d, 0], [1.25 + i * 0.25, x, d, 1], [30, x, d, 1]], ([px, py]) => ligand('blob', px, py, 'teal', 1, SR.s), () => contacts(x, SR.top, RECS[i][0], 2, SR.s));
@@ -618,15 +632,18 @@
 • This is the basis for agonists and antagonists`,
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
     // Slide 8: affinity and selectivity.
-    { script: `${Qs('What is affinity?', 'What is selectivity?', 'Why does low selectivity cause side effects?')}
-[▶ Watch them bind, then Selective drug, then Non-selective drug]`,
+    { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
+[▶ Watch them bind, then Specific → Selective → Non-selective]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
 • High affinity: snug fit, many bonds, stays bound; low affinity: loose fit, keeps falling off
-• Selectivity = how CHOOSY a drug is about which receptors it binds
-• Selective drug: only binds its target
-• Non-selective drug: binds other receptors too → side effects
+• Specificity and selectivity = how CHOOSY a drug is about which receptors it binds
+• Specific: binds ONLY its target, at any dose (all-or-nothing; very rare for real drugs)
+• Selective: PREFERS its target, but at high doses binds other receptors too (a matter of degree)
+• e.g. metoprolol is β1-selective (heart) but at high doses also hits β2 (lungs) → breathing problems
+• Non-selective: binds many receptors about equally → side effects even at normal doses
+• Most drugs are selective, not truly specific: higher dose → more side effects
 • Ideal drug: high affinity AND high selectivity`,
-      say: 'Affinity is how tightly a drug binds; selectivity is how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
+      say: 'Affinity is how tightly a drug binds; specificity and selectivity are how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
     // Slide 9: agonists.
     { script: `${Qs('What is a full agonist?', 'What is a partial agonist?', 'What happens when a partial and a full agonist are both around?')}
 [tabs: Full agonist → Partial agonist → Partial + full together]`,
