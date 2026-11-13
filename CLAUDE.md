@@ -66,6 +66,8 @@ dependencies. Open `index.html` in a browser.
   that scene (one video) and reuses `window.WB_PHARM_ART` from `pharmacology-essentials.js`; load it right after that file.
 - `scenes/pharmacology-pk.js` – part 3 (pharmacokinetics, slides 18–32) of the same topic; reuses `window.WB_PHARM_PD`
   (cards, tabs, graph helpers) shared by `pharmacology-pd.js`; load it right after that file.
+- `scenes/pharmacology-safety.js` – part 4 (drug safety and interactions, slides 33–37) of the same topic; load it right
+  after `pharmacology-pk.js`.
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
   explaining X") only need a new scene file plus one `<script>` line in
   `index.html`, placed before `app.js`.**
