@@ -57,7 +57,7 @@
     ['D', 'Distribution', DIS, 'Into the tissues\nProtein binding\nBrain and placenta', (cx, cy) => person(cx, cy + 6, 0.32, '#e3f4e8', '#6fa77f') + [[-14, -10], [12, 4], [-4, 22], [16, -26]].map(([dx, dy]) => `<circle cx="${cx + dx}" cy="${cy + dy}" r="6" fill="${DIS}"/>`).join('')],
     ['M', 'Metabolism', MET, 'Phase I and II\nCYP450 enzymes\nProdrugs\nInduction / inhibition', (cx, cy) => liverShape(cx, cy, 0.8)],
     ['E', 'Excretion', EXC, 'The kidneys\nOther routes', (cx, cy) => kidneyShape(cx - 22, cy, 0.9) + kidneyShape(cx + 26, cy, 0.9)],
-    ['⏱', 'Drug levels\nover time', TIME, 'Concentration curve\nHalf-life and clearance\nSteady state and\ndosing', (cx, cy) => {
+    ['⏱', 'Drug levels\nover time', TIME, 'Concentration curve\nHalf-life, clearance\nFirst vs zero order\nSteady state and\ndosing', (cx, cy) => {
       const pts = []; for (let t = 0; t <= 8; t += 0.2) pts.push([cx - 60 + t * 15, cy + 34 - bateman(t, 0.35) * 90]);
       return `<line x1="${cx - 60}" y1="${cy + 36}" x2="${cx + 64}" y2="${cy + 36}" stroke="${DARK}" stroke-width="2.5"/><line x1="${cx - 60}" y1="${cy + 36}" x2="${cx - 60}" y2="${cy - 38}" stroke="${DARK}" stroke-width="2.5"/>` + polyline(pts, TIME, 4);
     }],
@@ -668,7 +668,7 @@
     { script: Qs('What is part 3 about?', 'What does ADME stand for?'),
       notes: `• Part 3 = pharmacokinetics: what the BODY does to the DRUG
 • Structure: ADME = absorption, distribution, metabolism, excretion
-• Then drug levels over time: the concentration curve, half-life and clearance, steady state and dosing
+• Then drug levels over time: the concentration curve, half-life and clearance, first- vs zero-order, steady state and dosing
 • Why it matters: PK decides how fast a drug works, how strong it gets and how long it lasts → how we dose it`,
       say: 'Part 3: pharmacokinetics, what the body does to the drug.', clear: true, items: introItems },
     // Slide 20: routes of administration.
