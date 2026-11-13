@@ -88,29 +88,31 @@
 
   // =================================================================== slide 2: what is pharmacology?
   const P2 = { drug: [925, 470], body: [1370, 520] };
+  // the drug ⇄ body picture (drawn at 800..1540 × 120..860, shrunk into the bottom-left box)
+  const P2S = 0.64, P2X = 60 + (700 - 740 * P2S) / 2, P2Y = 378;
+  const COVERS = [['How drugs work in the body', PD], ['How the body handles drugs', PK], ['What drugs are used for\n(therapeutics)', ENDO],
+    ['Side effects and toxicity', DRUG], ['How much to give (dosing)', EXO], ['Drug discovery and development', '#0b7a8a']];
   const pharmItems = [
     title('What is pharmacology?'),
     box(60, 120, 700, 230, DARK, '#f4f6fa'),
     txt('PHARMACOLOGY', 410, 165, 34, DARK, { align: 'center', bold: true }),
     txt('The study of DRUGS and how they\ninteract with living things.', 410, 240, 28, INK, { align: 'center', bold: true }),
-    // where the word comes from
-    box(60, 375, 700, 160, '#c9ced8'),
-    txt('Where the word comes from', 90, 410, 20, GREY, { bold: true }),
-    txt('pharmakon', 90, 460, 32, DRUG, { bold: true }), txt('(Greek) = drug, medicine… or poison', 290, 462, 22, INK, { bold: true }),
-    txt('-logy', 90, 507, 32, PK, { bold: true }), txt('= the study of', 290, 509, 22, INK, { bold: true }),
-    // what it covers
-    txt('It covers', 60, 580, 24, DARK, { bold: true }),
-    ...[['How drugs work in the body', PD], ['How the body handles drugs', PK], ['What drugs are used for (therapeutics)', ENDO], ['Side effects and toxicity', DRUG], ['How much to give (dosing)', EXO]]
-      .flatMap(([t, c], i) => [svgItem(`<circle cx="78" cy="${625 + i * 50}" r="9" fill="${c}"/>`), txt(t, 100, 625 + i * 50, 23, INK, { bold: true })]),
-    // the two-way picture: drug ↔ body
-    svgItem(`${rr(800, 120, 740, 740, '#d9dce3', '#fbfcfe', 2)}
+    // the two-way picture: drug ↔ body (bottom left)
+    svgItem(`${rr(60, 370, 700, 490, '#d9dce3', '#fbfcfe', 2)}
+      <g transform="translate(${P2X - 800 * P2S} ${P2Y - 120 * P2S}) scale(${P2S})">
       ${capsule(...P2.drug, 1.5, -30)}${person(...P2.body, 1.2)}
-      ${T(P2.drug[0], 575, 26, DRUG)('DRUG')}${T(P2.body[0], 775, 26, '#2c5a92')('BODY')}
-      ${curve('M 950 385 C 1030 220, 1180 220, 1260 320', PD, 7)}
-      ${curve('M 1260 640 C 1170 760, 1020 760, 950 600', PK, 7)}`),
-    txt('acts on', 1080, 215, 24, PD, { align: 'center', bold: true }),
-    txt('acts on', 1080, 795, 24, PK, { align: 'center', bold: true }),
-    txt('It works BOTH ways', 1170, 160, 26, DARK, { align: 'center', bold: true }),
+      ${T(P2.drug[0], 590, 38, DRUG)('DRUG')}${T(P2.body[0], 790, 38, '#2c5a92')('BODY')}
+      ${curve('M 950 385 C 1030 220, 1180 220, 1260 320', PD, 8)}
+      ${curve('M 1260 640 C 1170 760, 1020 760, 950 600', PK, 8)}
+      ${T(1080, 225, 36, PD)('acts on')}${T(1080, 815, 36, PK)('acts on')}
+      ${T(1170, 168, 38, DARK)('It works BOTH ways')}</g>`),
+    // what it covers (right side, the focus)
+    box(800, 120, 740, 740, DARK, '#ffffff'),
+    txt('Pharmacology covers…', 840, 175, 34, DARK, { bold: true }),
+    ...COVERS.flatMap(([t, c], i) => {
+      const y = 265 + i * 102;
+      return [svgItem(`<circle cx="858" cy="${y}" r="16" fill="${c}"/>`), txt(t, 895, y, 30, INK, { bold: true })];
+    }),
   ];
 
   // =================================================================== slide 3: what is a drug?
@@ -354,7 +356,7 @@
         notes: `• Definition: the study of drugs and how they interact with living things
 • Word origin: pharmakon (Greek) = drug / medicine / poison + -logy = study of
 • Poison link: almost any drug becomes harmful at a high enough dose
-• What it covers: how drugs work, how the body handles them, uses, side effects / toxicity, dosing
+• What it covers: how drugs work, how the body handles them, uses, side effects / toxicity, dosing, drug discovery and development
 • It works BOTH ways: drug → body and body → drug (sets up PK vs PD later)`,
         say: 'Pharmacology is the study of drugs and how they interact with living things, in both directions.', clear: true, items: pharmItems },
       // Slide 3: what is a drug?
