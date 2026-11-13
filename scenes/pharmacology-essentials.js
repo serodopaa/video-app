@@ -40,6 +40,31 @@
   const badge = (x, y, n, c) => `<circle cx="${x}" cy="${y}" r="22" fill="${c}"/>${T(x, y + 8, 22, '#ffffff')(n)}`;
   const tag = (x, y, w, h, c, head, sub) => [box(x, y, w, h, c), txt(head, x + w / 2, y + 30, 22, c, { align: 'center', bold: true }), ...(sub ? [txt(sub, x + w / 2, y + 62, 18, GREY, { align: 'center', bold: true })] : [])];
 
+  // little pictures for the four topic cards (centred on cx, cy; about 200 x 90)
+  const miniArrow = (d, c) => { const id = `ma${gid++}`; return arrowHead(id, c) + `<path d="${d}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" marker-end="url(#${id})"/>`; };
+  const cardArt = [
+    // 1. pharmacology: drug ⇄ body
+    (cx, cy) => capsule(cx - 62, cy + 4, 0.55, -30) + person(cx + 66, cy + 10, 0.24)
+      + miniArrow(`M ${cx - 30} ${cy - 22} Q ${cx + 4} ${cy - 46} ${cx + 34} ${cy - 24}`, PD)
+      + miniArrow(`M ${cx + 34} ${cy + 30} Q ${cx + 2} ${cy + 52} ${cx - 30} ${cy + 32}`, PK),
+    // 2. drug: a capsule and a molecule
+    (cx, cy) => capsule(cx - 50, cy, 0.62, -30) + molecule(cx + 55, cy, 0.62),
+    // 3. endogenous vs exogenous: made inside (green) vs a pill coming in from outside (orange)
+    (cx, cy) => person(cx - 50, cy + 10, 0.24, '#e3f4e8', '#6fa77f') + `<circle cx="${cx - 50}" cy="${cy + 2}" r="7" fill="${ENDO}"/><circle cx="${cx - 50}" cy="${cy + 2}" r="13" fill="none" stroke="${ENDO}" stroke-width="2" opacity="0.5"/>`
+      + T(cx, cy + 12, 22, GREY)('vs') + person(cx + 60, cy + 10, 0.24, '#fbeee2', '#c9935c') + capsule(cx + 22, cy - 26, 0.32, -30)
+      + miniArrow(`M ${cx + 34} ${cy - 18} L ${cx + 52} ${cy - 4}`, EXO),
+    // 4. PK vs PD: the drug-level curve and the dose-response S-curve
+    (cx, cy) => {
+      const g = (x0, c, f) => {
+        const pts = []; for (let k = 0; k <= 40; k++) pts.push(`${f1(x0 + k * 2)},${f1(cy + 34 - f(k / 40) * 64)}`);
+        return `<line x1="${x0}" y1="${cy + 36}" x2="${x0 + 84}" y2="${cy + 36}" stroke="${DARK}" stroke-width="2.5"/><line x1="${x0}" y1="${cy + 36}" x2="${x0}" y2="${cy - 36}" stroke="${DARK}" stroke-width="2.5"/>`
+          + `<polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="4" stroke-linejoin="round"/>`;
+      };
+      return g(cx - 98, PK, (u) => 1.62 * (Math.exp(-3.4 * u) - Math.exp(-19 * u)) / 1)
+        + g(cx + 14, PD, (u) => 1 / (1 + Math.exp(-(u - 0.5) * 12)));
+    },
+  ];
+
   // =================================================================== slide 1: title
   const TOPICS = [['1', 'What is\npharmacology?', DARK], ['2', 'What is\na drug?', DRUG], ['3', 'Endogenous vs\nexogenous', ENDO], ['4', 'Pharmacokinetics vs\npharmacodynamics', PK]];
   const titleItems = [
@@ -52,7 +77,8 @@
     txt('Part 1 · Introduction to pharmacology', 410, 428, 30, GREY, { bold: true }),
     ...TOPICS.flatMap(([n, t, c], i) => {
       const x = 110 + i * 350;
-      return [box(x, 560, 320, 180, c), svgItem(badge(x + 44, 604, n, c)), txt(t, x + 160, 680, 24, c, { align: 'center', bold: true })];
+      return [box(x, 535, 320, 235, c), svgItem(badge(x + 38, 573, n, c) + cardArt[i](x + 160, 622)),
+        txt(t, x + 160, 712, 24, c, { align: 'center', bold: true })];
     }),
   ];
 
