@@ -1782,6 +1782,9 @@
     // The recorder says when it starts / pauses / stops: the script scrolls while you record.
     window.addEventListener('wb-rec', (e) => {
       const prev = tp.recState;
+      // a NEW clip (not a resume after pause) starts by playing the slide's entrance, like arriving from the
+      // previous slide, so joins between clips look like one continuous take
+      if (e.detail === 'recording' && prev === 'countdown' && player.step >= 0) player.t0 = animNow();
       tp.recState = e.detail;
       if (!tp.on || tp.editing) return;
       if (e.detail === 'recording' && prev !== 'recording') {

@@ -44,6 +44,8 @@ dependencies. Open `index.html` in a browser.
   faster, the sound comes from the video elements (fade gains, delayed fade-in at each join).
   Per-clip volume: optional `gain` on a clip (25–300%, select on each timeline card; missing = 100%),
   applied before the overall 🔊 Volume in export (both paths), Preview and the clip dialog (`clipGain`).
+  When a NEW clip starts (countdown → recording, not a resume), app.js replays the current slide's entrance
+  (`player.t0 = animNow()`) so clip joins look like a normal slide change.
   Never change how existing clips are stored (only add optional fields).
 - `exporter.js` – frame-exact export (`window.WB_EXACT_EXPORT`, used first by recorder.js when WebCodecs
   H.264 + AAC/Opus encoding exist; else the old real-time export runs). Sound: each kept piece is decoded,
