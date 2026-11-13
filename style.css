@@ -435,6 +435,9 @@ button, select {
 .notes-head { display: flex; flex-direction: column; gap: 2px; }
 .notes-head b { font-size: 15px; }
 .notes-hint { font-size: 12px; color: var(--muted); }
+.notes-tabs { display: flex; gap: 4px; margin-top: 6px; }
+.notes-tabs button { flex: 1; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; }
+.notes-tabs button.active { background: #fff4e5; border-color: #f0b46a; font-weight: 700; }
 .notes textarea {
   flex: 1;
   min-height: 120px;

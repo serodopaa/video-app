@@ -1515,6 +1515,9 @@
     toggle: document.getElementById('notesToggle'),
     key: null,
     timer: 0,
+    // two tabs: 'script' = the slide's script + the user's edits to it (wb-notes-…),
+    // 'mine' = the user's own notes, empty to start (wb-mynotes-…)
+    tab: 'script',
   };
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
@@ -1522,11 +1525,12 @@
     if (!notes.text) return;
     flushNotes();
     const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
-    notes.key = 'wb-notes-' + player.scene.id + '-' + n;
-    notes.def = '';
+    const mine = notes.tab === 'mine';
+    notes.key = (mine ? 'wb-mynotes-' : 'wb-notes-') + player.scene.id + '-' + n;
     // a slide can bring default notes (`notes` on its first step); the user's own saved notes win
-    const first = n ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
+    const first = n && !mine ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
     notes.def = (first && first.notes) || '';
+    notes.text.placeholder = mine ? 'Your own notes for this slide…' : 'Talking points for this slide…';
     const saved = lsGet(notes.key);
     // an empty saved note (the panel saves on every slide change) never hides the slide's own notes
     notes.text.value = saved && saved.trim() ? saved : notes.def;
@@ -1563,6 +1567,15 @@
     document.getElementById('notesBigger').addEventListener('click', () => { size = Math.min(32, size + 2); applySize(); });
     applySize();
     if (lsGet('wb-notes-open') === '1') setOpen(true);
+    const tabBtns = { script: document.getElementById('notesTabScript'), mine: document.getElementById('notesTabMine') };
+    const setTab = (t) => {
+      if (t !== notes.tab) { flushNotes(); notes.tab = t; lsSet('wb-notes-tab', t); }
+      Object.entries(tabBtns).forEach(([k, b]) => { if (b) { b.classList.toggle('active', k === t); b.setAttribute('aria-selected', String(k === t)); } });
+      if (player.scene) { notes.key = null; loadNotes(); }
+    };
+    Object.entries(tabBtns).forEach(([k, b]) => b && b.addEventListener('click', () => setTab(k)));
+    notes.tab = lsGet('wb-notes-tab') === 'mine' ? 'mine' : 'script';
+    Object.entries(tabBtns).forEach(([k, b]) => b && b.classList.toggle('active', k === notes.tab));
     window.addEventListener('beforeunload', flushNotes);
   }
 
@@ -1814,7 +1827,7 @@
     const idx = scenes.indexOf(sc);
     loadScene(0); // leave first (this saves the topic's ink), then wipe it
     try {
-      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-', 'wb-tp-' + sc.id + '-', 'wb-tps-' + sc.id + '-'];
+      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-', 'wb-mynotes-' + sc.id + '-', 'wb-tp-' + sc.id + '-', 'wb-tps-' + sc.id + '-'];
       Object.keys(localStorage).filter((k) => prefixes.some((p) => k.startsWith(p))).forEach((k) => localStorage.removeItem(k));
     } catch (_) { /* storage unavailable */ }
     [...historyBySlide.keys()].filter((k) => k.startsWith('wb-ink-' + sc.id)).forEach((k) => historyBySlide.delete(k));
