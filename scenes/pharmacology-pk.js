@@ -187,17 +187,19 @@
   // ================================================================ slide 24: getting absorbed
   const MEM = { top: 470, bot: 530 };
   const FAT = [150, 330, 510], BIG = [240, 420, 600];
+  const AB = tabsOf([{ id: 'fat24', text: 'Fat-soluble drug', c: '#d39a1c' }, { id: 'chg24', text: 'Charged drug', c: TIME }], 60, 460, 20);
   const absItems = [
     title('Getting absorbed'),
-    txt('Most drugs get in by simply slipping through cell membranes (passive diffusion)', 530, 150, 21, DARK, { align: 'center', bold: true }),
+    ...AB.bar(null),
     svgItem(panel(60, 1000, 190, MEM.top, MEM.bot, 860)
       + T(90, 228, 20, '#2c5a92', 700, 'start')('Inside the gut') + T(90, 840, 20, '#8e1d24', 700, 'start')('Blood')
+      + T(985, MEM.top - 14, 17, '#8a5a22', 700, 'end')('cell membrane: made of FAT (lipids)')
       + rr(690, 215, 290, 120, '#d9dce3', '#ffffff', 2, 12)
       + `<circle cx="716" cy="252" r="10" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>${T(736, 258, 17, INK, 700, 'start')('small, fat-soluble')}`
-      + `<circle cx="716" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(716, 306, 16, '#8e1d14')('+')}${T(744, 306, 17, INK, 700, 'start')('large or charged')}`),
+      + `<circle cx="716" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(716, 306, 16, '#8e1d14')('+')}${T(744, 306, 17, INK, 700, 'start')('charged (or large)')}`),
     { ...svgItem(FAT.map((x) => `<circle cx="${x}" cy="300" r="10" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>`).join('')
-      + BIG.map((x) => `<circle cx="${x}" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(x, 306, 16, '#8e1d14')('+')}`).join('')), hideDuring: 'abs20' },
-    { type: 'hotspot', x: 60, y: 190, w: 940, h: 670, action: 'abs20' },
+      + BIG.map((x) => `<circle cx="${x}" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(x, 306, 16, '#8e1d14')('+')}`).join('')), hideDuring: ['fat24', 'chg24'] },
+    txt('Most drugs get in by simply slipping through cell membranes\n(passive diffusion). Pick a drug type above ↑', 530, 690, 20, DARK, { align: 'center', bold: true, hideDuring: ['fat24', 'chg24'] }),
     ...[
       ['Fat solubility', 'Fat-soluble drugs slip through\nmembranes easily'],
       ['Size', 'Small molecules get through;\nvery big ones struggle'],
@@ -208,13 +210,32 @@
       const y = 112 + i * 152;
       return [box(1030, y, 510, 140, ABS), svgItem(badge(1066, y + 36, String(i + 1), ABS)), txt(h, 1100, y + 36, 22, ABS, { bold: true }), txt(t, 1056, y + 82, 18, INK, { bold: true })];
     }),
+    ...AB.hot,
   ];
-  const absActions = [{ id: 'abs20', label: 'Watch them cross', stay: true, drawn: false, items: [
-    ...FAT.map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 10, 500], [x + 20, 760]], r: 10, color: '#f0a12e', count: 1, speed: 2.6 + i * 0.3 })),
-    ...BIG.map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 4, 440], [x + 30, 320]], r: 17, color: '#e0606a', count: 1, speed: 2.0 + i * 0.3 })),
-    txt('✓ gets through', 330, 640, 22, DIS, { align: 'center', bold: true, at: 1.4, anim: 'fade', duration: 0.3 }),
-    txt('✕ bounces off', 560, 400, 22, TIME, { align: 'center', bold: true, at: 1.0, anim: 'fade', duration: 0.3 }),
-  ] }];
+  // the explanation box in the blood area for each tab, and a highlight on the matching factor card
+  const absBox = (c, head, body) => [
+    { type: 'rect', x: 90, y: 600, w: 880, h: 220, color: c, fill: '#ffffff', fillOpacity: 0.94, width: 3, rough: false, solid: true },
+    { ...txt(head, 115, 632, 22, c, { bold: true }), solid: true },
+    { ...txt(body, 115, 680, 19, INK, { bold: true }), solid: true },
+  ];
+  const factorGlow = (i, c) => ({ type: 'rect', x: 1026, y: 108 + i * 152, w: 518, h: 148, color: c, fill: c, fillOpacity: 0.06, width: 6, rough: false, solid: true });
+  const absActions = [
+    { id: 'fat24', label: 'Fat-soluble drug', group: 'abs', stay: true, drawn: false, items: [
+      ...AB.bar('fat24').map((it) => ({ ...it, solid: true })),
+      ...[150, 280, 410, 540].map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 10, MEM.top - 6], [x + 14, MEM.bot + 6], [x + 20, 570]], r: 10, color: '#f0a12e', count: 1, speed: 2.4 + i * 0.3 })),
+      { type: 'rect', x: 62, y: MEM.top - 4, w: 936, h: MEM.bot - MEM.top + 8, color: '#f0a12e', fill: '#f0a12e', fillOpacity: 0.12, width: 0, rough: false },
+      txt('✓ dissolves into the fat and slips through', 700, 400, 20, '#a8640a', { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 }),
+      ...absBox('#d39a1c', 'FAT-SOLUBLE: absorbed easily', 'The membrane is made of fat, so a fat-soluble drug dissolves\nright into it and passes straight through into the blood.\n\ne.g. most small drug molecules: diazepam, alcohol, paracetamol'),
+      factorGlow(0, '#d39a1c'),
+    ] },
+    { id: 'chg24', label: 'Charged drug', group: 'abs', stay: true, drawn: false, items: [
+      ...AB.bar('chg24').map((it) => ({ ...it, solid: true })),
+      ...[180, 330, 480].map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 4, MEM.top - 26], [x + 40, 330]], r: 17, color: '#e0606a', count: 1, speed: 2.0 + i * 0.3 })),
+      txt('✕ bounces off the fatty membrane', 700, 400, 20, TIME, { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 }),
+      ...absBox(TIME, 'CHARGED: absorbed poorly', 'A charge makes a drug love water and avoid fat, so it can\'t get\nthrough the fatty membrane and stays in the gut.\nStomach acid can add or remove a charge, which changes this.\n\ne.g. gentamicin (a charged antibiotic): barely absorbed if\nswallowed, so it\'s given by injection instead'),
+      factorGlow(2, TIME),
+    ] },
+  ];
 
   // ================================================================ slide 25: bioavailability and first-pass
   const NODE = { y: 400, xs: [150, 390, 630, 880] };
@@ -740,11 +761,15 @@
 • Compare the speed (click the routes in the legend to show / hide them): same dose, the route changes how fast the level rises, how high it gets and how long it lasts (IV instant; oral slow and lower; patch low and steady)`,
       say: 'Drugs can be given through the gut (enteral) or any other way (parenteral), and the route decides how fast and how much gets in.', clear: true, actions: routeActions, items: routeItems },
     // Slide 24: getting absorbed.
-    { script: `${Qs('How do drugs cross into the body?', 'What affects how well a drug is absorbed?')}
-[click the left side to watch them cross]`,
+    { script: `${Qs('How do drugs cross into the body?', 'Why are fat-soluble drugs absorbed easily and charged drugs poorly?', 'What affects how well a drug is absorbed?')}
+[tabs: Fat-soluble drug → Charged drug]`,
       notes: `• Absorption = the drug getting from where it was given into the blood
 • Most drugs simply slip through cell membranes (passive diffusion)
-• Small, fat-soluble drugs cross easily; large or charged drugs struggle
+• Cell membranes are made of FAT (lipids)
+• Fat-soluble drugs dissolve into the membrane and slip straight through → absorbed easily (e.g. diazepam, alcohol, paracetamol)
+• Charged drugs love water and avoid fat → bounce off the membrane → stay in the gut → poorly absorbed
+• Stomach acid can add or remove a charge, changing how well a drug crosses
+• e.g. gentamicin (charged antibiotic): barely absorbed if swallowed → given by injection
 • Factors: fat solubility, size, charge (stomach acid can change it)
 • Food can slow or block absorption (some drugs: take on an empty stomach)
 • Blood flow and surface area: the small intestine is huge → most oral absorption happens there`,
