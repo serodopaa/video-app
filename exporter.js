@@ -14,6 +14,9 @@
 (() => {
   'use strict';
   const W = 1920, H = 1080, SR = 48000, FADE = 0.015;
+  // joins between two DIFFERENT clips: a longer sound fade and a short picture crossfade, so the video feels like one take
+  const CLIP_FADE = 0.15, XFADE = 0.3;
+  const clipOf = (p) => (p._ci !== undefined ? p._ci : p._root || p);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const once = (el, ev) => new Promise((res) => el.addEventListener(ev, res, { once: true }));
 
@@ -89,12 +92,14 @@
         if (b > a) {
           let chs = [0, 1].map((c) => buf.getChannelData(Math.min(c, buf.numberOfChannels - 1)).subarray(a, b));
           if (speed !== 1) chs = await wsola(chs, speed);
-          const start = Math.round(at * SR), m = Math.min(chs[0].length, n - start), F = Math.min(Math.round(FADE * SR), m >> 2);
+          const start = Math.round(at * SR), m = Math.min(chs[0].length, n - start);
+          const newIn = i > 0 && clipOf(pieces[i - 1]) !== clipOf(p), newOut = i < pieces.length - 1 && clipOf(pieces[i + 1]) !== clipOf(p);
+          const FI = Math.min(Math.round((newIn ? CLIP_FADE : FADE) * SR), m >> 2), FO = Math.min(Math.round((newOut ? CLIP_FADE : FADE) * SR), m >> 2);
           const lvl = root.gain > 0 ? root.gain : 1; // this clip's own volume (the overall volume comes later)
           for (let c = 0; c < 2; c++) {
             const src = chs[c], dst = mix[c];
             for (let j = 0; j < m; j++) {
-              const g = j < F ? j / F : j > m - F ? (m - j) / F : 1; // short fades: no clicks at joins
+              const g = j < FI ? j / FI : j > m - FO ? (m - j) / FO : 1; // fades: no clicks at joins, softer between clips
               dst[start + j] += src[j] * g * lvl;
             }
           }
@@ -131,17 +136,33 @@
     v.preload = 'auto';
     const frameDur = Math.round(1e6 / 30 / speed);
     let outStart = 0, lastKey = -Infinity, lastTs = -1, total = pieces.reduce((s, p) => s + (p.out - p.in), 0), done = 0;
+    // the previous clip's last frame, faded out over the first XFADE seconds of the next clip
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const cx = cv.getContext('2d');
+    const last = document.createElement('canvas'); last.width = W; last.height = H;
+    const lx = last.getContext('2d');
+    let haveLast = false, xfadeFrom = -1; // output time (µs) where the current crossfade starts
     const put = (ts) => {
       if (ts <= lastTs) return;
       lastTs = ts;
-      const f = new VideoFrame(v, { timestamp: ts, duration: frameDur });
+      let src = v;
+      const k = xfadeFrom >= 0 ? (ts - xfadeFrom) / (XFADE * 1e6 / 1) : 1;
+      if (haveLast && k < 1) {
+        cx.globalAlpha = 1; cx.drawImage(v, 0, 0, W, H);
+        cx.globalAlpha = 1 - Math.max(0, k); cx.drawImage(last, 0, 0);
+        cx.globalAlpha = 1;
+        src = cv;
+      }
+      const f = new VideoFrame(src, { timestamp: ts, duration: frameDur });
       const key = ts - lastKey >= 2e6; // a keyframe every 2 s
       if (key) lastKey = ts;
       encoder.encode(f, { keyFrame: key });
       f.close();
     };
-    for (const p of pieces) {
+    for (let pi = 0; pi < pieces.length; pi++) {
+      const p = pieces[pi];
       if (signal.aborted) return false;
+      xfadeFrom = pi > 0 && clipOf(pieces[pi - 1]) !== clipOf(p) ? Math.round(outStart * 1e6) : -1;
       const url = urlOf(p);
       if (v._url !== url) { v._url = url; v.src = url; await once(v, 'loadeddata'); }
       v.currentTime = p.in;
@@ -183,6 +204,8 @@
         v.play().catch(finish);
         const check = setInterval(() => { if (finished) { clearInterval(check); document.removeEventListener('visibilitychange', vis); } }, 200);
       });
+      // remember this piece's last frame in case the next piece starts a new clip
+      try { lx.drawImage(v, 0, 0, W, H); haveLast = true; } catch (_) { haveLast = false; }
       outStart += (p.out - p.in) / speed;
       done += p.out - p.in;
     }

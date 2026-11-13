@@ -53,6 +53,8 @@ dependencies. Open `index.html` in a browser.
   chain is applied in an OfflineAudioContext. Picture: each piece plays muted and every decoded frame
   (`requestVideoFrameCallback`) is encoded with its exact clip time mapped to the output; a skipped frame
   makes it seek back and play slower. Output: MP4 via `vendor/mp4-muxer.js` (MIT, Vanilagy).
+  Joins between two DIFFERENT clips (`_ci`): 0.15 s sound fade out/in (CLIP_FADE) and a 0.3 s picture crossfade from the
+  previous clip's last frame (XFADE); joins inside one clip (cut parts) keep the 15 ms fades.
   Recording pushes frames itself (`captureStream(0)` + `requestFrame` every other screen refresh): a
   fixed-rate capture timer drifts against the screen and repeats/skips frames (stutter).
 - `vendor/fix-webm-duration.js` – MIT library that writes the length into WebM files.
