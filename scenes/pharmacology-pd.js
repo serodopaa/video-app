@@ -167,7 +167,7 @@
   const blobDock = { tri: -112, round: -127, square: -110 };
   const SPEC = '#0b7a8a';
   const COLX = [60, 560, 1060], CW3 = 480;
-  const P8 = { y0: 312, top: 705, bot: 755, y1: 845 };
+  const P8 = { y0: 324, top: 705, bot: 755, y1: 845 };
   const chip = (x, y, w, label, c, on = false) => [
     { type: 'rect', x, y, w, h: 44, color: c, fill: on ? c : '#ffffff', fillOpacity: 1, width: 3, rough: false },
     txt(label, x + w / 2, y + 22, 19, on ? '#ffffff' : c, { align: 'center', bold: true }),
@@ -207,8 +207,22 @@
   // where the extra molecules of a high dose wait
   const crowd = (i) => [[COLX[i] + 60, 400], [COLX[i] + 150, 360], [COLX[i] + 245, 405], [COLX[i] + 330, 365], [COLX[i] + 420, 400]];
   const cap = (i, text, c, t) => txt(text, COLX[i] + CW3 / 2, 830, 18, c, { align: 'center', bold: true, at: t, anim: 'fade', duration: 0.4 });
-  const SE_LABELS = ['High selectivity', 'Low selectivity'];
-  const SP_IDS = ['spLo8', 'spHi8'], SE_IDS = ['seHi8', 'seLo8'];
+    const SP_IDS = ['spLo8', 'spHi8'], SE_IDS = [['sHL8', 'sHH8'], ['sLL8', 'sLH8']];
+  // selectivity buttons: a small grid, rows = high / low selectivity, columns = low / high dose
+  const SG = { cols: [COLX[2] + 196, COLX[2] + 330], w: 128, rows: [248, 284], h: 30 };
+  const selCell = (id) => {
+    const r = SE_IDS.findIndex((row) => row.includes(id)), c = SE_IDS[r].indexOf(id);
+    return { x: SG.cols[c], y: SG.rows[r], w: SG.w, h: SG.h };
+  };
+  const selGrid = (active) => [
+    ...['Low dose', 'High dose'].map((t, c) => txt(t, SG.cols[c] + SG.w / 2, 233, 15, SEL, { align: 'center', bold: true })),
+    ...['High selectivity', 'Low selectivity'].map((t, r) => txt(t, COLX[2] + 22, SG.rows[r] + SG.h / 2, 16, SEL, { bold: true })),
+    ...SE_IDS.flat().flatMap((id) => {
+      const g = selCell(id), on = id === active;
+      return [{ type: 'rect', ...g, color: SEL, fill: on ? SEL : '#ffffff', fillOpacity: 1, width: 2.5, rough: false },
+        txt(on ? '■ playing' : '▶', g.x + g.w / 2, g.y + g.h / 2, 15, on ? '#ffffff' : SEL, { align: 'center', bold: true })];
+    }),
+  ];
   const affSelItems = [
     title('Affinity, specificity and selectivity'),
     ...section(0, AFF, 'AFFINITY', 'How TIGHTLY a drug\nbinds its receptor'),
@@ -219,8 +233,8 @@
     ...section(1, SPEC, 'SPECIFICITY', 'Binds ONLY ONE target,\nat ANY dose (all-or-nothing)'),
     ...doseChips(1, SPEC, SP_IDS, ['Low dose', 'High dose'], null), ...doseHot(1, SP_IDS),
     panel3(1),
-    ...section(2, SEL, 'SELECTIVITY', 'How strongly a drug PREFERS its\ntarget over other receptors'),
-    ...doseChips(2, SEL, SE_IDS, SE_LABELS, null), ...doseHot(2, SE_IDS),
+    ...section(2, SEL, 'SELECTIVITY', 'How strongly a drug PREFERS its target'),
+    ...selGrid(null), ...SE_IDS.flat().map((id) => ({ type: 'hotspot', ...selCell(id), action: id })),
     panel3(2),
   ];
   const dk = (i, k, kind) => [rx3(i)[k], P8.top + (kind === 'tri' ? DOCK.tri : blobDock[RECS[k][0]]) * RS];
@@ -255,24 +269,33 @@
       txt('✕ doesn\'t fit', rx3(1)[2], 560, 17, GREY, { align: 'center', bold: true, at: 2.2, anim: 'pop', duration: 0.3 }),
       cap(1, 'High dose: STILL only its target', SPEC, 3.4),
     ] },
-    // selectivity: HIGH = strongly prefers its target (the others only get brief, weak touches); LOW = binds them all about equally
-    { id: 'seHi8', label: 'High selectivity', group: 'sel', stay: true, drawn: false, items: [
-      ...doseChips(2, SEL, SE_IDS, SE_LABELS, 'seHi8'),
+    // selectivity × dose: high selectivity only spills over to other receptors at a HIGH dose;
+    // low selectivity hits them even at a LOW dose, and everything at a high dose
+    { id: 'sHL8', label: 'High selectivity, low dose', group: 'sel', stay: true, drawn: false, items: [
+      ...selGrid('sHL8'),
       ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
-      ...[[1, crowd(2)[2], 1.0], [2, crowd(2)[4], 1.5]].flatMap(([k, from, t]) => {
-        const d = dk(2, k, 'blob');
-        return track([[0, ...from, 0], [t, ...from, 0], [t + 1.0, ...d, 0], [t + 1.05, ...d, 1], [t + 1.6, ...d, 1], [t + 1.65, ...d, 0], [t + 2.5, ...from, 0], [30, ...from, 0]],
-          ([x, y]) => ligand('blob', x, y, 'amber', 1, RS), () => contacts(rx3(2)[k], P8.top, RECS[k][0], 1, RS));
-      }),
-      txt('weak, brief', rx3(2)[1], 560, 17, GREY, { align: 'center', bold: true, at: 2.1, anim: 'fade', duration: 0.3 }),
-      txt('weak, brief', rx3(2)[2], 560, 17, GREY, { align: 'center', bold: true, at: 2.6, anim: 'fade', duration: 0.3 }),
-      cap(2, 'Strongly prefers its target → FEW side effects', SEL, 3.6),
+      cap(2, 'Low dose: just its target → no side effects', SEL, 1.4),
     ] },
-    { id: 'seLo8', label: 'Low selectivity', group: 'sel', stay: true, drawn: false, items: [
-      ...doseChips(2, SEL, SE_IDS, SE_LABELS, 'seLo8'),
-      ...[0, 1, 2].flatMap((k) => bindTo(2, k, [rx3(2)[k] - 40, 400], 0.1 + k * 0.2, 'blob', 'teal', 3)),
+    { id: 'sHH8', label: 'High selectivity, high dose', group: 'sel', stay: true, drawn: false, items: [
+      ...selGrid('sHH8'),
+      ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
+      idle(crowd(2)[1], 'blob', 'amber'), idle(crowd(2)[3], 'blob', 'amber'),
+      ...bindTo(2, 1, crowd(2)[2], 1.0, 'blob', 'amber', 1), ...bindTo(2, 2, crowd(2)[4], 1.4, 'blob', 'amber', 1),
+      ...sideFx(2, [1, 2], 2.8),
+      cap(2, 'High dose: starts binding others (weakly)', ANT, 3.1),
+    ] },
+    { id: 'sLL8', label: 'Low selectivity, low dose', group: 'sel', stay: true, drawn: false, items: [
+      ...selGrid('sLL8'),
+      ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'teal', 3), ...bindTo(2, 1, crowd(2)[2], 0.4, 'blob', 'teal', 3),
+      ...sideFx(2, [1], 1.8),
+      cap(2, 'Even a LOW dose hits other receptors', ANT, 2.0),
+    ] },
+    { id: 'sLH8', label: 'Low selectivity, high dose', group: 'sel', stay: true, drawn: false, items: [
+      ...selGrid('sLH8'),
+      idle(crowd(2)[1], 'blob', 'teal'), idle(crowd(2)[3], 'blob', 'teal'),
+      ...[0, 1, 2].flatMap((k) => bindTo(2, k, [crowd(2)[0], crowd(2)[2], crowd(2)[4]][k], 0.1 + k * 0.2, 'blob', 'teal', 3)),
       ...sideFx(2, [1, 2], 1.8),
-      cap(2, 'Binds the others just as well → MANY side effects', ANT, 2.0),
+      cap(2, 'High dose: hits everything → MANY side effects', ANT, 2.0),
     ] },
   ];
 
@@ -671,7 +694,7 @@
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
     // Slide 8: affinity and selectivity.
     { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
-[▶ Watch them bind · Specificity: Low → High dose · Selectivity: High → Low selectivity]`,
+[▶ Watch them bind · Specificity: Low → High dose · Selectivity grid: high sel. low → high dose, then low sel. low → high dose]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
 • High affinity: snug fit, many bonds, stays bound; low affinity: loose fit, keeps falling off
 • Specificity = binds ONLY its target, at any dose (all-or-nothing; very rare for real drugs)
@@ -679,7 +702,8 @@
 • Selectivity = how strongly a drug PREFERS its target over other receptors (a matter of degree)
 • High selectivity: mostly binds its target, other receptors only weakly → few side effects
 • Low selectivity: binds other receptors about as well as its target → many side effects
-• Even a highly selective drug can hit other receptors at high doses (e.g. metoprolol: β1 heart → β2 lungs)
+• Dose matters: high selectivity → other receptors only at HIGH doses; low selectivity → even at LOW doses
+• So raising the dose of any selective drug brings more side effects (e.g. metoprolol: β1 heart → β2 lungs)
 • Most drugs are selective, not truly specific
 • Ideal drug: high affinity AND high selectivity`,
       say: 'Affinity is how tightly a drug binds; specificity and selectivity are how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
