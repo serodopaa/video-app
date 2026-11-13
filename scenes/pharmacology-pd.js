@@ -207,7 +207,8 @@
   // where the extra molecules of a high dose wait
   const crowd = (i) => [[COLX[i] + 60, 400], [COLX[i] + 150, 360], [COLX[i] + 245, 405], [COLX[i] + 330, 365], [COLX[i] + 420, 400]];
   const cap = (i, text, c, t) => txt(text, COLX[i] + CW3 / 2, 830, 18, c, { align: 'center', bold: true, at: t, anim: 'fade', duration: 0.4 });
-  const SP_IDS = ['spLo8', 'spHi8'], SE_IDS = ['seLo8', 'seHi8', 'non8'];
+  const SE_LABELS = ['High selectivity', 'Low selectivity'];
+  const SP_IDS = ['spLo8', 'spHi8'], SE_IDS = ['seHi8', 'seLo8'];
   const affSelItems = [
     title('Affinity, specificity and selectivity'),
     ...section(0, AFF, 'AFFINITY', 'How TIGHTLY a drug\nbinds its receptor'),
@@ -218,8 +219,8 @@
     ...section(1, SPEC, 'SPECIFICITY', 'Binds ONLY ONE target,\nat ANY dose (all-or-nothing)'),
     ...doseChips(1, SPEC, SP_IDS, ['Low dose', 'High dose'], null), ...doseHot(1, SP_IDS),
     panel3(1),
-    ...section(2, SEL, 'SELECTIVITY', 'PREFERS one target, but can\nbind others (a matter of degree)'),
-    ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], null), ...doseHot(2, SE_IDS),
+    ...section(2, SEL, 'SELECTIVITY', 'How strongly a drug PREFERS its\ntarget over other receptors'),
+    ...doseChips(2, SEL, SE_IDS, SE_LABELS, null), ...doseHot(2, SE_IDS),
     panel3(2),
   ];
   const dk = (i, k, kind) => [rx3(i)[k], P8.top + (kind === 'tri' ? DOCK.tri : blobDock[RECS[k][0]]) * RS];
@@ -254,25 +255,24 @@
       txt('✕ doesn\'t fit', rx3(1)[2], 560, 17, GREY, { align: 'center', bold: true, at: 2.2, anim: 'pop', duration: 0.3 }),
       cap(1, 'High dose: STILL only its target', SPEC, 3.4),
     ] },
-    // selectivity: binds its target best, the others weakly, only once there's lots of it
-    { id: 'seLo8', label: 'Selectivity: low dose', group: 'sel', stay: true, drawn: false, items: [
-      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'seLo8'),
+    // selectivity: HIGH = strongly prefers its target (the others only get brief, weak touches); LOW = binds them all about equally
+    { id: 'seHi8', label: 'High selectivity', group: 'sel', stay: true, drawn: false, items: [
+      ...doseChips(2, SEL, SE_IDS, SE_LABELS, 'seHi8'),
       ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
-      cap(2, 'Low dose: binds its target', SEL, 1.4),
+      ...[[1, crowd(2)[2], 1.0], [2, crowd(2)[4], 1.5]].flatMap(([k, from, t]) => {
+        const d = dk(2, k, 'blob');
+        return track([[0, ...from, 0], [t, ...from, 0], [t + 1.0, ...d, 0], [t + 1.05, ...d, 1], [t + 1.6, ...d, 1], [t + 1.65, ...d, 0], [t + 2.5, ...from, 0], [30, ...from, 0]],
+          ([x, y]) => ligand('blob', x, y, 'amber', 1, RS), () => contacts(rx3(2)[k], P8.top, RECS[k][0], 1, RS));
+      }),
+      txt('weak, brief', rx3(2)[1], 560, 17, GREY, { align: 'center', bold: true, at: 2.1, anim: 'fade', duration: 0.3 }),
+      txt('weak, brief', rx3(2)[2], 560, 17, GREY, { align: 'center', bold: true, at: 2.6, anim: 'fade', duration: 0.3 }),
+      cap(2, 'Strongly prefers its target → FEW side effects', SEL, 3.6),
     ] },
-    { id: 'seHi8', label: 'Selectivity: high dose', group: 'sel', stay: true, drawn: false, items: [
-      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'seHi8'),
-      ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
-      idle(crowd(2)[1], 'blob', 'amber'), idle(crowd(2)[3], 'blob', 'amber'),
-      ...bindTo(2, 1, crowd(2)[2], 0.9, 'blob', 'amber', 1), ...bindTo(2, 2, crowd(2)[4], 1.2, 'blob', 'amber', 1),
-      ...sideFx(2, [1, 2], 2.6),
-      cap(2, 'High dose: binds the others too', ANT, 3.0),
-    ] },
-    { id: 'non8', label: 'Non-selective drug', group: 'sel', stay: true, drawn: false, items: [
-      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'non8'),
-      ...[0, 1, 2].flatMap((k) => bindTo(2, k, [rx3(2)[k] - 40, 400], 0.1 + k * 0.2, 'blob', 'teal', 2)),
+    { id: 'seLo8', label: 'Low selectivity', group: 'sel', stay: true, drawn: false, items: [
+      ...doseChips(2, SEL, SE_IDS, SE_LABELS, 'seLo8'),
+      ...[0, 1, 2].flatMap((k) => bindTo(2, k, [rx3(2)[k] - 40, 400], 0.1 + k * 0.2, 'blob', 'teal', 3)),
       ...sideFx(2, [1, 2], 1.8),
-      cap(2, 'Binds them ALL, even at a low dose', ANT, 2.0),
+      cap(2, 'Binds the others just as well → MANY side effects', ANT, 2.0),
     ] },
   ];
 
@@ -671,16 +671,16 @@
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
     // Slide 8: affinity and selectivity.
     { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
-[▶ Watch them bind · Specificity: Low → High dose · Selectivity: Low → High dose → Non-selective]`,
+[▶ Watch them bind · Specificity: Low → High dose · Selectivity: High → Low selectivity]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
 • High affinity: snug fit, many bonds, stays bound; low affinity: loose fit, keeps falling off
-• Specificity and selectivity = how CHOOSY a drug is about which receptors it binds
-• Specific: binds ONLY its target, at any dose (all-or-nothing; very rare for real drugs)
-• Key contrast: raise the dose → specific drug STILL only binds its target; selective drug starts binding others
-• Selective: PREFERS its target, but at high doses binds other receptors too (a matter of degree)
-• e.g. metoprolol is β1-selective (heart) but at high doses also hits β2 (lungs) → breathing problems
-• Non-selective: binds many receptors about equally → side effects even at normal doses
-• Most drugs are selective, not truly specific: higher dose → more side effects
+• Specificity = binds ONLY its target, at any dose (all-or-nothing; very rare for real drugs)
+• Low vs high dose: a specific drug STILL only binds its target, even at a high dose
+• Selectivity = how strongly a drug PREFERS its target over other receptors (a matter of degree)
+• High selectivity: mostly binds its target, other receptors only weakly → few side effects
+• Low selectivity: binds other receptors about as well as its target → many side effects
+• Even a highly selective drug can hit other receptors at high doses (e.g. metoprolol: β1 heart → β2 lungs)
+• Most drugs are selective, not truly specific
 • Ideal drug: high affinity AND high selectivity`,
       say: 'Affinity is how tightly a drug binds; specificity and selectivity are how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
     // Slide 9: agonists.

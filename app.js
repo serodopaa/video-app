@@ -1585,6 +1585,7 @@
       if (notes.boxes.script.wrap) notes.boxes.script.wrap.hidden = v === 'mine';
       if (notes.boxes.mine.wrap) notes.boxes.mine.wrap.hidden = v === 'script';
       notes.panel.classList.toggle('both', v === 'both');
+      window.dispatchEvent(new Event('resize'));
     };
     Object.entries(viewBtns).forEach(([k, btn]) => btn && btn.addEventListener('click', () => setView(k)));
     const v0 = lsGet('wb-notes-tab');
