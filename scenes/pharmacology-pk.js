@@ -187,53 +187,86 @@
   // ================================================================ slide 24: getting absorbed
   const MEM = { top: 470, bot: 530 };
   const FAT = [150, 330, 510], BIG = [240, 420, 600];
-  const AB = tabsOf([{ id: 'fat24', text: 'Fat-soluble drug', c: '#d39a1c' }, { id: 'chg24', text: 'Charged drug', c: TIME }], 60, 460, 20);
+  // Click a factor card on the right: its animation plays on the left (one at a time).
+  const FACTORS = [
+    ['Fat solubility', 'Fat-soluble drugs slip through\nmembranes easily', '#d39a1c'],
+    ['Size', 'Small molecules get through;\nvery big ones struggle', MET],
+    ['Charge and stomach acid', 'Charged drugs struggle to cross;\nacid can change a drug\'s charge', TIME],
+    ['Food', 'Can slow or block absorption\n(some drugs: empty stomach)', '#8a5a22'],
+    ['Blood flow and surface area', 'Small intestine: huge surface and\nlots of blood → most absorption', PK],
+  ];
+  const FID = ['f1_24', 'f2_24', 'f3_24', 'f4_24', 'f5_24'];
   const absItems = [
     title('Getting absorbed'),
-    ...AB.bar(null),
+    txt('Most drugs get in by simply slipping through cell membranes (passive diffusion)', 530, 150, 21, DARK, { align: 'center', bold: true }),
     svgItem(panel(60, 1000, 190, MEM.top, MEM.bot, 860)
       + T(90, 228, 20, '#2c5a92', 700, 'start')('Inside the gut') + T(90, 840, 20, '#8e1d24', 700, 'start')('Blood')
-      + T(985, MEM.top - 14, 17, '#8a5a22', 700, 'end')('cell membrane: made of FAT (lipids)')
-      + rr(690, 215, 290, 120, '#d9dce3', '#ffffff', 2, 12)
-      + `<circle cx="716" cy="252" r="10" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>${T(736, 258, 17, INK, 700, 'start')('small, fat-soluble')}`
-      + `<circle cx="716" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(716, 306, 16, '#8e1d14')('+')}${T(744, 306, 17, INK, 700, 'start')('charged (or large)')}`),
+      + T(985, MEM.top - 14, 17, '#8a5a22', 700, 'end')('cell membrane: made of FAT (lipids)')),
     { ...svgItem(FAT.map((x) => `<circle cx="${x}" cy="300" r="10" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>`).join('')
-      + BIG.map((x) => `<circle cx="${x}" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(x, 306, 16, '#8e1d14')('+')}`).join('')), hideDuring: ['fat24', 'chg24'] },
-    txt('Most drugs get in by simply slipping through cell membranes\n(passive diffusion). Pick a drug type above ↑', 530, 690, 20, DARK, { align: 'center', bold: true, hideDuring: ['fat24', 'chg24'] }),
-    ...[
-      ['Fat solubility', 'Fat-soluble drugs slip through\nmembranes easily'],
-      ['Size', 'Small molecules get through;\nvery big ones struggle'],
-      ['Charge and stomach acid', 'Charged drugs struggle to cross;\nacid can change a drug\'s charge'],
-      ['Food', 'Can slow or block absorption\n(some drugs: empty stomach)'],
-      ['Blood flow and surface area', 'Small intestine: huge surface and\nlots of blood → most absorption'],
-    ].flatMap(([h, t], i) => {
+      + BIG.map((x) => `<circle cx="${x}" cy="300" r="17" fill="#f6a3a3" stroke="#c0392b" stroke-width="3"/>${T(x, 306, 16, '#8e1d14')('+')}`).join('')), hideDuring: FID },
+    txt('What decides how well a drug gets in?\nClick a factor on the right →', 530, 690, 22, DARK, { align: 'center', bold: true, hideDuring: FID }),
+    ...FACTORS.flatMap(([h, t], i) => {
       const y = 112 + i * 152;
-      return [box(1030, y, 510, 140, ABS), svgItem(badge(1066, y + 36, String(i + 1), ABS)), txt(h, 1100, y + 36, 22, ABS, { bold: true }), txt(t, 1056, y + 82, 18, INK, { bold: true })];
+      return [box(1030, y, 510, 140, ABS), svgItem(badge(1066, y + 36, String(i + 1), ABS)), txt(h, 1100, y + 36, 22, ABS, { bold: true }), txt(t, 1056, y + 82, 18, INK, { bold: true }),
+        { type: 'hotspot', x: 1030, y, w: 510, h: 140, action: FID[i] }];
     }),
-    ...AB.hot,
   ];
-  // the explanation box in the blood area for each tab, and a highlight on the matching factor card
-  const absBox = (c, head, body) => [
-    { type: 'rect', x: 90, y: 600, w: 880, h: 220, color: c, fill: '#ffffff', fillOpacity: 0.94, width: 3, rough: false, solid: true },
-    { ...txt(head, 115, 632, 22, c, { bold: true }), solid: true },
-    { ...txt(body, 115, 680, 19, INK, { bold: true }), solid: true },
+  const absBox = (c, head, body, y = 600, h = 220) => [
+    { type: 'rect', x: 90, y, w: 880, h, color: c, fill: '#ffffff', fillOpacity: 0.95, width: 3, rough: false, solid: true },
+    { ...txt(head, 115, y + 32, 22, c, { bold: true }), solid: true },
+    { ...txt(body, 115, y + 80, 19, INK, { bold: true }), solid: true },
   ];
-  const factorGlow = (i, c) => ({ type: 'rect', x: 1026, y: 108 + i * 152, w: 518, h: 148, color: c, fill: c, fillOpacity: 0.06, width: 6, rough: false, solid: true });
+  const factorGlow = (i) => ({ type: 'rect', x: 1026, y: 108 + i * 152, w: 518, h: 148, color: FACTORS[i][2], fill: FACTORS[i][2], fillOpacity: 0.07, width: 6, rough: false, solid: true });
+  const cleanPanel = (extra = '') => svgItem(panel(60, 1000, 190, MEM.top, MEM.bot, 860)
+    + T(90, 228, 20, '#2c5a92', 700, 'start')('Inside the gut') + T(90, 840, 20, '#8e1d24', 700, 'start')('Blood')
+    + T(985, MEM.top - 14, 17, '#8a5a22', 700, 'end')('cell membrane: made of FAT (lipids)') + extra, { solid: true });
+  const across = (xs, r, color, spd, end = 570) => xs.map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 10, MEM.top - 6], [x + 14, MEM.bot + 6], [x + 20, end]], r, color, count: 1, speed: spd + i * 0.3 }));
+  const bounce = (xs, r, color, spd) => xs.map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 4, MEM.top - r - 8], [x + 40, 330]], r, color, count: 1, speed: spd + i * 0.3 }));
+  const say24 = (t, x, y, c) => txt(t, x, y, 20, c, { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 });
+  // food: lumps of food in the gut that the drug has to get past
+  const FOOD = [[130, 400], [250, 360], [380, 410], [500, 370], [620, 405], [740, 380], [860, 410], [310, 300], [560, 290], [800, 300]];
+  const foodSvg = FOOD.map(([x, y], i) => `<path d="M ${x - 30} ${y} C ${x - 32} ${y - 22} ${x - 6} ${y - 30} ${x + 8} ${y - 22} C ${x + 30} ${y - 26} ${x + 36} ${y - 2} ${x + 26} ${y + 12} C ${x + 20} ${y + 28} ${x - 14} ${y + 26} ${x - 30} ${y} Z" fill="${i % 2 ? '#c9a27a' : '#d8b48a'}" stroke="#8a5a22" stroke-width="2.5"/>`).join('');
+  // the small intestine's villi: finger-like folds full of blood vessels
+  const VX = [140, 260, 380, 500, 620, 740, 860];
+  const villi = `<rect x="62" y="192" width="936" height="666" rx="16" fill="${OUT}"/><rect x="62" y="510" width="936" height="348" rx="16" fill="#fbe5e5"/>
+    ${VX.map((x) => `<rect x="${x - 34}" y="300" width="68" height="220" rx="34" fill="#fbecd6" stroke="#c99a62" stroke-width="4"/>
+      <path d="M ${x - 12} 515 L ${x - 12} 345 Q ${x} 328 ${x + 12} 345 L ${x + 12} 515" fill="none" stroke="#e0505a" stroke-width="6"/>`).join('')}
+    <path d="M 62 555 L 998 555" stroke="#e0505a" stroke-width="20" opacity="0.5"/>
+    ${T(90, 228, 20, '#2c5a92', 700, 'start')('Inside the small intestine')}${T(985, 288, 17, '#8a5a22', 700, 'end')('villi: tiny finger-like folds')}
+    ${T(90, 840, 20, '#8e1d24', 700, 'start')('Blood (carries the drug away)')}`;
   const absActions = [
-    { id: 'fat24', label: 'Fat-soluble drug', group: 'abs', stay: true, drawn: false, items: [
-      ...AB.bar('fat24').map((it) => ({ ...it, solid: true })),
-      ...[150, 280, 410, 540].map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 10, MEM.top - 6], [x + 14, MEM.bot + 6], [x + 20, 570]], r: 10, color: '#f0a12e', count: 1, speed: 2.4 + i * 0.3 })),
+    { id: FID[0], label: '1 Fat solubility', group: 'abs', stay: true, drawn: false, items: [
+      cleanPanel(), factorGlow(0),
+      ...across([150, 280, 410, 540], 10, '#f0a12e', 2.4),
       { type: 'rect', x: 62, y: MEM.top - 4, w: 936, h: MEM.bot - MEM.top + 8, color: '#f0a12e', fill: '#f0a12e', fillOpacity: 0.12, width: 0, rough: false },
-      txt('✓ dissolves into the fat and slips through', 700, 400, 20, '#a8640a', { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 }),
+      say24('✓ dissolves into the fat and slips through', 700, 400, '#a8640a'),
       ...absBox('#d39a1c', 'FAT-SOLUBLE: absorbed easily', 'The membrane is made of fat, so a fat-soluble drug dissolves\nright into it and passes straight through into the blood.\n\ne.g. most small drug molecules: diazepam, alcohol, paracetamol'),
-      factorGlow(0, '#d39a1c'),
     ] },
-    { id: 'chg24', label: 'Charged drug', group: 'abs', stay: true, drawn: false, items: [
-      ...AB.bar('chg24').map((it) => ({ ...it, solid: true })),
-      ...[180, 330, 480].map((x, i) => ({ type: 'mover', path: [[x, 300], [x + 4, MEM.top - 26], [x + 40, 330]], r: 17, color: '#e0606a', count: 1, speed: 2.0 + i * 0.3 })),
-      txt('✕ bounces off the fatty membrane', 700, 400, 20, TIME, { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 }),
+    { id: FID[1], label: '2 Size', group: 'abs', stay: true, drawn: false, items: [
+      cleanPanel(), factorGlow(1),
+      ...across([150, 300, 450], 9, '#f0a12e', 2.2),
+      ...bounce([640, 820], 36, '#b48ef0', 2.6),
+      say24('small: slips through', 300, 400, '#a8640a'), say24('BIG: can\'t squeeze through', 730, 280, MET),
+      ...absBox(MET, 'SIZE: small gets in, big struggles', 'Small molecules slip through the membrane easily.\nVery big molecules, like proteins, can\'t get through (and are\ndigested in the gut anyway).\n\ne.g. insulin is a big protein, so it has to be injected'),
+    ] },
+    { id: FID[2], label: '3 Charge and stomach acid', group: 'abs', stay: true, drawn: false, items: [
+      cleanPanel(), factorGlow(2),
+      ...bounce([180, 330, 480], 17, '#e0606a', 2.0),
+      say24('✕ bounces off the fatty membrane', 700, 400, TIME),
       ...absBox(TIME, 'CHARGED: absorbed poorly', 'A charge makes a drug love water and avoid fat, so it can\'t get\nthrough the fatty membrane and stays in the gut.\nStomach acid can add or remove a charge, which changes this.\n\ne.g. gentamicin (a charged antibiotic): barely absorbed if\nswallowed, so it\'s given by injection instead'),
-      factorGlow(2, TIME),
+    ] },
+    { id: FID[3], label: '4 Food', group: 'abs', stay: true, drawn: false, items: [
+      cleanPanel(foodSvg), factorGlow(3),
+      ...[[200, 250], [440, 240], [680, 250]].map(([x, y], i) => ({ type: 'mover', path: [[x, y], [x + 50, 330], [x - 20, 350], [x + 40, 300], [x, y]], r: 10, color: '#f0a12e', count: 1, speed: 4 + i })),
+      ...across([900], 10, '#f0a12e', 4.5),
+      say24('food gets in the way: slower, less gets in', 530, 555, '#8a5a22'),
+      ...absBox('#8a5a22', 'FOOD: can slow or block absorption', 'Food fills the gut and slows how fast a drug reaches the wall.\nSome foods even grab the drug, e.g. calcium in milk binds\nsome antibiotics (tetracyclines) so less gets in.\n\nSo: some drugs are taken on an EMPTY stomach, others WITH\nfood (e.g. NSAIDs, to protect the stomach)', 590, 240),
+    ] },
+    { id: FID[4], label: '5 Blood flow and surface area', group: 'abs', stay: true, drawn: false, items: [
+      svgItem(villi, { solid: true }), factorGlow(4),
+      ...VX.slice(0, 6).map((x, i) => ({ type: 'mover', path: [[x + 40, 250], [x, 340], [x, 515], [x + 40, 555], [998, 555]], r: 9, color: '#f0a12e', count: 1, speed: 3.0 + (i % 3) * 0.4 })),
+      txt('huge surface → lots of drug crosses at once', 450, 262, 19, PK, { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.3 }),
+      ...absBox(PK, 'BLOOD FLOW AND SURFACE AREA: most absorption here', 'The small intestine is lined with tiny finger-like folds (villi),\neach full of blood vessels → a HUGE surface to cross.\nBlood carries the drug away, so more can keep crossing.\n\nThat\'s why most swallowed drugs are absorbed in the small\nintestine, not the stomach.', 590, 240),
     ] },
   ];
 
@@ -762,7 +795,7 @@
       say: 'Drugs can be given through the gut (enteral) or any other way (parenteral), and the route decides how fast and how much gets in.', clear: true, actions: routeActions, items: routeItems },
     // Slide 24: getting absorbed.
     { script: `${Qs('How do drugs cross into the body?', 'Why are fat-soluble drugs absorbed easily and charged drugs poorly?', 'What affects how well a drug is absorbed?')}
-[tabs: Fat-soluble drug → Charged drug]`,
+[click the factor cards 1–5 on the right]`,
       notes: `• Absorption = the drug getting from where it was given into the blood
 • Most drugs simply slip through cell membranes (passive diffusion)
 • Cell membranes are made of FAT (lipids)
@@ -771,8 +804,9 @@
 • Stomach acid can add or remove a charge, changing how well a drug crosses
 • e.g. gentamicin (charged antibiotic): barely absorbed if swallowed → given by injection
 • Factors: fat solubility, size, charge (stomach acid can change it)
-• Food can slow or block absorption (some drugs: take on an empty stomach)
-• Blood flow and surface area: the small intestine is huge → most oral absorption happens there`,
+• Size: small molecules slip through; big ones like proteins can't (insulin → injected)
+• Food can slow or block absorption (calcium in milk binds tetracyclines); some drugs on an empty stomach, others with food (NSAIDs)
+• Blood flow and surface area: villi give the small intestine a huge surface, and blood carries the drug away → most oral absorption happens there, not the stomach`,
       say: 'Most drugs slip through membranes; small, fat-soluble drugs get absorbed most easily.', clear: true, actions: absActions, items: absItems },
     // Slide 25: bioavailability and first-pass.
     { script: `${Qs('What is bioavailability?', 'What is first-pass metabolism?', 'Why is oral bioavailability often low?')}
