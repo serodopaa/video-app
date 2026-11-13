@@ -1275,6 +1275,37 @@
 
   // ---------- scenes ----------
   const scenes = [{ id: 'blank', title: '✏️ Blank board', steps: [] }, ...(window.WB_SCENES || [])];
+  // ---------- slide renumbering (slides inserted in the middle of a built-in topic) ----------
+  // A scene can list `renumber: [{ key, before: [old slide numbers…] }]`: one new slide was inserted before each
+  // of those (old, 1-based) slides. Once per key, the user's saved per-slide data (drawings, notes, prompter)
+  // moves to the new slide numbers so it stays with its slide.
+  (function applyRenumbers() {
+    for (const sc of scenes) {
+      for (const r of sc.renumber || []) {
+        try {
+          const flag = `wb-renum-${sc.id}-${r.key}`;
+          if (localStorage.getItem(flag)) continue;
+          const nn = (n) => n + r.before.filter((p) => p <= n).length;
+          const id = sc.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pats = [
+            [new RegExp(`^wb-ink-${id}-s(\\d+)$`), (i) => `wb-ink-${sc.id}-s${nn(i + 1) - 1}`],
+            ...['wb-notes-', 'wb-mynotes-', 'wb-tp-', 'wb-tps-'].map((p) => [new RegExp(`^${p}${id}-(\\d+)$`), (n) => `${p}${sc.id}-${n ? nn(n) : 0}`]),
+          ];
+          const moves = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            for (const [re, to] of pats) {
+              const m = k.match(re);
+              if (m) { const nk = to(+m[1]); if (nk !== k) moves.push([k, nk, localStorage.getItem(k)]); }
+            }
+          }
+          moves.forEach(([k]) => localStorage.removeItem(k));
+          moves.forEach(([, nk, v]) => localStorage.setItem(nk, v));
+          localStorage.setItem(flag, '1');
+        } catch (_) { /* storage unavailable */ }
+      }
+    }
+  })();
   scenes.forEach((s) => s.steps.forEach((step, i) => {
     layoutStep(step, i, s);
     // Action buttons: their items animate normally (never "static").

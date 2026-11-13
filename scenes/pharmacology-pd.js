@@ -7,7 +7,7 @@
   const scene = (window.WB_SCENES || []).find((s) => s.id === 'pharmacology-essentials');
   if (!A || !P || !scene) return;
   const { panel, receptor, ligand, contacts, DOCK, track, frameTrack, T, svgItem, txt, title, f1 } = A;
-  const { box, rr, capsule, curve, dot, badge } = P;
+  const { box, rr, capsule, curve, dot, badge, person } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
   const AGO = '#1f8a4c', ANT = '#c0392b', MOD = '#7b3fd0', OUT = '#eef6fd', AFF = '#2f6fde', SEL = '#7b3fd0';
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
@@ -111,7 +111,7 @@
     ['Potency vs\nefficacy', PD, (cx, cy) => miniAxes(cx - 55, cy + 40, 110, 80) + miniS(cx - 55, cy + 40, 110, 76, PK, 0.35) + miniS(cx - 55, cy + 40, 110, 76, EXO, 0.45, 0.5)],
     ['Therapeutic\nindex', ENDO, (cx, cy) => miniAxes(cx - 55, cy + 40, 110, 80) + miniS(cx - 55, cy + 40, 110, 76, ENDO, 0.3) + miniS(cx - 55, cy + 40, 110, 76, ANT, 0.75)],
     ['Drug targets &\nreceptor types', EXO, (cx, cy) => [[-40, -22, AFF], [12, -22, EXO], [-40, 28, PD], [12, 28, ENDO]].map(([dx, dy, c]) => `<rect x="${cx + dx}" y="${cy + dy - 18}" width="44" height="40" rx="10" fill="${c}" opacity="0.85"/>`).join('')],
-    ['Tolerance', DARK, (cx, cy) => [0, 1, 2].map((i) => receptor(cx - 52 + i * 52, cy + 40, 'tri', 'blue', 0.3).replace('<g ', `<g opacity="${1 - i * 0.33}" `)).join('') + curve(`M ${cx + 82} ${cy - 30} L ${cx + 82} ${cy + 40}`, ANT, 4)],
+    ['Tolerance and\nthe placebo effect', DARK, (cx, cy) => [0, 1, 2].map((i) => receptor(cx - 52 + i * 52, cy + 40, 'tri', 'blue', 0.3).replace('<g ', `<g opacity="${1 - i * 0.33}" `)).join('') + curve(`M ${cx + 82} ${cy - 30} L ${cx + 82} ${cy + 40}`, ANT, 4)],
   ];
   const IC = { w: 352, h: 205, x: (i) => 60 + (i % 4) * 372, y: (i) => 400 + Math.floor(i / 4) * 228 };
   const introItems = [
@@ -675,6 +675,82 @@
     ] },
   ];
 
+  // ---------------------------------------------------------------- slide: the placebo effect
+  const PLA = '#8e5cc7', REAL = '#1f8a4c';
+  const PB = tabsOf([{ id: 'what18', text: 'What is a placebo?', c: PLA }, { id: 'trial18', text: 'A fair test', c: REAL }, { id: 'why18', text: 'Why does it work?', c: AFF }], 170, 400);
+  const plaItems = [
+    title('The placebo effect'),
+    ...PB.bar(null),
+    svgItem(`${rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2)}${capsule(530, 470, 2.2, -25)}`),
+    txt('A pill with NO drug in it…\ncan still make people feel better', 530, 700, 26, PLA, { align: 'center', bold: true, hideDuring: ['what18', 'trial18', 'why18'] }),
+    ...card(1030, 190, 510, 670, PLA, 'PLACEBO', 'A dummy treatment with NO active\ndrug in it, e.g. a sugar pill or a\nsalt-water injection.\n\nPLACEBO EFFECT\nA real improvement that comes\nfrom EXPECTING to get better,\nnot from a drug.', 22),
+    ...PB.hot,
+  ];
+  // tab 1: two identical-looking pills
+  const whatItems = [
+    svgItem(`${rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2)}
+      ${T(300, 250, 26, REAL)('Real drug')}${T(760, 250, 26, PLA)('Placebo')}
+      ${capsule(300, 380, 1.6, -25)}${capsule(760, 380, 1.6, -25)}
+      ${T(530, 392, 44, GREY)('=')}${T(530, 450, 18, GREY)('they look exactly the same')}
+      ${rr(150, 490, 300, 70, REAL, '#eaf6ee', 2.5, 14)}${T(300, 532, 19, REAL)('✓ contains the drug')}
+      ${rr(610, 490, 300, 70, PLA, '#f3edfa', 2.5, 14)}${T(760, 520, 19, PLA)('✕ no drug inside')}${T(760, 545, 16, GREY)('(e.g. just sugar)')}
+      ${rr(150, 640, 760, 160, '#e2d6f2', '#ffffff', 2.5, 16)}`),
+    txt('Yet people taking the PLACEBO often\nfeel BETTER too.', 530, 690, 25, INK, { align: 'center', bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
+    txt('→ the PLACEBO EFFECT', 530, 768, 26, PLA, { align: 'center', bold: true, at: 1.4, anim: 'pop', duration: 0.4 }),
+  ];
+  // tab 2: a fair (blinded) trial, two groups and their results
+  const people = (y, c, edge) => [0, 1, 2, 3, 4, 5].map((k) => person(120 + k * 66, y, 0.2, c, edge)).join('');
+  const BARS = { base: 770, h: 470, xP: 610, xR: 770, w: 110 };
+  const trialBars = (u) => {
+    const pH = BARS.h * 0.35 * Math.min(1, u * 1.6), rTot = BARS.h * 0.6 * u, rLow = Math.min(rTot, BARS.h * 0.35);
+    return `<line x1="580" y1="${BARS.base}" x2="990" y2="${BARS.base}" stroke="${DARK}" stroke-width="3"/>
+      <rect x="${BARS.xP}" y="${f1(BARS.base - pH)}" width="${BARS.w}" height="${f1(pH)}" rx="8" fill="#c9b3e8"/>
+      <rect x="${BARS.xR}" y="${f1(BARS.base - rLow)}" width="${BARS.w}" height="${f1(rLow)}" fill="#c9b3e8"/>
+      <rect x="${BARS.xR}" y="${f1(BARS.base - rTot)}" width="${BARS.w}" height="${f1(rTot - rLow)}" rx="8" fill="${REAL}"/>
+      ${T(BARS.xP + BARS.w / 2, BARS.base + 28, 18, PLA)('Placebo')}${T(BARS.xR + BARS.w / 2, BARS.base + 28, 18, REAL)('Real drug')}
+      ${u >= 1 ? T(BARS.xP + BARS.w / 2, BARS.base - pH - 14, 20, PLA)('35%') + T(BARS.xR + BARS.w / 2, BARS.base - rTot - 14, 20, REAL)('60%') : ''}
+      ${T(785, 255, 20, DARK)('How many feel better')}`;
+  };
+  const trialItems = [
+    svgItem(`${rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2)}
+      ${T(90, 245, 20, REAL, 700, 'start')('Group 1 gets the REAL drug')}${people(345, '#dff1e5', '#6fa77f')}${capsule(500, 330, 0.5, -25)}
+      ${T(90, 515, 20, PLA, 700, 'start')('Group 2 gets the PLACEBO')}${people(615, '#efe6fa', '#9b7ac9')}${capsule(500, 600, 0.5, -25)}
+      ${rr(80, 720, 470, 100, '#e4e7ee', '#ffffff', 2, 12)}${T(315, 760, 18, DARK)('Nobody knows which pill they got')}${T(315, 790, 18, GREY)('("blinded", so expectations are equal)')}
+      <line x1="565" y1="210" x2="565" y2="840" stroke="#e4e7ee" stroke-width="2"/>`),
+    ...frameTrack([[0, 0], [0.5, 0], [2.5, 1], [30, 1]], ([u]) => trialBars(u), 12),
+    { ...svgItem(`<path d="M ${BARS.xR + BARS.w + 12} ${BARS.base} l 10 0 l 0 ${-BARS.h * 0.35} l -10 0" fill="none" stroke="${PLA}" stroke-width="3"/>
+      <path d="M ${BARS.xR + BARS.w + 12} ${BARS.base - BARS.h * 0.35} l 10 0 l 0 ${-BARS.h * 0.25} l -10 0" fill="none" stroke="${REAL}" stroke-width="3"/>`), at: 2.6, duration: 0.3 },
+    txt('placebo\neffect', BARS.xR + BARS.w + 30, BARS.base - BARS.h * 0.2, 16, PLA, { bold: true, at: 2.6, anim: 'fade', duration: 0.3 }),
+    txt('drug\'s REAL\neffect', BARS.xR + BARS.w + 30, BARS.base - BARS.h * 0.49, 16, REAL, { bold: true, at: 2.9, anim: 'fade', duration: 0.3 }),
+  ];
+  // tab 3: why it works, and what it can and can't do
+  const step3 = (x, n, head, body, c) => [
+    { type: 'rect', x, y: 220, w: 270, h: 210, color: c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    svgItem(badge(x + 34, 254, String(n), c)), txt(head, x + 66, 254, 21, c, { bold: true }), txt(body, x + 22, 330, 18, INK, { bold: true }),
+  ];
+  const whyItems = [
+    svgItem(`${rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2)}${curve('M 368 325 L 392 325', DARK, 5)}${curve('M 678 325 L 702 325', DARK, 5)}`),
+    ...at([...step3(90, 1, 'Expect it', 'You believe the\ntreatment will\nhelp you', PLA)], 0),
+    ...at([...step3(395, 2, 'Brain reacts', 'It releases its\nown chemicals\n(e.g. endorphins:\nnatural painkillers)', AFF)], 0.6),
+    ...at([...step3(705, 3, 'Feel better', 'Less pain, less\nnausea, better\nmood', REAL)], 1.2),
+    ...at([
+      { type: 'rect', x: 90, y: 470, w: 425, h: 250, color: REAL, fill: '#eaf6ee', fillOpacity: 1, width: 2.5, rough: false },
+      txt('✓ Works best on how you FEEL', 110, 505, 20, REAL, { bold: true }),
+      txt('• pain\n• nausea\n• mood and anxiety\n• tiredness and sleep', 115, 560, 19, INK, { bold: true }),
+      { type: 'rect', x: 545, y: 470, w: 425, h: 250, color: '#c0392b', fill: '#fbecea', fillOpacity: 1, width: 2.5, rough: false },
+      txt('✕ Can\'t fix the disease itself', 565, 505, 20, '#c0392b', { bold: true }),
+      txt('• infections\n• tumours\n• broken bones\n• high blood sugar', 570, 560, 19, INK, { bold: true }),
+    ], 1.8),
+    txt('Also helping: natural recovery, and extra care and attention', 530, 780, 19, GREY, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.3 }),
+  ];
+  const plaActions = [
+    { id: 'what18', label: 'What is a placebo?', group: 'pla', stay: true, drawn: false, items: [...PB.bar('what18'), ...whatItems] },
+    { id: 'trial18', label: 'A fair test', group: 'pla', stay: true, drawn: false, items: [...PB.bar('trial18'), ...trialItems,
+      ...card(1030, 190, 510, 670, REAL, 'A FAIR TEST (A TRIAL)', 'One group gets the real drug, the\nother an identical-looking placebo.\nNobody knows who got which.\n\nThe placebo group improves too!\n\nThe drug\'s REAL effect = how much\nMORE the drug group improves.\n\nThat\'s why new drugs are always\ntested against a placebo.', 21)] },
+    { id: 'why18', label: 'Why does it work?', group: 'pla', stay: true, drawn: false, items: [...PB.bar('why18'), ...whyItems,
+      ...card(1030, 190, 510, 670, AFF, 'WHY DOES IT WORK?', 'Expectation: the brain responds to\nwhat it thinks will happen, and\nreleases its own chemicals.\n\nIt\'s a REAL effect, not "all in\nyour head", but it mostly changes\nsymptoms, not the disease.\n\nNOCEBO: the opposite. Expecting\nside effects can cause them\n(e.g. after reading the leaflet).', 21)] },
+  ];
+
   // shared with part 3 (pharmacology-pk.js)
   window.WB_PHARM_PD = { glow, gauge, card, tabsOf, plot, axes, sCurve, sig, dash, tagOver, chip, ball };
 
@@ -684,7 +760,7 @@
     { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `• Part 2 = pharmacodynamics: what the drug does to the body
 • Goal: understand how drugs actually produce their effects
-• Roadmap: receptors & binding → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → drug targets & receptor types → tolerance`,
+• Roadmap: receptors & binding → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → drug targets & receptor types → tolerance → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
     // Slide 7: receptors and binding.
     { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
@@ -796,5 +872,19 @@
 • Too little stimulation (e.g. daily beta-blocker) → upregulation: more receptors → extra sensitive
 • Stop suddenly → rebound (e.g. racing heart)`,
       say: 'Cells adjust their receptors: too much stimulation means fewer receptors (tolerance), too little means more.', clear: true, actions: tolActions, items: tolItems },
+    // Slide 18: the placebo effect.
+    { script: `${Qs('What is a placebo?', 'What is the placebo effect?', 'How do we know a drug really works?', 'Why does a placebo work, and what can it not do?')}
+[tabs: What is a placebo? → A fair test → Why does it work?]`,
+      notes: `• Placebo = a dummy treatment with NO active drug (e.g. a sugar pill, salt-water injection) that looks exactly like the real thing
+• Placebo effect = a real improvement that comes from EXPECTING to get better, not from a drug
+• Fair test (clinical trial): one group gets the real drug, the other an identical placebo; nobody knows who got which (blinded)
+• The placebo group improves too (e.g. 35%), the drug group more (e.g. 60%)
+• The drug's REAL effect = how much MORE the drug group improves than the placebo group → why new drugs are tested against placebo
+• Why it works: expectation → the brain releases its own chemicals (e.g. endorphins, the body's natural painkillers) → you feel better
+• Works best on symptoms you feel: pain, nausea, mood, anxiety, tiredness, sleep
+• Can't fix the disease itself: infections, tumours, broken bones, high blood sugar
+• It's a real effect, not "all in your head"; natural recovery and extra care also help
+• Nocebo = the opposite: expecting side effects can cause them`,
+      say: 'A placebo has no drug in it, yet people often feel better because they expect to, so drugs are tested against placebos.', clear: true, actions: plaActions, items: plaItems },
   );
 })();
