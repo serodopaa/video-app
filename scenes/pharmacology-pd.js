@@ -104,7 +104,7 @@
   const S2 = 0.42;
   const miniRec = (cx, cy, extra = '') => receptor(cx, cy + 46, 'tri', 'blue', S2) + extra;
   const INTRO = [
-    ['Drug targets', EXO, (cx, cy) => [[-40, -22, AFF], [12, -22, EXO], [-40, 28, PD], [12, 28, ENDO]].map(([dx, dy, c]) => `<rect x="${cx + dx}" y="${cy + dy - 18}" width="44" height="40" rx="10" fill="${c}" opacity="0.85"/>`).join('')],
+    ['Drug targets\n(all 4 types)', EXO, (cx, cy) => [[-40, -22, AFF], [12, -22, EXO], [-40, 28, PD], [12, 28, ENDO]].map(([dx, dy, c]) => `<rect x="${cx + dx}" y="${cy + dy - 18}" width="44" height="40" rx="10" fill="${c}" opacity="0.85"/>`).join('')],
     ['Receptors, binding\n& receptor types', AFF, (cx, cy) => miniRec(cx, cy, ligand('tri', cx, cy + 46 + DOCK.tri * S2, 'amber', 1, S2) + ligand('tri', cx - 70, cy - 4, 'amber', 1, S2))],
     ['Agonists\n(full & partial)', AGO, (cx, cy) => miniRec(cx, cy, ligand('tri', cx, cy + 46 + DOCK.tri * S2, 'amber', 1, S2) + glow(cx, cy + 46, S2))],
     ['Antagonists &\nmodulators', ANT, (cx, cy) => miniRec(cx, cy, antag(cx, cy + 46 + DOCK.tri * S2, S2) + sideSite(cx, cy + 46, S2) + ball(...sideAt(cx, cy + 46, S2), S2))],
@@ -1120,6 +1120,7 @@
 [tabs: Wide → Narrow]`,
       notes: `• Therapeutic index = how SAFE a drug is (gap between the helpful and the harmful dose)
 • TI = TD50 ÷ ED50 (ED50: works in half of people; TD50: toxic in half of people)
+• Note the graph: the y-axis is '% of PEOPLE' who respond (a population curve), not how big the effect is in one person as on the dose–response slide
 • Wide TI → big safety margin (e.g. penicillin)
 • Narrow TI → easy to overdose (warfarin, lithium, digoxin) → blood levels monitored
 • Bigger TI = safer drug`,
