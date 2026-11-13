@@ -427,6 +427,192 @@
     ] },
   ];
 
+  // ---------------------------------------------------------------- slides: enzymes, transporters, ion channels
+  // One slide per non-receptor target. Same shape on each: what it normally does → what the drug does → the effect.
+  const STG = () => svgItem(rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2));
+  const GT3 = { x: 860, y: 215, w: 120, h: 620 };
+  const meter3 = (keys, head) => frameTrack(keys, ([v]) => gauge(GT3.x, GT3.y, GT3.w, GT3.h, v, head), 12);
+  const sol = (items) => items.map((it) => ({ ...it, solid: true }));
+  const topCard = (c, head, body) => sol(card(1030, 190, 510, 330, c, head, body, 19));
+  const exCard = (c, body) => card(1030, 540, 510, 320, c, 'EXAMPLES', body, 18);
+  const pill = (cx, cy, s = 0.5) => capsule(cx, cy, s, 0);
+
+  // ---- enzymes ----
+  const EZ = { cx: 380, cy: 480 };
+  const SITE = [EZ.cx + 178, EZ.cy];
+  const enzymeBig = `<ellipse cx="${EZ.cx}" cy="${EZ.cy}" rx="190" ry="140" fill="#f4c995" stroke="#b67d3c" stroke-width="5"/>
+    <circle cx="${SITE[0] + 12}" cy="${SITE[1]}" r="50" fill="#fbfcfe" stroke="#b67d3c" stroke-width="5"/><rect x="${SITE[0] + 18}" y="${SITE[1] - 60}" width="70" height="120" fill="#fbfcfe"/>
+    ${T(EZ.cx - 40, EZ.cy + 10, 34, '#8a5a22')('ENZYME')}${T(SITE[0] - 4, SITE[1] + 82, 16, '#8a5a22')('active site')}
+    <circle cx="590" cy="250" r="12" fill="#f6c45a" stroke="#a8640a" stroke-width="3"/>${T(610, 256, 17, INK, 700, 'start')('starting molecule')}
+    <circle cx="590" cy="800" r="9" fill="${ANT}"/>${T(610, 806, 17, INK, 700, 'start')('product')}`;
+  const subIn = (k) => ({ type: 'mover', path: [[700 - k * 30, 290 + k * 10], [SITE[0] + 10, SITE[1] - 6]], r: 12, color: '#f0a12e', count: 1, speed: 1.6 + k * 0.4 });
+  const prodOut = (k) => ({ type: 'mover', path: [[SITE[0] + 10, SITE[1] + 6], [700 - k * 30, 740 - k * 10]], r: 9, color: ANT, count: 1, speed: 1.6 + k * 0.4 });
+  const subBounce = (k) => ({ type: 'mover', path: [[700 - k * 40, 290 + k * 20], [SITE[0] + 70, SITE[1] - 70], [720 - k * 40, 300 + k * 20]], r: 12, color: '#f0a12e', count: 1, speed: 1.8 + k * 0.5 });
+  const lock = (x, y) => `<rect x="${x - 14}" y="${y - 2}" width="28" height="22" rx="4" fill="${ANT}"/><path d="M ${x - 9} ${y - 2} v -8 a 9 9 0 0 1 18 0 v 8" fill="none" stroke="${ANT}" stroke-width="4"/>`;
+  const EN = tabsOf([{ id: 'en14', text: 'Normal', c: ENDO }, { id: 'rev14', text: 'Reversible inhibitor', c: '#e8890c' }, { id: 'irr14', text: 'Irreversible inhibitor', c: ANT }], 170, 400);
+  const enzItems = [
+    title('Drugs that act on enzymes'),
+    ...EN.bar(null),
+    STG(), svgItem(enzymeBig + gauge(GT3.x, GT3.y, GT3.w, GT3.h, 0, 'Product made')),
+    ...card(1030, 190, 510, 330, '#b5694a', 'ENZYMES', 'Proteins that speed up chemical\nreactions: they turn a starting\nmolecule into a product.\n\nMany drugs are enzyme INHIBITORS:\nthey block the enzyme, so less\nproduct is made.', 19),
+    ...exCard('#b5694a', '• Statins: block the enzyme that\n   makes cholesterol\n• ACE inhibitors (e.g. ramipril): less\n   of a vessel-tightening hormone\n   → lower blood pressure\n• NSAIDs and aspirin: block COX\n   → less pain and inflammation'),
+    ...EN.hot,
+  ];
+  const enzActions = [
+    { id: 'en14', label: 'Normal', group: 'en', stay: true, drawn: false, items: [
+      ...sol(EN.bar('en14')),
+      ...[0, 1, 2].flatMap((k) => [subIn(k), prodOut(k)]),
+      ...meter3([[0, 0], [2.5, 0.9], [30, 0.9]], 'Product made'),
+      ...topCard(ENDO, 'NORMALLY', 'The enzyme grabs the starting\nmolecule, changes it, and lets\nthe product go, over and over.\n\nLots of product is made.'),
+    ] },
+    { id: 'rev14', label: 'Reversible inhibitor', group: 'en', stay: true, drawn: false, items: [
+      ...sol(EN.bar('rev14')),
+      ...track([[0, 640, 420], [0.9, ...SITE], [2.6, ...SITE], [3.4, 640, 420], [4.4, 640, 420], [5.3, ...SITE], [7.0, ...SITE], [7.8, 640, 420], [8.8, 640, 420], [9.7, ...SITE], [30, ...SITE]], ([x, y]) => pill(x, y)),
+      subBounce(0), subIn(1), prodOut(1),
+      ...meter3([[0, 0], [2.5, 0.35], [30, 0.35]], 'Product made'),
+      txt('binds… lets go… binds again', 400, 760, 20, '#e8890c', { align: 'center', bold: true, at: 1.2, anim: 'fade', duration: 0.3 }),
+      ...topCard('#e8890c', 'REVERSIBLE INHIBITOR', 'Binds the enzyme, then lets go.\nLike a competitive antagonist:\nlots of starting molecule can\npush it out.\n\nThe effect wears off as the drug\nis removed. e.g. statins, ibuprofen'),
+    ] },
+    { id: 'irr14', label: 'Irreversible inhibitor', group: 'en', stay: true, drawn: false, items: [
+      ...sol(EN.bar('irr14')),
+      ...track([[0, 640, 420], [0.9, ...SITE], [30, ...SITE]], ([x, y]) => pill(x, y)),
+      { ...svgItem(lock(SITE[0] + 2, SITE[1] - 44)), at: 1.1, duration: 0.3 },
+      subBounce(0), subBounce(1), subBounce(2),
+      ...meter3([[0, 0], [30, 0]], 'Product made'),
+      txt('locked on for good: this enzyme is\nuseless until the body makes a new one', 400, 760, 20, ANT, { align: 'center', bold: true, at: 1.3, anim: 'fade', duration: 0.3 }),
+      ...topCard(ANT, 'IRREVERSIBLE INHIBITOR', 'Locks onto the enzyme for good.\nThe effect lasts until the body\nmakes NEW enzyme, long after\nthe drug is gone.\n\ne.g. aspirin: platelets can\'t make\nnew COX, so one dose lasts ~a week'),
+    ] },
+  ];
+
+  // ---- transporters ----
+  const SY = { top: 380, post: 560, tr: 520 };
+  const synapse = `<path d="M 100 200 L 640 200 L 640 ${SY.top - 40} Q 640 ${SY.top} 600 ${SY.top} L 140 ${SY.top} Q 100 ${SY.top} 100 ${SY.top - 40} Z" fill="#efe6fb" stroke="#7b3fd0" stroke-width="4"/>
+    ${T(130, 235, 19, '#4a1f8a', 700, 'start')('nerve ending')}
+    <circle cx="280" cy="300" r="34" fill="#ffffff" stroke="#a77be8" stroke-width="3"/>${[[268, 290], [292, 296], [276, 312], [294, 316]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="7" fill="#f6c45a" stroke="#a8640a" stroke-width="2"/>`).join('')}
+    <rect x="${SY.tr - 28}" y="${SY.top - 44}" width="56" height="74" rx="16" fill="#c9a8f2" stroke="#4a1f8a" stroke-width="4"/><rect x="${SY.tr - 7}" y="${SY.top - 44}" width="14" height="74" fill="#efe6fb" stroke="#4a1f8a" stroke-width="2.5"/>
+    ${T(SY.tr + 40, SY.top - 54, 16, '#4a1f8a', 700, 'start')('transporter')}
+    ${T(600, 520, 17, GREY)('the gap (synapse)')}
+    <rect x="100" y="${SY.post}" width="540" height="140" rx="20" fill="#e6f0fb" stroke="#2c5a92" stroke-width="4"/>${T(130, SY.post + 112, 19, '#2c5a92', 700, 'start')('next nerve')}
+    ${[220, 330, 440].map((x) => receptor(x, SY.post + 8, 'round', 'green', 0.38)).join('')}
+    <circle cx="140" cy="790" r="9" fill="#f6c45a" stroke="#a8640a" stroke-width="2.5"/>${T(158, 796, 16, INK, 700, 'start')('serotonin')}`;
+  const SG3 = { x0: 700, x1: 960, y0: 600, y1: 800 };
+  const sigGraph = (kind, u = 1) => {
+    const p = plot(SG3), f = (t) => (kind === 'long' ? 0.9 * (1 - Math.exp(-t * 3)) * Math.exp(-Math.max(0, t - 0.55) * 0.6) : 0.85 * (1 - Math.exp(-t * 5)) * Math.exp(-t * 4));
+    const pts = []; for (let t = 0; t <= u + 1e-6; t += 0.01) pts.push(`${f1(p.x(t))},${f1(p.y(f(t)))}`);
+    return `${rr(680, 540, 300, 300, '#d9dce3', '#ffffff', 2, 12)}${T(830, 572, 17, DARK)('Signal over time')}
+      <line x1="${SG3.x0}" y1="${SG3.y1}" x2="${SG3.x1}" y2="${SG3.y1}" stroke="${DARK}" stroke-width="2.5"/><line x1="${SG3.x0}" y1="${SG3.y1}" x2="${SG3.x0}" y2="${SG3.y0 - 6}" stroke="${DARK}" stroke-width="2.5"/>
+      ${pts.length > 1 ? `<polyline points="${pts.join(' ')}" fill="none" stroke="${kind === 'long' ? PD : ENDO}" stroke-width="5" stroke-linejoin="round"/>` : ''}
+      ${T(830, 826, 16, kind === 'long' ? PD : ENDO)(kind === 'long' ? 'stronger, lasts longer' : 'short')}`;
+  };
+  const release = (k) => ({ type: 'mover', path: [[280, 330], [300 + k * 40, 470], [220 + k * 110, SY.post - 30], [SY.tr - 20, 440], [SY.tr, SY.top + 10], [SY.tr, SY.top - 50]], r: 9, color: '#f0a12e', count: 1, speed: 2.4 + k * 0.4 });
+  const stuck = (k) => ({ type: 'mover', path: [[280, 330], [240 + k * 60, 470], [220 + k * 110, SY.post - 30], [470 - k * 80, 450], [180 + k * 120, 500], [240 + k * 60, 470]], r: 9, color: '#f0a12e', count: 1, speed: 2.8 + k * 0.4 });
+  const stomach = `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>
+    <rect x="100" y="210" width="740" height="230" rx="18" fill="#fde6cf" stroke="#d0630b" stroke-width="3"/>${T(130, 245, 19, '#a64e08', 700, 'start')('Inside the stomach (acid)')}
+    <rect x="100" y="440" width="740" height="260" rx="18" fill="#f8dce3" stroke="#c2566b" stroke-width="3"/>${T(130, 680, 19, '#9c2a45', 700, 'start')('Stomach-lining cell')}
+    <rect x="420" y="400" width="84" height="84" rx="20" fill="#f6b48f" stroke="#b5560e" stroke-width="4"/>${T(462, 448, 15, '#7a3a08')('acid')}${T(462, 466, 15, '#7a3a08')('pump')}
+    ${[[200, 300], [300, 340], [620, 290], [720, 350], [560, 360]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="15" fill="#ffb3a7" stroke="${ANT}" stroke-width="2.5"/>${T(a, b + 5, 13, '#8e1d14')('H⁺')}`).join('')}`;
+  const TR = tabsOf([{ id: 'tn15', text: 'Normal', c: ENDO }, { id: 'ssri15', text: 'Reuptake blocked (SSRI)', c: PD }, { id: 'ppi15', text: 'Acid pump blocked (PPI)', c: '#d0630b' }], 170, 400);
+  const transItems = [
+    title('Drugs that act on transporters'),
+    ...TR.bar(null),
+    STG(), svgItem(synapse + sigGraph('short', 0)),
+    ...card(1030, 190, 510, 330, PD, 'TRANSPORTERS', 'Proteins that MOVE things across\ncell membranes:\n• reuptake transporters pull a\n   chemical back into a cell\n• pumps push things out, using\n   energy\nDrugs usually BLOCK them.', 19),
+    ...exCard(PD, '• SSRIs (e.g. fluoxetine): block\n   serotonin reuptake → depression,\n   anxiety\n• PPIs (e.g. omeprazole): block the\n   stomach\'s acid pump → reflux, ulcers\n• Digoxin: blocks the Na⁺/K⁺ pump\n   in heart cells'),
+    ...TR.hot,
+  ];
+  const transActions = [
+    { id: 'tn15', label: 'Normal', group: 'tr', stay: true, drawn: false, items: [
+      ...sol(TR.bar('tn15')), release(0), release(1), release(2),
+      ...frameTrack([[0, 0], [2.5, 1], [30, 1]], ([u]) => sigGraph('short', u), 12),
+      ...topCard(ENDO, 'NORMALLY', 'Serotonin is released, switches\non the next nerve\'s receptors,\nthen the transporter pulls it\nback in.\n\n→ the signal is SHORT.'),
+    ] },
+    { id: 'ssri15', label: 'SSRI', group: 'tr', stay: true, drawn: false, items: [
+      ...sol(TR.bar('ssri15')),
+      { ...svgItem(pill(SY.tr, SY.top + 20, 0.42)), at: 0, duration: 0.3 },
+      stuck(0), stuck(1), stuck(2),
+      ...frameTrack([[0, 0], [2.5, 1], [30, 1]], ([u]) => sigGraph('long', u), 12),
+      txt('can\'t get back in', SY.tr + 40, SY.top + 30, 17, PD, { align: 'left', bold: true, at: 0.6, anim: 'fade', duration: 0.3 }),
+      ...topCard(PD, 'SSRI', 'The transporter is blocked, so\nserotonin stays in the gap longer\n→ a stronger, longer signal.\n\ne.g. fluoxetine, sertraline\n(Cocaine blocks the dopamine\ntransporter the same way.)'),
+    ] },
+    { id: 'ppi15', label: 'PPI', group: 'tr', stay: true, drawn: false, items: [
+      ...sol(TR.bar('ppi15')),
+      svgItem(stomach, { solid: true }),
+      ...[0, 1, 2].map((k) => ({ type: 'mover', path: [[462, 640], [462, 440], [400 + k * 60, 300]], r: 14, color: '#ff8f80', count: 1, speed: 1.0 + k * 0.2, until: 1.6 })),
+      ...track([[0, 640, 560], [1.4, 462, 442], [30, 462, 442]], ([x, y]) => pill(x, y, 0.45)),
+      { ...svgItem(`<rect x="${GT3.x - 2}" y="${GT3.y - 2}" width="${GT3.w + 4}" height="${GT3.h + 4}" fill="#fbfcfe"/>`), solid: true },
+      ...meter3([[0, 0.85], [1.6, 0.85], [3.4, 0.2], [30, 0.2]], 'Stomach acid'),
+      txt('pump switched off → much less acid', 470, 760, 20, '#d0630b', { align: 'center', bold: true, at: 2.0, anim: 'fade', duration: 0.3 }),
+      ...topCard('#d0630b', 'PROTON PUMP INHIBITOR', 'Cells in the stomach lining pump\nacid (H⁺) into the stomach.\nPPIs switch this pump off\n→ much less acid.\n\ne.g. omeprazole, lansoprazole\n(reflux, stomach ulcers)'),
+    ] },
+  ];
+
+  // ---- ion channels ----
+  const NV = { x0: 150, x1: 840, y: 430, h: 70 };
+  const axonChannels = (blockFrom = 0, blockTo = 0) => {
+    let out = '';
+    for (let x = NV.x0 + 40; x <= NV.x1 - 30; x += 70) {
+      const blocked = x >= blockFrom && x <= blockTo;
+      for (const y of [NV.y - NV.h / 2 - 6, NV.y + NV.h / 2 - 8]) {
+        out += `<rect x="${x - 10}" y="${y}" width="20" height="14" rx="4" fill="#62b067" stroke="#2e7d32" stroke-width="2"/>`;
+        if (blocked) out += `<rect x="${x - 7}" y="${y + 2}" width="14" height="10" rx="3" fill="${ANT}"/>`;
+      }
+    }
+    return out;
+  };
+  const nerve = (block) => `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>
+    <rect x="${NV.x0}" y="${NV.y - NV.h / 2}" width="${NV.x1 - NV.x0}" height="${NV.h}" rx="${NV.h / 2}" fill="#fde9b8" stroke="#c89a3a" stroke-width="4"/>
+    ${block ? `<rect x="440" y="${NV.y - 90}" width="200" height="180" rx="16" fill="#9fc0ef" opacity="0.28"/>${T(540, NV.y - 104, 17, '#2c5a92')('lidocaine injected here')}` : ''}
+    ${axonChannels(block ? 440 : 0, block ? 640 : 0)}
+    <path d="M 110 ${NV.y - 22} l 14 14 l -14 8 l 18 16" fill="none" stroke="${ANT}" stroke-width="4"/>${T(110, NV.y + 80, 17, ANT)('pain at')}${T(110, NV.y + 100, 17, ANT)('the finger')}
+    <ellipse cx="900" cy="${NV.y}" rx="62" ry="50" fill="#f6c6cf" stroke="#c2566b" stroke-width="4"/>${T(900, NV.y + 6, 17, '#9c2a45')('brain')}
+    ${T(495, NV.y + 92, 16, '#2e7d32')('Na⁺ channels along the nerve')}`;
+  const VC = { cx: 360, cy: 520 };
+  const vessel = (u) => {
+    const lumen = 62 + 58 * u, outer = 182 + 6 * u;
+    return `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>
+      <circle cx="${VC.cx}" cy="${VC.cy}" r="${f1(outer)}" fill="#f2b8a0" stroke="#b5694a" stroke-width="5"/>
+      <circle cx="${VC.cx}" cy="${VC.cy}" r="${f1(lumen)}" fill="#e0505a" stroke="#8e1d24" stroke-width="4"/>
+      ${T(VC.cx, VC.cy + 6, 18, '#ffffff')('blood')}
+      ${T(VC.cx, VC.cy - outer - 18, 18, '#8a3a1a')('muscle in the vessel wall')}
+      ${T(VC.cx, VC.cy + outer + 34, 20, u > 0.5 ? ENDO : ANT)(u > 0.5 ? 'relaxed → WIDER' : 'squeezed → NARROW')}`;
+  };
+  const CN = tabsOf([{ id: 'nn16', text: 'Nerve: normal', c: ENDO }, { id: 'lido16', text: 'Nerve + lidocaine', c: '#2c5a92' }, { id: 'ccb16', text: 'Calcium channel blocker', c: ANT }], 170, 400);
+  const pulse = (to, speed) => ({ type: 'mover', path: [[NV.x0 + 10, NV.y], [to, NV.y]], r: 16, color: '#ffcf3d', count: 1, speed });
+  const chanItems = [
+    title('Drugs that act on ion channels'),
+    ...CN.bar(null),
+    svgItem(nerve(false)),
+    ...card(1030, 190, 510, 330, ENDO, 'ION CHANNELS', 'Pores that let ions (Na⁺, K⁺, Ca²⁺,\nCl⁻) flow across a membrane\n→ electrical signals in nerves,\nheart and muscle.\n\nDrugs can BLOCK them (most\ncommon) or help OPEN them.', 19),
+    ...exCard(ENDO, '• Lidocaine: blocks Na⁺ channels\n   → numbness\n• Amlodipine: blocks Ca²⁺ channels\n   → lower blood pressure\n• Some anti-epileptics block Na⁺\n   channels → calm overactive nerves\n• Benzodiazepines OPEN the GABA-A\n   Cl⁻ channel more (slide 13)'),
+    ...CN.hot,
+  ];
+  const chanActions = [
+    { id: 'nn16', label: 'Nerve: normal', group: 'ch', stay: true, drawn: false, items: [
+      ...sol(CN.bar('nn16')), svgItem(nerve(false), { solid: true }),
+      pulse(NV.x1 + 40, 2.0),
+      { type: 'pulse', x: 900, y: NV.y, r: 66, color: '#e0606a', speed: 1.2, at: 1.8 },
+      txt('OUCH! the brain feels it', 900, NV.y - 84, 19, ANT, { align: 'center', bold: true, at: 1.9, anim: 'pop', duration: 0.3 }),
+      ...topCard(ENDO, 'NORMALLY', 'Na⁺ channels open one after\nanother along the nerve, passing\nthe signal (e.g. pain) all the way\nto the brain.'),
+    ] },
+    { id: 'lido16', label: 'Nerve + lidocaine', group: 'ch', stay: true, drawn: false, items: [
+      ...sol(CN.bar('lido16')), svgItem(nerve(true), { solid: true }),
+      pulse(440, 1.3),
+      txt('✕ signal stops here', 440, NV.y + 130, 19, '#2c5a92', { align: 'center', bold: true, at: 1.2, anim: 'fade', duration: 0.3 }),
+      txt('no pain felt\n(numb)', 900, NV.y - 100, 19, '#2c5a92', { align: 'center', bold: true, at: 1.4, anim: 'fade', duration: 0.3 }),
+      ...topCard('#2c5a92', 'LIDOCAINE (Na⁺ BLOCKER)', 'Plugs the Na⁺ channels where it\'s\ninjected. The signal can\'t get past,\nso the brain never hears about\nthe pain → numb.\n\nUsed for dental work, stitches,\nsmall operations.'),
+    ] },
+    { id: 'ccb16', label: 'Calcium channel blocker', group: 'ch', stay: true, drawn: false, items: [
+      ...sol(CN.bar('ccb16')),
+      ...frameTrack([[0, 0], [1.8, 0], [3.8, 1], [30, 1]], ([u]) => vessel(u), 12),
+      ...[0, 1, 2, 3].map((k) => ({ type: 'mover', path: [[VC.cx + Math.cos(k * 1.57 + 0.6) * 260, VC.cy + Math.sin(k * 1.57 + 0.6) * 260], [VC.cx + Math.cos(k * 1.57 + 0.6) * 120, VC.cy + Math.sin(k * 1.57 + 0.6) * 120]], r: 12, color: '#9fd0f0', count: 1, speed: 0.9, until: 1.7 })),
+      txt('Ca²⁺ flows in → the muscle squeezes', VC.cx, 240, 18, '#2c5a92', { align: 'center', bold: true, at: 0.1, anim: 'fade', duration: 0.3, until: 1.7 }),
+      ...[0, 1, 2, 3].map((k) => ({ ...svgItem(pill(VC.cx + Math.cos(k * 1.57 + 0.6) * 205, VC.cy + Math.sin(k * 1.57 + 0.6) * 205, 0.3)), at: 1.5, duration: 0.3 })),
+      txt('blocker added → Ca²⁺ can\'t get in', VC.cx, 240, 18, ANT, { align: 'center', bold: true, at: 1.8, anim: 'fade', duration: 0.3 }),
+      ...meter3([[0, 0.8], [1.8, 0.8], [3.8, 0.5], [30, 0.5]], 'Blood pressure'),
+      ...topCard(ANT, 'CALCIUM CHANNEL BLOCKER', 'Ca²⁺ flowing into the muscle in\nblood-vessel walls makes it\nsqueeze. Block it → the muscle\nrelaxes → the vessel WIDENS\n→ blood pressure falls.\n\ne.g. amlodipine'),
+    ] },
+  ];
+
   // ---------------------------------------------------------------- slide: dose–response curve
   const GD = { x0: 170, x1: 940, y0: 230, y1: 740 };
   const pD = plot(GD);
@@ -803,12 +989,13 @@
     { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `• Part 2 = pharmacodynamics: what the drug does to the body
 • Goal: understand how drugs actually produce their effects
-• Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
+• Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → enzymes, transporters, ion channels → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
     // Slide 7: drug targets.
     { script: `${Qs('Where do drugs act?', 'What are the four main drug targets?', 'What does each target do normally, and what does the drug change?')}
 [tabs: Normally (no drug) → With the drug]`,
       notes: `• First, the big picture: drugs act on 4 main types of target (receptors are the most common, but not the only one)
+• Receptors come next (slides 8–13); enzymes, transporters and ion channels each get their own slide after that (14–16)
 • Receptors: switched on or blocked (morphine at opioid receptors)
 • Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
 • Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
@@ -876,7 +1063,39 @@
 • GABA + benzodiazepine → same GABA, much bigger effect
 • Benzodiazepine alone → almost no effect (it only boosts what's already there)`,
       say: 'Allosteric modulators bind a different site and turn the response up or down, like benzodiazepines boosting GABA.', clear: true, actions: modActions, items: modItems },
-    // Slide 14: dose–response curves.
+    // Slide 14: drugs that act on enzymes.
+    { script: `${Qs('What do enzymes do?', 'How do enzyme inhibitors work?', 'Reversible vs irreversible inhibitors?')}
+[tabs: Normal → Reversible inhibitor → Irreversible inhibitor]`,
+      notes: `• Enzyme = a protein that speeds up a reaction: turns a starting molecule into a product
+• Many drugs are enzyme INHIBITORS: they block the enzyme → less product is made
+• Reversible inhibitor: binds and lets go; lots of starting molecule can push it out (like a competitive antagonist); the effect wears off as the drug is removed
+• Irreversible inhibitor: locks on for good; the effect lasts until the body makes NEW enzyme
+• Aspirin: irreversibly blocks COX in platelets, which can't make new COX → one dose lasts ~a week (why low-dose aspirin thins the blood)
+• Examples: statins (cholesterol-making enzyme), ACE inhibitors such as ramipril (lower blood pressure), NSAIDs / aspirin (COX → less pain and inflammation)`,
+      say: 'Enzyme inhibitors block an enzyme so less product is made, either reversibly or for good.', clear: true, actions: enzActions, items: enzItems },
+    // Slide 15: drugs that act on transporters.
+    { script: `${Qs('What do transporters do?', 'How do SSRIs work?', 'How do proton pump inhibitors work?')}
+[tabs: Normal → Reuptake blocked (SSRI) → Acid pump blocked (PPI)]`,
+      notes: `• Transporter = a protein that MOVES things across a cell membrane
+• Two kinds: reuptake transporters (pull a chemical back into a cell) and pumps (push things out using energy)
+• Drugs usually BLOCK them
+• Normally: serotonin is released, activates receptors, then is pulled back in → a short signal
+• SSRIs (fluoxetine, sertraline) block serotonin reuptake → serotonin stays in the gap → stronger, longer signal (depression, anxiety)
+• Cocaine blocks the dopamine transporter the same way
+• PPIs (omeprazole) switch off the stomach's acid pump → much less acid (reflux, ulcers)
+• Digoxin blocks the Na⁺/K⁺ pump in heart cells`,
+      say: 'Transporter-blocking drugs stop a chemical being moved, like SSRIs keeping serotonin around or PPIs switching off the acid pump.', clear: true, actions: transActions, items: transItems },
+    // Slide 16: drugs that act on ion channels.
+    { script: `${Qs('What do ion channels do?', 'How does lidocaine make you numb?', 'How do calcium channel blockers lower blood pressure?')}
+[tabs: Nerve: normal → Nerve + lidocaine → Calcium channel blocker]`,
+      notes: `• Ion channel = a pore that lets ions (Na⁺, K⁺, Ca²⁺, Cl⁻) flow across a membrane → electrical signals in nerves, heart and muscle
+• Drugs can BLOCK channels (most common) or help OPEN them
+• Normally: Na⁺ channels open one after another along a nerve, carrying the signal (e.g. pain) to the brain
+• Lidocaine plugs Na⁺ channels where it's injected → the signal can't get past → numb (dental work, stitches)
+• Calcium channel blockers (amlodipine): Ca²⁺ makes blood-vessel muscle squeeze; blocking it → muscle relaxes → vessel widens → lower blood pressure
+• Some anti-epileptics block Na⁺ channels; benzodiazepines OPEN the GABA-A Cl⁻ channel more (slide 13)`,
+      say: 'Ion channel drugs mostly block channels, like lidocaine stopping nerve signals or calcium channel blockers relaxing blood vessels.', clear: true, actions: chanActions, items: chanItems },
+    // Slide 17: dose–response curves.
     { script: `${Qs('What is a dose-response curve?', 'Why is it S-shaped?', 'How does it link to receptors being bound?')}
 [click the graph to raise the dose]`,
       notes: `• Dose–response curve = how the effect changes as the dose goes up
@@ -885,7 +1104,7 @@
 • High dose: nearly all receptors bound → effect levels off (maximum)
 • Dose axis is usually a log scale (each step = 10× more) → S-shaped curve`,
       say: 'A dose-response curve shows the effect rising with dose until nearly every receptor is bound.', clear: true, actions: drActions, items: drItems },
-    // Slide 15: potency vs efficacy.
+    // Slide 18: potency vs efficacy.
     { script: `${Qs('What is potency? (EC50)', 'What is efficacy? (Emax)', 'Which matters more?')}
 [tabs: Potency → Efficacy]`,
       notes: `• Two different ways to compare drugs (often confused)
@@ -896,7 +1115,7 @@
 • A vs C: C can never reach A's effect (like a partial agonist)
 • Efficacy usually matters more than potency; more potent ≠ stronger`,
       say: 'Potency is how much drug you need (EC50); efficacy is the biggest effect it can give (Emax).', clear: true, actions: pvActions, items: pvItems },
-    // Slide 16: therapeutic index.
+    // Slide 19: therapeutic index.
     { script: `${Qs('What is the therapeutic index?', 'How is it calculated? (TD50 ÷ ED50)', 'Wide vs narrow: why does it matter?')}
 [tabs: Wide → Narrow]`,
       notes: `• Therapeutic index = how SAFE a drug is (gap between the helpful and the harmful dose)
@@ -905,7 +1124,7 @@
 • Narrow TI → easy to overdose (warfarin, lithium, digoxin) → blood levels monitored
 • Bigger TI = safer drug`,
       say: 'The therapeutic index compares the toxic dose to the helpful dose; the wider it is, the safer the drug.', clear: true, actions: tiActions, items: tiItems },
-    // Slide 17: receptor regulation (up and down).
+    // Slide 20: receptor regulation (up and down).
     { script: `${Qs('What is tolerance?', 'What is downregulation (and desensitisation)?', 'What is upregulation?', 'Why do withdrawal and rebound effects happen?')}
 [tabs: Normal → Too much stimulation → Too little stimulation]`,
       notes: `• Receptor regulation = cells adjust how many receptors they have (and how strongly they respond) to stay balanced
@@ -918,7 +1137,7 @@
 • Too little stimulation (e.g. daily beta-blocker) → upregulation: more receptors → extra sensitive
 • Stop suddenly → rebound (e.g. racing heart)`,
       say: 'Cells regulate their receptors: too much stimulation means fewer receptors, too little means more.', clear: true, actions: tolActions, items: tolItems },
-    // Slide 18: the placebo effect.
+    // Slide 21: the placebo effect.
     { script: `${Qs('What is a placebo?', 'What is the placebo effect?', 'How do we know a drug really works?', 'Why does a placebo work, and what can it not do?')}
 [tabs: What is a placebo? → A fair test → Why does it work?]`,
       notes: `• Placebo = a dummy treatment with NO active drug (e.g. a sugar pill, salt-water injection) that looks exactly like the real thing

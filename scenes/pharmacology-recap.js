@@ -22,9 +22,9 @@
   // ---------- base view: the four parts of the course ----------
   const PARTS = [
     ['PART 1', 'Foundations', C1, 'slides 1–5', 'What is pharmacology?\nWhat is a drug?\nEndogenous vs exogenous\nPK vs PD'],
-    ['PART 2', 'Pharmacodynamics', C2, 'slides 6–18', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
-    ['PART 3', 'Pharmacokinetics', C3, 'slides 19–34', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
-    ['PART 4', 'Drug safety', C4, 'slides 35–39', 'Adverse drug reactions\nDrug toxicity\nDrug–drug interactions\nTolerance and dependence'],
+    ['PART 2', 'Pharmacodynamics', C2, 'slides 6–21', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nEnzymes, transporters,\nion channels\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
+    ['PART 3', 'Pharmacokinetics', C3, 'slides 22–37', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
+    ['PART 4', 'Drug safety', C4, 'slides 38–42', 'Adverse drug reactions\nDrug toxicity\nDrug–drug interactions\nTolerance and dependence'],
   ];
   const baseItems = PARTS.flatMap(([p, t, c, sl, list], i) => {
     const x = 60 + i * 375, w = 355;
@@ -154,7 +154,7 @@
   ];
 
   scene.steps.push(
-    // Slide 40: course recap.
+    // Slide 43: course recap.
     { script: `${Qs('What did the whole course cover?', 'How do PK, PD and safety fit together?', 'What are the key takeaways?')}
 [tabs: The big picture → Follow one drug (click the tiles 1–8) → Key takeaways]`,
       notes: `• Start with the 4 parts on screen: foundations → pharmacodynamics → pharmacokinetics → drug safety
@@ -175,4 +175,6 @@
   // user's saved drawings / notes / prompter text for those slides to their new numbers once. Must come after
   // the insert entry added by pharmacology-safety.js (entries apply in order).
   scene.renumber = [...(scene.renumber || []), { key: '2026-11-targets-first', move: { 7: 8, 8: 10, 9: 11, 10: 12, 11: 13, 12: 14, 13: 15, 14: 16, 15: 7, 16: 9 } }];
+  // Three slides were inserted after slide 13 (enzymes, transporters, ion channels): move saved work on 14+ by 3.
+  scene.renumber = [...scene.renumber, { key: '2026-11-enzyme-transporter-channel', before: [14, 14, 14] }];
 })();

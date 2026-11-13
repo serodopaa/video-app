@@ -18,7 +18,7 @@
   const warn = (cx, cy, s = 1, c = ADR) => `<g transform="translate(${f1(cx)} ${f1(cy)}) scale(${s})"><polygon points="0,-46 52,40 -52,40" fill="${c}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
       <rect x="-5" y="-18" width="10" height="34" rx="4" fill="#ffffff"/><circle cx="0" cy="27" r="6" fill="#ffffff"/></g>`;
 
-  // ================================================================ slide 35: part 4 intro
+  // ================================================================ slide 38: part 4 intro
   const INTRO = [
     ['Adverse drug\nreactions', ADR, 'Unwanted effects:\npredictable vs\nunpredictable', (cx, cy) => warn(cx, cy, 0.85)],
     ['Drug toxicity', TOX, 'When the level\ngets too high,\nand why', (cx, cy) => {
@@ -47,7 +47,7 @@
     }),
   ];
 
-  // ================================================================ slide 36: adverse drug reactions
+  // ================================================================ slide 39: adverse drug reactions
   const GA = { x0: 170, x1: 940, y0: 300, y1: 740 };
   const pA = plot(GA);
   const sig = (u, mid, steep = 10) => 1 / (1 + Math.exp(-(u - mid) * steep));
@@ -85,7 +85,7 @@
     ] },
   ];
 
-  // ================================================================ slide 37: drug toxicity
+  // ================================================================ slide 40: drug toxicity
   const GT = { x0: 170, x1: 940, y0: 280, y1: 740 };
   const pT = plot(GT);
   const TMAX = 12, YMAX = 1.4, WIN = [0.3, 0.75];
@@ -129,7 +129,7 @@
     ] },
   ];
 
-  // ================================================================ slide 38: drug–drug interactions
+  // ================================================================ slide 41: drug–drug interactions
   const half = (x, c, head, sub) => [
     { type: 'rect', x, y: 112, w: 720, h: 70, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
     txt(head, x + 360, 136, 24, '#ffffff', { align: 'center', bold: true }), txt(sub, x + 360, 163, 17, '#ffffff', { align: 'center', bold: true }),
@@ -180,7 +180,7 @@
     ...frameTrack([[0, 0], [3.2, 1], [30, 1]], ([u]) => `${rr(78, 218, 230, 284, '#e4e7ee', '#f7f8fb', 2, 14)}${artAdd(193, 360, u)}`, 12),
   ] }];
 
-  // ================================================================ slide 39: tolerance and dependence
+  // ================================================================ slide 42: tolerance and dependence
   const GD = { x0: 170, x1: 940, y0: 300, y1: 740 };
   const pD = plot(GD);
   const DAYS = [1, 0.8, 0.64, 0.52, 0.45, 0.4];
@@ -241,7 +241,7 @@
       ...TD.bar('tol37'),
       ...frameTrack([[0, 0], [3, 1], [30, 1]], ([u]) => tolGraph(u), 12),
       txt('Same dose, less effect every day', 555, 800, 20, TOL, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.3 }),
-      ...card(1030, 190, 510, 670, TOL, 'TOLERANCE', 'Needing MORE of a drug to get\nthe same effect.\n\nWhy:\n• fewer or less responsive\n   receptors (slide 17)\n• the body breaks the drug down\n   faster (enzyme induction)\n\ne.g. opioids, alcohol, caffeine,\nbenzodiazepines', 21),
+      ...card(1030, 190, 510, 670, TOL, 'TOLERANCE', 'Needing MORE of a drug to get\nthe same effect.\n\nWhy:\n• fewer or less responsive\n   receptors (slide 20)\n• the body breaks the drug down\n   faster (enzyme induction)\n\ne.g. opioids, alcohol, caffeine,\nbenzodiazepines', 21),
     ] },
     { id: 'phys37', label: 'Physical dependence', group: 'td', stay: true, drawn: false, items: [
       ...TD.bar('phys37'),
@@ -264,7 +264,7 @@
 
   // ================================================================ the slides (added after part 3)
   scene.steps.push(
-    // Slide 35: part 4 intro.
+    // Slide 38: part 4 intro.
     { script: Qs('What is part 4 about?'),
       notes: `• Part 4 = drug safety and interactions: when drugs cause harm
 • Adverse drug reactions: predictable (type A) vs unpredictable (type B)
@@ -272,7 +272,7 @@
 • Drug–drug interactions: effects that add up or cancel; levels that rise or fall
 • Tolerance and dependence: needing more, needing it, and withdrawal`,
       say: 'Part 4: drug safety and interactions.', clear: true, items: introItems },
-    // Slide 36: adverse drug reactions.
+    // Slide 39: adverse drug reactions.
     { script: `${Qs('What is an adverse drug reaction?', 'Type A vs type B?', 'Examples of each')}
 [tabs: Type A → Type B]`,
       notes: `• Adverse drug reaction (ADR) = an unwanted, harmful effect of a drug at a normal dose
@@ -285,7 +285,7 @@
 • e.g. penicillin allergy → anaphylaxis → stop the drug and avoid it for life
 • (Other types exist, e.g. long-term and withdrawal effects, but A and B are the key ones)`,
       say: 'Adverse drug reactions are either dose-related and predictable (type A) or unpredictable (type B).', clear: true, actions: adrActions, items: adrItems },
-    // Slide 37: drug toxicity.
+    // Slide 40: drug toxicity.
     { script: `${Qs('What is drug toxicity?', 'How does a drug level get too high?', 'Which drugs are most at risk?')}
 [tabs: Too much taken → Can't clear it → Another drug]`,
       notes: `• Toxicity = harm from TOO MUCH drug in the body: the level goes above the therapeutic window
@@ -296,7 +296,7 @@
 • Another drug: enzyme inhibition or protein-binding displacement raises the level (clarithromycin + statin)
 • Most at risk: narrow therapeutic index drugs (warfarin, lithium, digoxin) → blood levels are monitored`,
       say: 'Toxicity happens when the drug level rises above the therapeutic window: too much taken, too little cleared, or another drug.', clear: true, actions: toxActions, items: toxItems },
-    // Slide 38: drug–drug interactions.
+    // Slide 41: drug–drug interactions.
     { script: `${Qs('What is a drug–drug interaction?', 'Pharmacodynamic vs pharmacokinetic interactions?', 'Examples of each')}
 [click the "Adding up" picture to build it]`,
       notes: `• Drug–drug interaction = one drug changes what another drug does
@@ -308,7 +308,7 @@
 • Absorption (antacids + some antibiotics), protein binding (warfarin), excretion (NSAIDs → lithium builds up)
 • Herbal remedies, alcohol and food can interact too`,
       say: 'Drug interactions either change each other’s effect (pharmacodynamic) or each other’s level (pharmacokinetic).', clear: true, actions: ddiActions, items: ddiItems },
-    // Slide 39: tolerance and dependence.
+    // Slide 42: tolerance and dependence.
     { script: `${Qs('What is tolerance?', 'What is physical dependence and withdrawal?', 'What is addiction, and is it the same as dependence?')}
 [tabs: Tolerance → Physical dependence → Psychological (addiction)]`,
       notes: `• Three different things that often get mixed up
