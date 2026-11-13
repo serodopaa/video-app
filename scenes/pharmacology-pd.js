@@ -160,81 +160,119 @@
     ],
   }];
 
-  // ---------------------------------------------------------------- slide: affinity and selectivity
-  const AL = { x0: 80, x1: 760, y0: 290, top: 700, bot: 755, y1: 845, xs: [250, 590] };
-  const SR = { x0: 840, x1: 1520, y0: 290, top: 700, bot: 755, y1: 845, xs: [960, 1180, 1400], s: 0.9 };
+  // ---------------------------------------------------------------- slide: affinity, specificity, selectivity
+  // Three sections side by side. Specificity and selectivity get the same Low dose / High dose buttons, so the
+  // difference shows: at a high dose the specific drug STILL binds only its target; the selective one binds others too.
   const RECS = [['tri', 'blue'], ['round', 'green'], ['square', 'pink']];
   const blobDock = { tri: -112, round: -127, square: -110 };
+  const SPEC = '#0b7a8a';
+  const COLX = [60, 560, 1060], CW3 = 480;
+  const P8 = { y0: 312, top: 705, bot: 755, y1: 845 };
   const chip = (x, y, w, label, c, on = false) => [
-    { type: 'rect', x, y, w, h: 46, color: c, fill: on ? c : '#ffffff', fillOpacity: 1, width: 3, rough: false },
-    txt(label, x + w / 2, y + 23, 20, on ? '#ffffff' : c, { align: 'center', bold: true }),
+    { type: 'rect', x, y, w, h: 44, color: c, fill: on ? c : '#ffffff', fillOpacity: 1, width: 3, rough: false },
+    txt(label, x + w / 2, y + 22, 19, on ? '#ffffff' : c, { align: 'center', bold: true }),
   ];
-  const AFF_START = [[AL.xs[0] - 120, 380], [AL.xs[1] - 120, 380]];
-  const SCH = { spec: [850, 210, 'Specific'], sel: [1072, 210, 'Selective'], non: [1294, 216, 'Non-selective'] };
-  const schip = (k, on = false) => chip(SCH[k][0], 230, SCH[k][1], SCH[k][2], SEL, on);
-
+  const section = (i, c, head, def) => {
+    const x = COLX[i];
+    return [
+      box(x, 112, CW3, 748, c), { type: 'rect', x, y: 112, w: CW3, h: 58, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
+      txt(head, x + CW3 / 2, 141, 27, '#ffffff', { align: 'center', bold: true }),
+      txt(def, x + CW3 / 2, 196, 19, c, { align: 'center', bold: true }),
+    ];
+  };
+  // affinity
+  const AS = 0.82, AX = [COLX[0] + 130, COLX[0] + 350];
+  const AFF_START = [[AX[0] - 90, 400], [AX[1] - 90, 400]];
+  const affDock = dockY(P8.top, AS);
+  const lowKeys = (x, st) => {
+    const d = affDock, a = 1.3;
+    return [[0, ...st, 0], [a, x, d, 0], [a + 0.05, x, d, 1], [a + 0.9, x, d, 1], [a + 0.95, x, d, 0], [a + 1.9, x + 70, 420, 0], [a + 3.0, x + 70, 420, 0],
+      [a + 4.0, x, d, 0], [a + 4.05, x, d, 1], [a + 4.9, x, d, 1], [a + 4.95, x, d, 0], [a + 5.9, x - 80, 410, 0], [a + 7.0, x - 80, 410, 0], [a + 8.0, x, d, 0], [a + 8.05, x, d, 1], [30, x, d, 1]];
+  };
+  // specificity / selectivity panels: target + two other receptors
+  const RS = 0.72;
+  const rx3 = (i) => [COLX[i] + 95, COLX[i] + 240, COLX[i] + 385];
+  const panel3 = (i) => svgItem(panel(COLX[i] + 15, COLX[i] + CW3 - 15, P8.y0, P8.top, P8.bot, P8.y1)
+    + rx3(i).map((x, k) => receptor(x, P8.top, RECS[k][0], RECS[k][1], RS)).join('')
+    + T(rx3(i)[0], 795, 18, '#2c5a92')('Target') + T(rx3(i)[1], 795, 18, GREY)('Other') + T(rx3(i)[2], 795, 18, GREY)('Other'));
+  // chip widths: equal for two; the third (Non-selective) a bit wider
+  const chipGeo = (i, n) => {
+    const ws = n === 3 ? [128, 128, 184] : [205, 205], out = [];
+    let x = COLX[i] + 20;
+    for (const w of ws) { out.push([x, w]); x += w + 10; }
+    return out;
+  };
+  const doseChips = (i, c, ids, labels, active) => chipGeo(i, ids.length).flatMap(([x, w], k) => chip(x, 240, w, labels[k], c, ids[k] === active));
+  const doseHot = (i, ids) => chipGeo(i, ids.length).map(([x, w], k) => ({ type: 'hotspot', x, y: 240, w, h: 44, action: ids[k] }));
+  // where the extra molecules of a high dose wait
+  const crowd = (i) => [[COLX[i] + 60, 400], [COLX[i] + 150, 360], [COLX[i] + 245, 405], [COLX[i] + 330, 365], [COLX[i] + 420, 400]];
+  const cap = (i, text, c, t) => txt(text, COLX[i] + CW3 / 2, 830, 18, c, { align: 'center', bold: true, at: t, anim: 'fade', duration: 0.4 });
+  const SP_IDS = ['spLo8', 'spHi8'], SE_IDS = ['seLo8', 'seHi8', 'non8'];
   const affSelItems = [
     title('Affinity, specificity and selectivity'),
-    // affinity half
-    box(60, 112, 720, 748, AFF), { type: 'rect', x: 60, y: 112, w: 720, h: 62, color: AFF, fill: AFF, fillOpacity: 1, width: 3, rough: false },
-    txt('AFFINITY', 420, 143, 30, '#ffffff', { align: 'center', bold: true }),
-    txt('How TIGHTLY a drug binds its receptor', 420, 205, 22, AFF, { align: 'center', bold: true }),
-    ...chip(280, 230, 280, '▶ Watch them bind', AFF),
-    { type: 'hotspot', x: 280, y: 230, w: 280, h: 46, action: 'aff8' },
-    svgItem(panel(AL.x0, AL.x1, AL.y0, AL.top, AL.bot, AL.y1) + AL.xs.map((x) => receptor(x, AL.top, 'tri', 'blue')).join('')
-      + T(AL.xs[0], 330, 22, AFF)('High affinity') + T(AL.xs[1], 330, 22, '#8a8f98')('Low affinity')),
-    { ...svgItem(ligand('tri', ...AFF_START[0], 'amber') + ligand('tri', ...AFF_START[1], 'pale', 0.82)), hideDuring: 'aff8' },
-    // selectivity half
-    box(820, 112, 720, 748, SEL), { type: 'rect', x: 820, y: 112, w: 720, h: 62, color: SEL, fill: SEL, fillOpacity: 1, width: 3, rough: false },
-    txt('SPECIFICITY & SELECTIVITY', 1180, 143, 28, '#ffffff', { align: 'center', bold: true }),
-    txt('How CHOOSY a drug is about which receptors it binds', 1180, 205, 22, SEL, { align: 'center', bold: true }),
-    ...schip('spec'), ...schip('sel'), ...schip('non'),
-    ...[['spec', 'spec8'], ['sel', 'sel8'], ['non', 'non8']].map(([k, a]) => ({ type: 'hotspot', x: SCH[k][0], y: 230, w: SCH[k][1], h: 46, action: a })),
-    svgItem(panel(SR.x0, SR.x1, SR.y0, SR.top, SR.bot, SR.y1) + SR.xs.map((x, i) => receptor(x, SR.top, RECS[i][0], RECS[i][1], SR.s)).join('')
-      + T(SR.xs[0], 800, 21, '#2c5a92')('Target') + T(SR.xs[1], 800, 21, GREY)('Other receptor') + T(SR.xs[2], 800, 21, GREY)('Other receptor')),
+    ...section(0, AFF, 'AFFINITY', 'How TIGHTLY a drug\nbinds its receptor'),
+    ...chip(COLX[0] + 100, 240, 280, '▶ Watch them bind', AFF), { type: 'hotspot', x: COLX[0] + 100, y: 240, w: 280, h: 44, action: 'aff8' },
+    svgItem(panel(COLX[0] + 15, COLX[0] + CW3 - 15, P8.y0, P8.top, P8.bot, P8.y1) + AX.map((x) => receptor(x, P8.top, 'tri', 'blue', AS)).join('')
+      + T(AX[0], 345, 20, AFF)('High affinity') + T(AX[1], 345, 20, '#8a8f98')('Low affinity')),
+    { ...svgItem(ligand('tri', ...AFF_START[0], 'amber', 1, AS) + ligand('tri', ...AFF_START[1], 'pale', 0.82, AS)), hideDuring: 'aff8' },
+    ...section(1, SPEC, 'SPECIFICITY', 'Binds ONLY ONE target,\nat ANY dose (all-or-nothing)'),
+    ...doseChips(1, SPEC, SP_IDS, ['Low dose', 'High dose'], null), ...doseHot(1, SP_IDS),
+    panel3(1),
+    ...section(2, SEL, 'SELECTIVITY', 'PREFERS one target, but can\nbind others (a matter of degree)'),
+    ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], null), ...doseHot(2, SE_IDS),
+    panel3(2),
   ];
-  const lowKeys = (x, s) => {
-    const d = dockY(AL.top), a = 1.3;
-    return [[0, ...s, 0], [a, x, d, 0], [a + 0.05, x, d, 1], [a + 0.9, x, d, 1], [a + 0.95, x, d, 0], [a + 1.9, x + 120, 390, 0], [a + 3.0, x + 120, 390, 0],
-      [a + 4.0, x, d, 0], [a + 4.05, x, d, 1], [a + 4.9, x, d, 1], [a + 4.95, x, d, 0], [a + 5.9, x - 120, 380, 0], [a + 7.0, x - 120, 380, 0], [a + 8.0, x, d, 0], [a + 8.05, x, d, 1], [30, x, d, 1]];
+  const dk = (i, k, kind) => [rx3(i)[k], P8.top + (kind === 'tri' ? DOCK.tri : blobDock[RECS[k][0]]) * RS];
+  const bindTo = (i, k, from, t, kind, color, n) => track([[0, ...from, 0], [t, ...from, 0], [t + 1.1, ...dk(i, k, kind), 0], [t + 1.15, ...dk(i, k, kind), 1], [30, ...dk(i, k, kind), 1]],
+    ([x, y]) => ligand(kind, x, y, color, 1, RS), () => contacts(rx3(i)[k], P8.top, RECS[k][0], n, RS));
+  const tryAndLeave = (i, k, from, t) => {
+    const hover = P8.top - 131 * RS - 40, x = rx3(i)[k];
+    return track([[0, ...from], [t, ...from], [t + 1.0, x, hover], [t + 1.6, x, hover], [t + 2.4, ...from], [30, ...from]], ([px, py]) => ligand('tri', px, py, 'amber', 1, RS));
   };
-  const selStart = (i) => [SR.xs[i] - 70, 380];
+  const idle = (from, kind, color) => svgItem(ligand(kind, ...from, color, 1, RS));
+  const sideFx = (i, ks, t) => ks.map((k) => txt('⚠ side effect', rx3(i)[k], 560, 17, ANT, { align: 'center', bold: true, at: t, anim: 'pop', duration: 0.3 }));
   const affSelActions = [
     { id: 'aff8', label: 'Affinity: watch them bind', stay: true, drawn: false, items: [
-      ...chip(280, 230, 280, '▶ Watch them bind', AFF, true),
-      ...track([[0, ...AFF_START[0], 0], [1.3, AL.xs[0], dockY(AL.top), 0], [1.35, AL.xs[0], dockY(AL.top), 1], [30, AL.xs[0], dockY(AL.top), 1]], ([x, y]) => ligand('tri', x, y, 'amber'), () => contacts(AL.xs[0], AL.top, 'tri', 4)),
-      ...track(lowKeys(AL.xs[1], AFF_START[1]), ([x, y]) => ligand('tri', x, y, 'pale', 0.82), () => contacts(AL.xs[1], AL.top, 'tri', 1)),
-      txt('Snug fit, many bonds:\nstays bound', AL.xs[0], 805, 19, AFF, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.4 }),
-      txt('Loose fit, few bonds:\nkeeps falling off', AL.xs[1], 805, 19, GREY, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
+      ...chip(COLX[0] + 100, 240, 280, '▶ Watch them bind', AFF, true),
+      ...track([[0, ...AFF_START[0], 0], [1.3, AX[0], affDock, 0], [1.35, AX[0], affDock, 1], [30, AX[0], affDock, 1]], ([x, y]) => ligand('tri', x, y, 'amber', 1, AS), () => contacts(AX[0], P8.top, 'tri', 4, AS)),
+      ...track(lowKeys(AX[1], AFF_START[1]), ([x, y]) => ligand('tri', x, y, 'pale', 0.82, AS), () => contacts(AX[1], P8.top, 'tri', 1, AS)),
+      txt('Snug fit, many bonds:\nstays bound', AX[0], 818, 17, AFF, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.4 }),
+      txt('Loose fit, few bonds:\nkeeps falling off', AX[1], 818, 17, GREY, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
     ] },
-    { id: 'spec8', label: 'Specific drug', group: 'sel', stay: true, drawn: false, items: [
-      ...schip('spec', true),
-      ...track([[0, ...selStart(0), 0], [1.3, SR.xs[0], dockY(SR.top, SR.s), 0], [1.35, SR.xs[0], dockY(SR.top, SR.s), 1], [30, SR.xs[0], dockY(SR.top, SR.s), 1]], ([x, y]) => ligand('tri', x, y, 'amber', 1, SR.s), () => contacts(SR.xs[0], SR.top, 'tri', 4, SR.s)),
-      ...[1, 2].flatMap((i) => {
-        const hover = SR.top - 131 * SR.s - 46, x = SR.xs[i];
-        return track([[0, ...selStart(i)], [1.2 + i * 0.3, x, hover], [1.8 + i * 0.3, x, hover], [2.7 + i * 0.3, x + 60, 360], [30, x + 60, 360]], ([px, py]) => ligand('tri', px, py, 'amber', 1, SR.s));
-      }),
-      txt('Fits ONLY its target, at any dose', 1180, 834, 21, SEL, { align: 'center', bold: true, at: 3.4, anim: 'fade', duration: 0.4 }),
+    // specificity: a triangle that fits only the triangular pocket
+    { id: 'spLo8', label: 'Specificity: low dose', group: 'spc', stay: true, drawn: false, items: [
+      ...doseChips(1, SPEC, SP_IDS, ['Low dose', 'High dose'], 'spLo8'),
+      ...bindTo(1, 0, crowd(1)[0], 0, 'tri', 'amber', 4),
+      cap(1, 'Low dose: binds its target', SPEC, 1.4),
     ] },
-    { id: 'sel8', label: 'Selective drug', group: 'sel', stay: true, drawn: false, items: [
-      ...schip('sel', true),
-      ...[0, 1, 2].flatMap((i) => {
-        const x = SR.xs[i], d = SR.top + blobDock[RECS[i][0]] * SR.s, t = i ? 3.4 + i * 0.3 : 0;
-        return track([[0, ...selStart(i), 0], [t, ...selStart(i), 0], [t + 1.2, x, d, 0], [t + 1.25, x, d, 1], [30, x, d, 1]], ([px, py]) => ligand('blob', px, py, 'amber', 1, SR.s), () => contacts(x, SR.top, RECS[i][0], i ? 1 : 4, SR.s));
-      }),
-      txt('Normal dose: just its target', 1180, 470, 20, SEL, { align: 'center', bold: true, at: 1.5, anim: 'fade', duration: 0.3, until: 1.6 }),
-      txt('Raise the dose…', 1180, 470, 20, ANT, { align: 'center', bold: true, at: 3.1, anim: 'fade', duration: 0.3, until: 1.7 }),
-      ...[1, 2].map((i) => txt('⚠ side effect', SR.xs[i], 470, 20, ANT, { align: 'center', bold: true, at: 5.0, anim: 'pop', duration: 0.3 })),
-      txt('PREFERS its target, but at high doses binds others too', 1180, 834, 20, SEL, { align: 'center', bold: true, at: 5.2, anim: 'fade', duration: 0.4 }),
+    { id: 'spHi8', label: 'Specificity: high dose', group: 'spc', stay: true, drawn: false, items: [
+      ...doseChips(1, SPEC, SP_IDS, ['Low dose', 'High dose'], 'spHi8'),
+      ...bindTo(1, 0, crowd(1)[0], 0, 'tri', 'amber', 4),
+      idle(crowd(1)[1], 'tri', 'amber'), idle(crowd(1)[3], 'tri', 'amber'),
+      ...tryAndLeave(1, 1, crowd(1)[2], 0.8), ...tryAndLeave(1, 2, crowd(1)[4], 1.1),
+      txt('✕ doesn\'t fit', rx3(1)[1], 560, 17, GREY, { align: 'center', bold: true, at: 1.9, anim: 'pop', duration: 0.3 }),
+      txt('✕ doesn\'t fit', rx3(1)[2], 560, 17, GREY, { align: 'center', bold: true, at: 2.2, anim: 'pop', duration: 0.3 }),
+      cap(1, 'High dose: STILL only its target', SPEC, 3.4),
+    ] },
+    // selectivity: binds its target best, the others weakly, only once there's lots of it
+    { id: 'seLo8', label: 'Selectivity: low dose', group: 'sel', stay: true, drawn: false, items: [
+      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'seLo8'),
+      ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
+      cap(2, 'Low dose: binds its target', SEL, 1.4),
+    ] },
+    { id: 'seHi8', label: 'Selectivity: high dose', group: 'sel', stay: true, drawn: false, items: [
+      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'seHi8'),
+      ...bindTo(2, 0, crowd(2)[0], 0, 'blob', 'amber', 4),
+      idle(crowd(2)[1], 'blob', 'amber'), idle(crowd(2)[3], 'blob', 'amber'),
+      ...bindTo(2, 1, crowd(2)[2], 0.9, 'blob', 'amber', 1), ...bindTo(2, 2, crowd(2)[4], 1.2, 'blob', 'amber', 1),
+      ...sideFx(2, [1, 2], 2.6),
+      cap(2, 'High dose: binds the others too', ANT, 3.0),
     ] },
     { id: 'non8', label: 'Non-selective drug', group: 'sel', stay: true, drawn: false, items: [
-      ...schip('non', true),
-      ...[0, 1, 2].flatMap((i) => {
-        const x = SR.xs[i], d = SR.top + blobDock[RECS[i][0]] * SR.s;
-        return track([[0, ...selStart(i), 0], [1.2 + i * 0.25, x, d, 0], [1.25 + i * 0.25, x, d, 1], [30, x, d, 1]], ([px, py]) => ligand('blob', px, py, 'teal', 1, SR.s), () => contacts(x, SR.top, RECS[i][0], 2, SR.s));
-      }),
-      ...[1, 2].map((i) => txt('⚠ side effect', SR.xs[i], 470, 20, ANT, { align: 'center', bold: true, at: 2.2, anim: 'pop', duration: 0.3 })),
-      txt('Binds other receptors too → SIDE EFFECTS', 1180, 834, 21, ANT, { align: 'center', bold: true, at: 2.4, anim: 'fade', duration: 0.4 }),
+      ...doseChips(2, SEL, SE_IDS, ['Low dose', 'High dose', 'Non-selective'], 'non8'),
+      ...[0, 1, 2].flatMap((k) => bindTo(2, k, [rx3(2)[k] - 40, 400], 0.1 + k * 0.2, 'blob', 'teal', 2)),
+      ...sideFx(2, [1, 2], 1.8),
+      cap(2, 'Binds them ALL, even at a low dose', ANT, 2.0),
     ] },
   ];
 
@@ -633,11 +671,12 @@
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
     // Slide 8: affinity and selectivity.
     { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
-[▶ Watch them bind, then Specific → Selective → Non-selective]`,
+[▶ Watch them bind · Specificity: Low → High dose · Selectivity: Low → High dose → Non-selective]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
 • High affinity: snug fit, many bonds, stays bound; low affinity: loose fit, keeps falling off
 • Specificity and selectivity = how CHOOSY a drug is about which receptors it binds
 • Specific: binds ONLY its target, at any dose (all-or-nothing; very rare for real drugs)
+• Key contrast: raise the dose → specific drug STILL only binds its target; selective drug starts binding others
 • Selective: PREFERS its target, but at high doses binds other receptors too (a matter of degree)
 • e.g. metoprolol is β1-selective (heart) but at high doses also hits β2 (lungs) → breathing problems
 • Non-selective: binds many receptors about equally → side effects even at normal doses
