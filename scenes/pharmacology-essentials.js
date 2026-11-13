@@ -4,7 +4,11 @@
 (() => {
   const A = window.WB_LIGAND_ART;
   if (!A) return;
-  const { panel, receptor, ligand, contacts, DOCK, track, frameTrack, T, svgItem, txt, title, f1 } = A;
+  const { panel, receptor, ligand, contacts, DOCK, track, frameTrack, svgItem, title, f1 } = A;
+  // labels and visual text: small sizes made a bit bigger so they're easy to read
+  const bump = (s) => (s < 22 ? Math.round(s * 1.18) : s);
+  const T = (x, y, s, ...r) => A.T(x, y, bump(s), ...r);
+  const txt = (t, x, y, s, ...r) => A.txt(t, x, y, bump(s), ...r);
   const INK = '#1f2430', GREY = '#5b6270', DARK = '#3b4252';
   const PK = '#2f6fde', PD = '#7b3fd0', ENDO = '#1f8a4c', EXO = '#d0630b', DRUG = '#c0392b';
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
@@ -166,7 +170,7 @@
   const exList = (x, c, lines) => lines.flatMap(([h, b], i) => [
     svgItem(`<circle cx="${x + 412}" cy="${C4.y + 245 + i * 95}" r="8" fill="${c}"/>`),
     txt(h, x + 430, C4.y + 245 + i * 95, 23, INK, { bold: true }),
-    txt(b, x + 430, C4.y + 277 + i * 95, 19, GREY, { bold: true }),
+    txt(b, x + 430, C4.y + 277 + i * 95, 16, GREY, { bold: true }),
   ]);
   // inside the body: a gland that releases molecules
   const ENDO_SRC = [endoP[0] + 4, endoP[1] - 40];

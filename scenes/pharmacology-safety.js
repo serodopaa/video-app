@@ -6,7 +6,11 @@
   const A = window.WB_LIGAND_ART, P = window.WB_PHARM_ART, D = window.WB_PHARM_PD;
   const scene = (window.WB_SCENES || []).find((s) => s.id === 'pharmacology-essentials');
   if (!A || !P || !D || !scene) return;
-  const { frameTrack, T, svgItem, txt, title, f1 } = A;
+  const { frameTrack, svgItem, title, f1 } = A;
+  // labels and visual text: small sizes made a bit bigger so they're easy to read
+  const bump = (s) => (s < 22 ? Math.round(s * 1.18) : s);
+  const T = (x, y, s, ...r) => A.T(x, y, bump(s), ...r);
+  const txt = (t, x, y, s, ...r) => A.txt(t, x, y, bump(s), ...r);
   const { box, rr, capsule, curve, dot, badge, person } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
   const { card, tabsOf, plot, axes, dash, fitTxt } = D;

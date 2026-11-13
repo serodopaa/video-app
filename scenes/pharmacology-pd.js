@@ -6,7 +6,11 @@
   const A = window.WB_LIGAND_ART, P = window.WB_PHARM_ART;
   const scene = (window.WB_SCENES || []).find((s) => s.id === 'pharmacology-essentials');
   if (!A || !P || !scene) return;
-  const { panel, receptor, ligand, contacts, DOCK, track, frameTrack, T, svgItem, txt, title, f1 } = A;
+  const { panel, receptor, ligand, contacts, DOCK, track, frameTrack, svgItem, title, f1 } = A;
+  // labels and visual text: small sizes made a bit bigger so they're easy to read
+  const bump = (s) => (s < 22 ? Math.round(s * 1.18) : s);
+  const T = (x, y, s, ...r) => A.T(x, y, bump(s), ...r);
+  const txt = (t, x, y, s, ...r) => A.txt(t, x, y, bump(s), ...r);
   const { box, rr, capsule, curve, dot, badge, person } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
   const AGO = '#1f8a4c', ANT = '#c0392b', MOD = '#7b3fd0', OUT = '#eef6fd', AFF = '#2f6fde', SEL = '#7b3fd0';
@@ -129,7 +133,7 @@
   // a text block that fills the area (x, y, w, h): top-left anchored, re-wrapped, biggest size that fits
   const fitTxt = (body, x, y, w, h, color, minSize = 15, maxSize = 30, extra = {}) => {
     const f = fitBody(body, w, h, minSize, maxSize);
-    return txt(f.text, x, y + f.size * 0.58, f.size, color, { bold: true, ...extra });
+    return A.txt(f.text, x, y + f.size * 0.58, f.size, color, { bold: true, ...extra });
   };
   const card = (x, y, w, h, c, head, body, size = 21, extra = {}) => {
     const fit = fitBody(body, w - 56, h - 58 - 40, size);
@@ -137,7 +141,7 @@
       box(x, y, w, h, c, '#ffffff', extra),
       { type: 'rect', x, y, w, h: 58, color: c, fill: c, fillOpacity: 1, width: 3, rough: false, ...extra },
       txt(head, x + w / 2, y + 29, 25, '#ffffff', { align: 'center', bold: true, ...extra }),
-      txt(fit.text, x + 28, y + 58 + 22 + fit.size * 0.58, fit.size, INK, { bold: true, ...extra }),
+      A.txt(fit.text, x + 28, y + 58 + 22 + fit.size * 0.58, fit.size, INK, { bold: true, ...extra }),
     ];
   };
   const at = (items, t) => items.map((it) => ({ ...it, at: t }));

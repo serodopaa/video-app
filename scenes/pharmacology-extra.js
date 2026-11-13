@@ -7,7 +7,11 @@
   const A = window.WB_LIGAND_ART, P = window.WB_PHARM_ART, D = window.WB_PHARM_PD;
   const scene = (window.WB_SCENES || []).find((s) => s.id === 'pharmacology-essentials');
   if (!A || !P || !D || !scene || scene.steps.length !== 43) return;
-  const { frameTrack, T, svgItem, txt, title, f1 } = A;
+  const { frameTrack, svgItem, title, f1 } = A;
+  // labels and visual text: small sizes made a bit bigger so they're easy to read
+  const bump = (s) => (s < 22 ? Math.round(s * 1.18) : s);
+  const T = (x, y, s, ...r) => A.T(x, y, bump(s), ...r);
+  const txt = (t, x, y, s, ...r) => A.txt(t, x, y, bump(s), ...r);
   const { box, rr, capsule, person, curve, badge } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
   const { card, tabsOf, plot, axes } = D;
@@ -26,7 +30,7 @@
     { type: 'rect', x: 90, y, w: 220, h: 130, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
     txt(label, 200, y + 65, 21, '#ffffff', { align: 'center', bold: true }),
     txt(main, 340, y + 46, 26, c, { bold: true }),
-    txt(sub, 340, y + 92, 17, GREY, { bold: true }),
+    txt(sub, 340, y + 92, 14, GREY, { bold: true }),
   ];
 
   // ================================================================ drug names and classes (new slide 4)
