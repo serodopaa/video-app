@@ -34,7 +34,7 @@
       txt(p, x + w / 2, 218, 18, '#ffffff', { align: 'center', bold: true }),
       txt(t, x + w / 2, 254, 26, '#ffffff', { align: 'center', bold: true }),
       txt(sl, x + w / 2, 312, 16, GREY, { align: 'center', bold: true }),
-      txt(list, x + 26, 360, 18, INK, { bold: true }),
+      D.fitTxt(list.split('\n').map((l) => (/^[a-z]/.test(l) ? '   ' + l : '• ' + l)).join('\n'), x + 22, 336, w - 44, 500, INK, 15, 30),
     ];
   });
 

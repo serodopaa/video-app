@@ -70,12 +70,76 @@
     };
   };
   // a card with a coloured header strip
-  const card = (x, y, w, h, c, head, body, size = 21, extra = {}) => [
-    box(x, y, w, h, c, '#ffffff', extra),
-    { type: 'rect', x, y, w, h: 58, color: c, fill: c, fillOpacity: 1, width: 3, rough: false, ...extra },
-    txt(head, x + w / 2, y + 29, 25, '#ffffff', { align: 'center', bold: true, ...extra }),
-    txt(body, x + 26, y + 92, size, INK, { bold: true, ...extra }),
-  ];
+  // ---- text that fills its box: re-wrap the body and use the biggest font that still fits ----
+  // Width of a string in Lexend bold, in ems (measured: ~0.53 em per character on average).
+  const emW = (str) => {
+    let w = 0;
+    for (const ch of str) {
+      if (ch === ' ') w += 0.27;
+      else if ('iljtfrI.,:;\'!|()[]'.includes(ch)) w += 0.34;
+      else if ('mwMW@%'.includes(ch)) w += 0.86;
+      else if (/[A-Z0-9]/.test(ch)) w += 0.66;
+      else w += 0.55;
+    }
+    return w * 1.13;
+  };
+  // Lines that start a new item (bullets, labels, examples, after a header) stay on their own line;
+  // other lines continue the sentence above, so they can be re-wrapped.
+  const BULLET = /^\s*([•✓✗✕!→↑↓▲▼-]|\d+[.)] |e\.g\.)/;
+  const itemsOf = (body) => body.split('\n\n').map((para) => {
+    const out = [];
+    for (const raw of para.split('\n')) {
+      const line = raw.replace(/\s+$/, '');
+      const prev = out[out.length - 1];
+      const indented = /^\s{2,}\S/.test(raw) && !BULLET.test(line);
+      // a line continues the one above only if it's indented or starts with a lower-case letter / symbol
+      const cont = prev && (indented || (!BULLET.test(line) && !/:$/.test(prev.text) && (!/^[A-Z"“]/.test(line.trim()) || /[a-z,]$/.test(prev.text)) && !/^[A-Z][A-Za-z /-]{0,30}:/.test(line.trim())));
+      if (!cont) out.push({ text: line.trim(), bullet: BULLET.test(line) && !/^\s*e\.g\./.test(line) });
+      else prev.text += (/-$/.test(prev.text) ? '' : ' ') + line.trim();
+    }
+    return out;
+  });
+  const wrapItem = (it, maxEm) => {
+    const words = it.text.split(' '), lines = [];
+    let cur = '';
+    for (const w of words) {
+      const next = cur ? `${cur} ${w}` : w;
+      if (cur && emW((lines.length && it.bullet ? '   ' : '') + next) > maxEm) { lines.push(cur); cur = w; } else cur = next;
+    }
+    if (cur) lines.push(cur);
+    return lines.map((l, i) => (i && it.bullet ? '   ' + l : l));
+  };
+  const fitBody = (body, w, h, minSize, maxSize = 30) => {
+    const paras = itemsOf(body);
+    const tryAt = (size, strict) => {
+      const wrapped = paras.map((p) => p.map((it) => wrapItem(it, w / size)));
+      if (strict && wrapped.some((p) => p.some((ls) => ls.length > 1 && ls[ls.length - 1].trim().split(' ').length < 2))) return null;
+      const lines = wrapped.map((p) => p.flat()).reduce((acc, p, i) => (i ? [...acc, '', ...p] : p), []);
+      return lines.length * size * 1.15 <= h && lines.every((l) => emW(l) * size <= w) ? { text: lines.join('\n'), size } : null;
+    };
+    // biggest size that fits; then shrink a little (≤ 15%) if that avoids a single word alone on a line
+    let best = null;
+    for (let size = maxSize; size > minSize && !best; size -= 0.5) best = tryAt(size, false);
+    if (!best) return { text: body, size: minSize };
+    for (let size = best.size; size >= Math.max(minSize, best.size * 0.85); size -= 0.5) { const r = tryAt(size, true); if (r) return r; }
+    return best;
+  };
+
+
+  // a text block that fills the area (x, y, w, h): top-left anchored, re-wrapped, biggest size that fits
+  const fitTxt = (body, x, y, w, h, color, minSize = 15, maxSize = 30, extra = {}) => {
+    const f = fitBody(body, w, h, minSize, maxSize);
+    return txt(f.text, x, y + f.size * 0.58, f.size, color, { bold: true, ...extra });
+  };
+  const card = (x, y, w, h, c, head, body, size = 21, extra = {}) => {
+    const fit = fitBody(body, w - 56, h - 58 - 40, size);
+    return [
+      box(x, y, w, h, c, '#ffffff', extra),
+      { type: 'rect', x, y, w, h: 58, color: c, fill: c, fillOpacity: 1, width: 3, rough: false, ...extra },
+      txt(head, x + w / 2, y + 29, 25, '#ffffff', { align: 'center', bold: true, ...extra }),
+      txt(fit.text, x + 28, y + 58 + 22 + fit.size * 0.58, fit.size, INK, { bold: true, ...extra }),
+    ];
+  };
   const at = (items, t) => items.map((it) => ({ ...it, at: t }));
   // graph helpers: plot area (x0..x1, y0 top .. y1 bottom), u = 0..1 along x, v = 0..1 up
   const plot = (G) => ({ x: (u) => G.x0 + u * (G.x1 - G.x0), y: (v) => G.y1 - v * (G.y1 - G.y0) });
@@ -724,7 +788,7 @@
     box(x, y, 730, 330, c), { type: 'rect', x, y, w: 730, h: 54, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
     txt(head, x + 365, y + 27, 25, '#ffffff', { align: 'center', bold: true }),
     svgItem(art(x, y)),
-    txt(body, x + 355, y + 100, 20, INK, { bold: true }),
+    fitTxt(body, x + 352, y + 74, 356, 236, INK, 16, 26),
   ];
   const clipArt = (id, x, y, inner) => `<defs><clipPath id="${id}"><rect x="${x + 20}" y="${y + 70}" width="310" height="248" rx="12"/></clipPath></defs><g clip-path="url(#${id})">${inner}</g>`;
   const recArt = (x, y, natural) => {
@@ -775,7 +839,7 @@
   // "normally": cover each picture and text with the no-drug version, plus the natural flow
   const coverCard = (x, y, art, body) => [
     svgItem(`<rect x="${x + 4}" y="${y + 58}" width="722" height="268" fill="#ffffff"/>${art}`, { solid: true }),
-    { ...txt(body, x + 355, y + 100, 20, ENDO, { bold: true }), solid: true },
+    { ...fitTxt(body, x + 352, y + 74, 356, 236, ENDO, 16, 26), solid: true },
   ];
   const [E0, E1] = ENZ_C(...TCARDS[1]), [R0, R1] = TR_C(...TCARDS[2]), [C0, C1] = CH_C(...TCARDS[3]);
   const normItems = [
@@ -847,8 +911,8 @@
         { type: 'rect', x, y: 112, w: CW, h: 70, color: col.c, fill: col.c, fillOpacity: 1, width: 3, rough: false },
         txt(col.head, cx, 136, 24, '#ffffff', { align: 'center', bold: true }), txt(col.sub, cx, 164, 17, '#ffffff', { align: 'center', bold: true }),
         svgItem(typeArt(i, cx)),
-        txt(col.how, x + 22, 500, 19, INK, { bold: true }),
-        txt(col.ex, x + 22, 640, 18, GREY, { bold: true }),
+        fitTxt(col.how, x + 22, 478, CW - 44, 138, INK, 16, 26),
+        fitTxt(col.ex, x + 22, 628, CW - 44, 100, GREY, 15, 24),
         svgItem(`<rect x="${x + 22}" y="755" width="${CW - 44}" height="16" rx="8" fill="#eef0f4"/><rect x="${x + 22}" y="755" width="${f1((CW - 44) * col.v)}" height="16" rx="8" fill="${col.c}"/>`),
         txt(`⏱ ${col.speed}`, cx, 810, 22, col.c, { align: 'center', bold: true }),
       ];
@@ -981,7 +1045,7 @@
   ];
 
   // shared with part 3 (pharmacology-pk.js)
-  window.WB_PHARM_PD = { glow, gauge, card, tabsOf, plot, axes, sCurve, sig, dash, tagOver, chip, ball };
+  window.WB_PHARM_PD = { fitBody, fitTxt, glow, gauge, card, tabsOf, plot, axes, sCurve, sig, dash, tagOver, chip, ball };
 
   // ---------------------------------------------------------------- the slides (added after part 1)
   scene.steps.push(

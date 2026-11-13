@@ -9,7 +9,7 @@
   const { panel, receptor, ligand, frameTrack, track, T, svgItem, txt, title, f1 } = A;
   const { box, rr, capsule, person, curve, dot, badge } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
-  const { gauge, card, tabsOf, plot, axes, dash, chip } = D;
+  const { gauge, card, tabsOf, plot, axes, dash, chip, fitTxt } = D;
   const ABS = '#d0630b', DIS = '#1f8a4c', MET = '#7b3fd0', EXC = '#2f6fde', TIME = '#c0392b';
   const OUT = '#eef6fd', LIVER = '#a0522d';
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
@@ -207,14 +207,14 @@
     txt('What decides how well a drug gets in?\nClick a factor on the right →', 530, 690, 22, DARK, { align: 'center', bold: true, hideDuring: FID }),
     ...FACTORS.flatMap(([h, t], i) => {
       const y = 112 + i * 152;
-      return [box(1030, y, 510, 140, ABS), svgItem(badge(1066, y + 36, String(i + 1), ABS)), txt(h, 1100, y + 36, 22, ABS, { bold: true }), txt(t, 1056, y + 82, 18, INK, { bold: true }),
+      return [box(1030, y, 510, 140, ABS), svgItem(badge(1066, y + 36, String(i + 1), ABS)), txt(h, 1100, y + 36, 22, ABS, { bold: true }), fitTxt(t, 1056, y + 62, 462, 72, INK, 16, 30),
         { type: 'hotspot', x: 1030, y, w: 510, h: 140, action: FID[i] }];
     }),
   ];
   const absBox = (c, head, body, y = 600, h = 220) => [
     { type: 'rect', x: 90, y, w: 880, h, color: c, fill: '#ffffff', fillOpacity: 0.95, width: 3, rough: false, solid: true },
     { ...txt(head, 115, y + 32, 22, c, { bold: true }), solid: true },
-    { ...txt(body, 115, y + 80, 19, INK, { bold: true }), solid: true },
+    { ...fitTxt(body, 115, y + 60, 830, h - 72, INK, 16, 28), solid: true },
   ];
   const factorGlow = (i) => ({ type: 'rect', x: 1026, y: 108 + i * 152, w: 518, h: 148, color: FACTORS[i][2], fill: FACTORS[i][2], fillOpacity: 0.07, width: 6, rough: false, solid: true });
   const cleanPanel = (extra = '') => svgItem(panel(60, 1000, 190, MEM.top, MEM.bot, 860)
@@ -457,7 +457,7 @@
       { type: 'rect', x, y: 112, w: MW, h: 62, color: S.c, fill: S.c, fillOpacity: 1, width: 3, rough: false },
       txt(`${i ? i + '. ' : ''}${S.head}`, cx, 143, 24, '#ffffff', { align: 'center', bold: true }),
       svgItem(S.mol(cx, 360)),
-      txt(S.text, x + 24, 560, 19, INK, { bold: true }),
+      fitTxt(S.text, x + 24, 530, MW - 48, 200, INK, 16, 26),
       svgItem(levelBar(x + 24, 760, MW - 48, S.v, S.c, 'Water-soluble?', S.v > 0.6 ? 'very' : S.v > 0.3 ? 'a bit' : 'no')),
     ];
   };

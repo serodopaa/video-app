@@ -9,7 +9,7 @@
   const { frameTrack, T, svgItem, txt, title, f1 } = A;
   const { box, rr, capsule, curve, dot, badge, person } = P;
   const { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } = P.COL;
-  const { card, tabsOf, plot, axes, dash } = D;
+  const { card, tabsOf, plot, axes, dash, fitTxt } = D;
   const RED = '#c0392b', ADR = '#d0630b', TOX = '#8e1d14', DDI = '#7b3fd0', TOL = '#2f6fde', OK = '#1f8a4c';
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
 
@@ -139,7 +139,7 @@
     box(x, y, 720, 320, c),
     svgItem(`${rr(x + 18, y + 18, 230, 284, '#e4e7ee', '#f7f8fb', 2, 14)}${art(x + 133, y + 160)}`),
     txt(head, x + 272, y + 44, 24, c, { bold: true }),
-    txt(body, x + 272, y + 100, 18, INK, { bold: true }),
+    fitTxt(body, x + 272, y + 74, 430, 232, INK, 16, 26),
   ];
   // u = 0..1 builds it up: drug A's bar, then drug B's, then both together crossing the danger line
   const artAdd = (cx, cy, u = 1) => {
