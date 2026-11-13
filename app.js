@@ -1493,13 +1493,9 @@
       b.addEventListener('click', () => runAction(a));
       actionsBox.appendChild(b);
     });
-    if (list.length) {
-      const reset = document.createElement('button');
-      reset.textContent = '↺';
-      reset.title = 'Reset this slide’s animations (R)';
-      reset.addEventListener('click', () => { actionRuns.clear(); setAnimPaused(false); });
-      actionsBox.appendChild(reset);
-    }
+    // the ↺ reset button sits next to the zoom buttons (always visible, never scrolls away)
+    const resetBtn = document.getElementById('resetAnim');
+    if (resetBtn) resetBtn.disabled = !list.length;
   }
 
   function goTo(i, animate = true) {
@@ -2575,6 +2571,7 @@
     else if (KEYS[k]) setTool(KEYS[k]);
   });
   document.getElementById('zoomIn').addEventListener('click', () => zoomAt(1.5, ...viewCenter()));
+  document.getElementById('resetAnim')?.addEventListener('click', () => { actionRuns.clear(); setAnimPaused(false); });
   document.getElementById('zoomOut').addEventListener('click', () => zoomAt(1 / 1.5, ...viewCenter()));
   document.getElementById('zoomLabel').addEventListener('click', () => zoomFit());
 

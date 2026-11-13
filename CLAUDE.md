@@ -121,7 +121,8 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
       drawn: false,           // optional per-step override of the scene setting
       thumbnail: true,        // optional: the 💾 button saves this slide as a 1920×1080 JPEG (YouTube < 2 MB)
       // Animation buttons for this slide: shown in the toolbar (never recorded) only
-      // while the slide is on screen; keys 1-9 press them, Shift+R / ↺ resets.
+      // while the slide is on screen; keys 1-9 press them, Shift+R / ↺ resets (the ↺ button
+      // sits next to the zoom buttons, `#resetAnim`, so it never scrolls away; disabled on slides without actions).
       // Pressing plays `items` (normal animated timing); pressing again replays.
       // When done it holds 1s (HOLD_AT_END), then resets. All animation runs on a
       // pausable clock (animNow): ⏸ / Q / Space / K freezes everything; one global
@@ -134,7 +135,8 @@ The board is **1600 × 900** (x right, y down). Scenes register themselves:
 });
 ```
 
-Actions can also have `stay: true` (the last frame stays on screen instead of resetting after 1 s),
+When tabs (a `group` with `stay`) switch whole views, mark the parts that are already on screen `solid: true` so they
+don't fade in over the old view (it flashes). Actions can also have `stay: true` (the last frame stays on screen instead of resetting after 1 s),
 `group: 'name'` (starting one action of a group stops the others; with `stay` this makes a
 click-to-switch demo panel) and `drawn: false` (items appear fully formed at once; without it,
 action items without `at` play one after another).

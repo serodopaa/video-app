@@ -12,7 +12,9 @@
   const C1 = DARK, C2 = PD, C3 = PK, C4 = '#c0392b';
   const Qs = (...q) => '[QUESTIONS THIS SLIDE ANSWERS]\n' + q.map((x) => `[• ${x}]`).join('\n');
   const at = (items, t) => items.map((it) => ({ ...it, at: t }));
-  const cover = svgItem('<rect x="40" y="184" width="1520" height="690" fill="#fcfcfa"/>');
+  const cover = svgItem('<rect x="40" y="184" width="1520" height="690" fill="#fcfcfa"/>', { solid: true });
+  // switching views: everything already on screen appears at once (no fade), so the old view never shows through
+  const solid = (items) => items.map((it) => ({ ...it, solid: true }));
 
   // ---------- the slide's tabs ----------
   const RC = tabsOf([{ id: 'big40', text: 'The big picture', c: DARK }, { id: 'follow40', text: 'Follow one drug: ibuprofen', c: C3 }, { id: 'take40', text: 'Key takeaways', c: C4 }], 170, 400);
@@ -106,8 +108,7 @@
   const flowArrows = svgItem([0, 1, 2, 4, 5, 6].map((i) => `<path d="M ${TX(i) + TW + 3} ${TY(i) + TH / 2} l 13 0" stroke="#9aa1ad" stroke-width="4"/>`).join('')
     + `<path d="M ${TX(3) + TW / 2} ${TY(3) + TH + 2} C ${TX(3) + TW / 2} ${TY(3) + TH + 14}, ${TX(0) + TW / 2} ${TY(3) + TH + 2}, ${TX(0) + TW / 2} ${TY(4) - 2}" fill="none" stroke="#d3d7de" stroke-width="3" stroke-dasharray="6 6"/>`);
   const followView = (k) => [
-    cover, flowArrows,
-    ...Array.from({ length: 8 }, (_, i) => (i < k - 1 ? tileFull(i) : i === k - 1 ? [] : tileEmpty(i))).flat(),
+    ...solid([cover, flowArrows, ...Array.from({ length: 8 }, (_, i) => (i < k - 1 ? tileFull(i) : i === k - 1 ? [] : tileEmpty(i))).flat()]),
     ...(k ? at(tileFull(k - 1), 0.05) : []),
   ];
 
@@ -146,10 +147,10 @@
     ...Array.from({ length: 8 }, (_, i) => ({ type: 'hotspot', x: TX(i), y: TY(i), w: TW, h: TH, action: `ib${i + 1}` })),
   ];
   const recapActions = [
-    { id: 'big40', label: 'The big picture', group: 'rc', stay: true, drawn: false, items: [...bigItems, ...RC.bar('big40')] },
-    { id: 'follow40', label: 'Follow one drug', group: 'rc', stay: true, drawn: false, items: [...followView(0), ...RC.bar('follow40')] },
-    { id: 'take40', label: 'Key takeaways', group: 'rc', stay: true, drawn: false, items: [...takeItems, ...RC.bar('take40')] },
-    ...STEPS.map((st, i) => ({ id: `ib${i + 1}`, label: `Ibuprofen ${i + 1}: ${st[0]}`, group: 'rc', stay: true, drawn: false, items: [...followView(i + 1), ...RC.bar('follow40')] })),
+    { id: 'big40', label: 'The big picture', group: 'rc', stay: true, drawn: false, items: [...bigItems, ...solid(RC.bar('big40'))] },
+    { id: 'follow40', label: 'Follow one drug', group: 'rc', stay: true, drawn: false, items: [...followView(0), ...solid(RC.bar('follow40'))] },
+    { id: 'take40', label: 'Key takeaways', group: 'rc', stay: true, drawn: false, items: [...takeItems, ...solid(RC.bar('take40'))] },
+    ...STEPS.map((st, i) => ({ id: `ib${i + 1}`, label: `Ibuprofen ${i + 1}: ${st[0]}`, group: 'rc', stay: true, drawn: false, items: [...followView(i + 1), ...solid(RC.bar('follow40'))] })),
   ];
 
   scene.steps.push(
