@@ -122,24 +122,45 @@
     patch: (t) => 0.32 * (1 - Math.exp(-0.45 * t)),
   };
   const SPD = [['iv', 'IV', PK], ['inh', 'Inhaled', DIS], ['im', 'IM', MET], ['oral', 'Oral', ABS], ['patch', 'Patch', '#8a8f98']];
-  const speedGraph = (u) => {
+  // mask = which routes are shown (bit i = SPD[i]); click a legend item to switch it on/off
+  const ALL = 31;
+  const speedGraph = (u, mask = ALL) => {
     const tN = TR * u;
-    const lines = SPD.map(([k, , c]) => { const pts = []; for (let t = 0; t <= tN + 1e-6; t += 0.08) pts.push([pR.x(t / TR), pR.y(routeLevel[k](t))]); return polyline(pts, c, 5); }).join('');
-    const legend = SPD.map(([, n, c], i) => `<rect x="${GR.x0 + 20 + i * 150}" y="${GR.y0 - 52}" width="24" height="9" rx="4" fill="${c}"/>${T(GR.x0 + 52 + i * 150, GR.y0 - 42, 18, c, 700, 'start')(n)}`).join('');
-    return `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>${axes(GR, 'Time after the dose →', 'Drug level in the blood →', false)}${legend}${lines}`;
+    const lines = SPD.map(([k, , c], i) => {
+      if (!(mask & (1 << i))) return '';
+      const pts = []; for (let t = 0; t <= tN + 1e-6; t += 0.08) pts.push([pR.x(t / TR), pR.y(routeLevel[k](t))]);
+      return polyline(pts, c, 5);
+    }).join('');
+    const legend = SPD.map(([, n, c], i) => {
+      const on = !!(mask & (1 << i)), x = GR.x0 + 12 + i * 150, y = GR.y0 - 60;
+      return `<rect x="${x}" y="${y}" width="138" height="34" rx="17" fill="${on ? '#ffffff' : '#f1f2f5'}" stroke="${on ? c : '#c9ced8'}" stroke-width="2.5"/>
+        <rect x="${x + 12}" y="${y + 13}" width="24" height="9" rx="4" fill="${on ? c : '#c9ced8'}"/>${T(x + 44, y + 23, 17, on ? c : '#a0a6b0', 700, 'start')(n)}
+        ${on ? '' : `<line x1="${x + 40}" y1="${y + 17}" x2="${x + 44 + n.length * 9.5}" y2="${y + 17}" stroke="#a0a6b0" stroke-width="2"/>`}`;
+    }).join('');
+    return `<rect x="62" y="192" width="936" height="666" fill="#fbfcfe"/>${axes(GR, 'Time after the dose →', 'Drug level in the blood →', false)}${legend}
+      ${T(GR.x1, GR.y0 - 6, 14, GREY, 700, 'end')('click a route above to show / hide it')}${lines}`;
   };
-  const speedItems = [
-    ...frameTrack([[0, 0], [3.5, 1], [30, 1]], ([u]) => speedGraph(u), 12),
-    txt('IV: instant, all of it', pR.x(0.02) + 12, pR.y(1) + 6, 17, PK, { bold: true, at: 3.5, anim: 'fade', duration: 0.3 }),
-    txt('Oral: slower, and less gets in', pR.x(0.42), pR.y(0.42), 17, ABS, { bold: true, at: 3.7, anim: 'fade', duration: 0.3 }),
-    { ...svgItem(`<line x1="${f1(pR.x(0.42) - 6)}" y1="${f1(pR.y(0.42) + 8)}" x2="${f1(pR.x(0.2) + 8)}" y2="${f1(pR.y(0.31) - 6)}" stroke="${ABS}" stroke-width="2.5" stroke-dasharray="6 5"/>`), at: 3.7, duration: 0.3 },
-    txt('Patch: slow, steady, long-lasting', pR.x(0.62), pR.y(0.36), 17, '#6b7280', { bold: true, at: 3.9, anim: 'fade', duration: 0.3 }),
-  ];
+  const speedNotes = (mask, animate) => {
+    const t = (i) => (animate ? { at: 3.5 + i * 0.2, anim: 'fade', duration: 0.3 } : { solid: true });
+    const out = [];
+    if (mask & 1) out.push(txt('IV: instant, all of it', pR.x(0.02) + 12, pR.y(1) + 6, 17, PK, { bold: true, ...t(0) }));
+    if (mask & 8) {
+      out.push(txt('Oral: slower, and less gets in', pR.x(0.42), pR.y(0.42), 17, ABS, { bold: true, ...t(1) }));
+      out.push({ ...svgItem(`<line x1="${f1(pR.x(0.42) - 6)}" y1="${f1(pR.y(0.42) + 8)}" x2="${f1(pR.x(0.2) + 8)}" y2="${f1(pR.y(0.31) - 6)}" stroke="${ABS}" stroke-width="2.5" stroke-dasharray="6 5"/>`), ...(animate ? { at: 3.7, duration: 0.3 } : { solid: true }) });
+    }
+    if (mask & 16) out.push(txt('Patch: slow, steady, long-lasting', pR.x(0.62), pR.y(0.36), 17, '#6b7280', { bold: true, ...t(2) }));
+    return out;
+  };
+  const legendHot = (mask) => SPD.map((_, i) => ({ type: 'hotspot', x: GR.x0 + 12 + i * 150, y: GR.y0 - 60, w: 138, h: 34, action: `spd19-${mask ^ (1 << i)}` }));
+  // the first view draws the curves; after that, switching routes on/off redraws instantly
+  const speedItems = [...frameTrack([[0, 0], [3.5, 1], [30, 1]], ([u]) => speedGraph(u), 12), ...speedNotes(ALL, true), ...legendHot(ALL)];
+  const solidCard = (...args) => card(...args).map((it) => ({ ...it, solid: true }));
+  const speedView = (mask) => [svgItem(speedGraph(1, mask), { solid: true }), ...speedNotes(mask, false), ...legendHot(mask)];
   const routeItems = [
     title('Routes of administration'),
     ...RT.bar(null),
     svgItem(rr(60, 190, 940, 670, '#d9dce3', '#fbfcfe', 2) + person(...BODY, BS, '#e3ecfb', '#8aa3cc')),
-    txt('Pick a group above →\nto see the routes', 760, 470, 22, '#9aa1ad', { align: 'center', bold: true, hideDuring: ['ent19', 'par19', 'spd19'] }),
+    txt('Pick a group above →\nto see the routes', 760, 470, 22, '#9aa1ad', { align: 'center', bold: true, hideDuring: ['ent19', 'par19', 'spd19', ...Array.from({ length: 32 }, (_, m) => `spd19-${m}`)] }),
     ...card(1030, 190, 510, 670, DARK, 'HOW THE DRUG GETS IN', 'The ROUTE decides how FAST and\nhow MUCH of a drug gets in.\n\nENTERAL: through the gut\n(enteron = intestine)\n\nPARENTERAL: any other way\n(para = beside the gut)', 22),
     ...RT.hot,
   ];
@@ -156,6 +177,11 @@
       ...RT.bar('spd19').map((it) => ({ ...it, solid: true })), ...speedItems,
       ...card(1030, 190, 510, 670, DARK, 'SAME DOSE, DIFFERENT ROUTE', 'The route changes how FAST the\nlevel rises, how HIGH it gets and\nhow LONG it lasts.\n\nIV: instant, 100% gets in\nInhaled: very fast\nIM: within minutes\nOral: slowest, and less gets in\n(first-pass, next slides)\nPatch: slow, low and steady\nfor a long time', 21),
     ] },
+    // one hidden view per combination of routes shown (switched by clicking the legend)
+    ...Array.from({ length: 32 }, (_, m) => ({ id: `spd19-${m}`, label: `Speed: routes ${m}`, hidden: true, group: 'rt', stay: true, drawn: false, items: [
+      ...RT.bar('spd19').map((it) => ({ ...it, solid: true })), ...speedView(m),
+      ...solidCard(1030, 190, 510, 670, DARK, 'SAME DOSE, DIFFERENT ROUTE', 'The route changes how FAST the\nlevel rises, how HIGH it gets and\nhow LONG it lasts.\n\nIV: instant, 100% gets in\nInhaled: very fast\nIM: within minutes\nOral: slowest, and less gets in\n(first-pass, next slides)\nPatch: slow, low and steady\nfor a long time', 21),
+    ] })),
   ];
 
   // ================================================================ slide 21: getting absorbed
@@ -711,7 +737,7 @@
 • Parenteral = any other way: IV, IM, subcutaneous, inhaled, transdermal
 • IV: fastest, 100% reaches the blood; IM: minutes (vaccines); subcutaneous: slower and steady (insulin)
 • Inhaled: very fast (asthma inhalers); transdermal patch: slow and steady (nicotine patch)
-• Compare the speed: same dose, the route changes how fast the level rises, how high it gets and how long it lasts (IV instant; oral slow and lower; patch low and steady)`,
+• Compare the speed (click the routes in the legend to show / hide them): same dose, the route changes how fast the level rises, how high it gets and how long it lasts (IV instant; oral slow and lower; patch low and steady)`,
       say: 'Drugs can be given through the gut (enteral) or any other way (parenteral), and the route decides how fast and how much gets in.', clear: true, actions: routeActions, items: routeItems },
     // Slide 21: getting absorbed.
     { script: `${Qs('How do drugs cross into the body?', 'What affects how well a drug is absorbed?')}
