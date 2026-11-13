@@ -330,6 +330,9 @@
     { id: 'pd5', label: 'Pharmacodynamics (full view)', group: 'pk', stay: true, drawn: false, items: pdFull },
   ];
 
+  // shared with the later parts of the course (pharmacology-pd.js)
+  window.WB_PHARM_ART = { box, rr, capsule, molecule, person, arrowHead, curve, dot, badge, COL: { INK, GREY, DARK, PK, PD, ENDO, EXO, DRUG } };
+
   (window.WB_SCENES = window.WB_SCENES || []).push({
     id: 'pharmacology-essentials',
     title: '💊 Pharmacology essentials',
