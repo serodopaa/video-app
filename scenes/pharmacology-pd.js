@@ -606,7 +606,7 @@
     { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `Ok, so now we're moving on to part 2, which is all about pharmacodynamics. So remember from the last part, pharmacodynamics is basically what the drug does to the body. So in this section we're going to look at how drugs actually produce their effects.
 
-[point to the cards] So here's what we're going to go over. First we'll start with receptors and how drugs bind to them. Then we'll look at agonists, both full and partial agonists, and then antagonists and something called allosteric modulators. After that we'll get into dose-response curves, which is how we actually measure a drug's effect, and that'll lead us into potency vs efficacy, and the therapeutic index, which is basically how safe a drug is.
+So here's what we're going to go over. First we'll start with receptors and how drugs bind to them. Then we'll look at agonists, both full and partial agonists, and then antagonists and something called allosteric modulators. After that we'll get into dose-response curves, which is how we actually measure a drug's effect, and that'll lead us into potency vs efficacy, and the therapeutic index, which is basically how safe a drug is.
 
 Then we'll zoom out a little bit and look at the other targets drugs can act on besides receptors, and the four main types of receptors. And then lastly we'll finish with tolerance, so why you sometimes need more of a drug over time to get the same effect.
 
@@ -617,11 +617,11 @@ So let's get into it.`,
 [click the left side to bind]`,
       notes: `So to understand pharmacodynamics, we first need to understand receptors, because this is where most drugs actually do their thing.
 
-So a receptor is basically just a protein, usually sitting on the surface of a cell, and it has this pocket that only the right molecule can fit into. [point to the receptor] So you can kind of think of it like a lock and key.
+So a receptor is basically just a protein, usually sitting on the surface of a cell, and it has this pocket that only the right molecule can fit into. So you can kind of think of it like a lock and key.
 
-And the molecule that binds to it is called a ligand. [point to the ligand] So a ligand is just any molecule that binds to a receptor, so it could be a neurotransmitter, a hormone, or a drug.
+And the molecule that binds to it is called a ligand. So a ligand is just any molecule that binds to a receptor, so it could be a neurotransmitter, a hormone, or a drug.
 
-So let's see what happens when it binds. [click] So the ligand comes in and fits into the pocket. And here's the important part, when the right ligand binds, the receptor actually changes shape. [point to the arrows] And that shape change is what switches the receptor on, and that sends a message into the cell.
+So let's see what happens when it binds. So the ligand comes in and fits into the pocket. And here's the important part, when the right ligand binds, the receptor actually changes shape. And that shape change is what switches the receptor on, and that sends a message into the cell.
 
 So basically, binding causes a shape change, and the shape change is what activates the receptor. Keep that in mind, because it's going to be really important when we talk about agonists and antagonists.`,
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
@@ -630,11 +630,11 @@ So basically, binding causes a shape change, and the shape change is what activa
 [▶ Watch them bind, then Selective drug, then Non-selective drug]`,
       notes: `Ok so now there are two really important properties of how a drug binds to a receptor, and that's affinity and selectivity.
 
-So affinity is how tightly a drug binds to its receptor. [click Watch them bind] So we can see on the left here, the high-affinity drug fits really snugly and makes lots of bonds, so it stays bound. But the low-affinity one has a looser fit and fewer bonds, so it keeps falling off and coming back.
+So affinity is how tightly a drug binds to its receptor. So we can see on the left here, the high-affinity drug fits really snugly and makes lots of bonds, so it stays bound. But the low-affinity one has a looser fit and fewer bonds, so it keeps falling off and coming back.
 
-Then on the other side we have selectivity, which is how choosy a drug is about which receptors it binds to. [click Selective drug] So a selective drug will only bind to its target receptor, so you can see it tries the other receptors but it just doesn't fit.
+Then on the other side we have selectivity, which is how choosy a drug is about which receptors it binds to. So a selective drug will only bind to its target receptor, so you can see it tries the other receptors but it just doesn't fit.
 
-[click Non-selective drug] But a non-selective drug will bind to its target, and it'll also bind to other receptors as well. And this is really important, because when a drug binds to receptors it wasn't meant for, that's where a lot of side effects come from.
+But a non-selective drug will bind to its target, and it'll also bind to other receptors as well. And this is really important, because when a drug binds to receptors it wasn't meant for, that's where a lot of side effects come from.
 
 So basically, affinity is how tightly it binds, and selectivity is how choosy it is. And ideally a drug has high affinity and high selectivity.`,
       say: 'Affinity is how tightly a drug binds; selectivity is how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
@@ -643,22 +643,22 @@ So basically, affinity is how tightly it binds, and selectivity is how choosy it
 [tabs: Full agonist → Partial agonist → Partial + full together]`,
       notes: `So now let's talk about agonists. So an agonist is a drug that binds to a receptor and switches it on. But not every agonist switches the receptor on by the same amount, so we split them into full agonists and partial agonists.
 
-[click Full agonist] So a full agonist binds and switches the receptor fully on, so you get the maximum response that receptor can give. So you can see the response goes all the way up to 100%. And a lot of your body's own neurotransmitters are full agonists, and an example of a drug would be morphine at opioid receptors.
+So a full agonist binds and switches the receptor fully on, so you get the maximum response that receptor can give. So you can see the response goes all the way up to 100%. And a lot of your body's own neurotransmitters are full agonists, and an example of a drug would be morphine at opioid receptors.
 
-[click Partial agonist] Now a partial agonist still binds to the receptor and still switches it on, but only partly. So you get a smaller response, and the key thing is, even if every single receptor is bound, you still can't reach that maximum response. So an example of this is buprenorphine at opioid receptors.
+Now a partial agonist still binds to the receptor and still switches it on, but only partly. So you get a smaller response, and the key thing is, even if every single receptor is bound, you still can't reach that maximum response. So an example of this is buprenorphine at opioid receptors.
 
-[click Partial + full together] Ok, and here's where it gets interesting. So if the partial agonist is already sitting in the receptor, the full agonist can't get in, because the spot is taken. So the response is basically capped at that partial level. So a partial agonist can actually act kind of like a blocker against a full agonist. And this is exactly why buprenorphine is used to help treat opioid addiction.`,
+Ok, and here's where it gets interesting. So if the partial agonist is already sitting in the receptor, the full agonist can't get in, because the spot is taken. So the response is basically capped at that partial level. So a partial agonist can actually act kind of like a blocker against a full agonist. And this is exactly why buprenorphine is used to help treat opioid addiction.`,
       say: 'Full agonists switch a receptor fully on; partial agonists only partly, and can even block full agonists.', clear: true, actions: agoActions, items: agoItems },
     // Slide 10: antagonists.
     { script: `${Qs('What is an antagonist?', 'Competitive vs noncompetitive: what is the difference?', 'Reversible vs irreversible')}
 [tabs: Competitive → Noncompetitive]`,
       notes: `So now on the other side we have antagonists. So an antagonist binds to the receptor but it doesn't switch it on. And while it's sitting there, agonists can't do their job, so basically it blocks them. And there are two main ways an antagonist can do this.
 
-[click Competitive] So the first is a competitive antagonist. So this binds to the exact same spot as the agonist. So you can see here the antagonist is in the pocket, and the agonist comes along and it just can't get in. But since they're competing for the same spot, whichever there's more of wins. So if we add a lot more agonist, it can actually push the antagonist out, and then the receptor switches on. So a competitive block can be overcome. And a really good example of this is naloxone, which is used to reverse opioid overdoses by pushing the opioids off their receptors.
+So the first is a competitive antagonist. So this binds to the exact same spot as the agonist. So you can see here the antagonist is in the pocket, and the agonist comes along and it just can't get in. But since they're competing for the same spot, whichever there's more of wins. So if we add a lot more agonist, it can actually push the antagonist out, and then the receptor switches on. So a competitive block can be overcome. And a really good example of this is naloxone, which is used to reverse opioid overdoses by pushing the opioids off their receptors.
 
-[click Noncompetitive] Then the second type is a noncompetitive antagonist. So this one binds to a different site on the receptor, and it changes the shape of the receptor. So now even if the agonist binds, the receptor still can't switch on. And because it's not competing for the same spot, adding more agonist doesn't help at all.
+Then the second type is a noncompetitive antagonist. So this one binds to a different site on the receptor, and it changes the shape of the receptor. So now even if the agonist binds, the receptor still can't switch on. And because it's not competing for the same spot, adding more agonist doesn't help at all.
 
-[point to the bottom box] And then one last thing, antagonists can also be reversible or irreversible. So most drugs are reversible, meaning they'll eventually let go. But irreversible ones bind permanently, so the cell actually has to make brand new receptors to get around it.`,
+And then one last thing, antagonists can also be reversible or irreversible. So most drugs are reversible, meaning they'll eventually let go. But irreversible ones bind permanently, so the cell actually has to make brand new receptors to get around it.`,
       say: 'Antagonists bind without switching the receptor on; competitive ones can be outcompeted, noncompetitive ones cannot.', clear: true, actions: antActions, items: antItems },
     // Slide 11: allosteric modulators.
     { script: `${Qs('What is an allosteric modulator?', 'Positive vs negative modulators', 'Example: benzodiazepines and GABA')}
@@ -667,18 +667,18 @@ So basically, affinity is how tightly it binds, and selectivity is how choosy it
 
 So the classic example of this is benzodiazepines, like diazepam, and the GABA-A receptor. And GABA is basically your brain's main calming signal.
 
-[click GABA alone] So when GABA binds on its own, you get a normal calming signal.
+So when GABA binds on its own, you get a normal calming signal.
 
-[click GABA + benzodiazepine] But now if a benzodiazepine binds to that other site as well, then the same amount of GABA has a much bigger effect. So it's boosting GABA's signal.
+But now if a benzodiazepine binds to that other site as well, then the same amount of GABA has a much bigger effect. So it's boosting GABA's signal.
 
-[click Benzodiazepine alone] And here's the important part. If the benzodiazepine binds but there's no GABA around, it does pretty much nothing. So it's not switching the receptor on itself, it's only boosting what's already there.`,
+And here's the important part. If the benzodiazepine binds but there's no GABA around, it does pretty much nothing. So it's not switching the receptor on itself, it's only boosting what's already there.`,
       say: 'Allosteric modulators bind a different site and turn the response up or down, like benzodiazepines boosting GABA.', clear: true, actions: modActions, items: modItems },
     // Slide 12: dose–response curves.
     { script: `${Qs('What is a dose-response curve?', 'Why is it S-shaped?', 'How does it link to receptors being bound?')}
 [click the graph to raise the dose]`,
       notes: `Ok so now we need to talk about dose-response curves. So a dose-response curve just shows how the effect of a drug changes as you increase the dose.
 
-So let's raise the dose and watch what happens. [click the graph] So at really low doses, only a few receptors are bound, [point to the receptors] so there's very little effect. Then as we keep going up, we hit this steep part in the middle, where even a small increase in dose gives you a big increase in effect. And then eventually nearly all the receptors are bound, so the effect levels off, and this is the maximum effect the drug can give.
+So let's raise the dose and watch what happens. So at really low doses, only a few receptors are bound, so there's very little effect. Then as we keep going up, we hit this steep part in the middle, where even a small increase in dose gives you a big increase in effect. And then eventually nearly all the receptors are bound, so the effect levels off, and this is the maximum effect the drug can give.
 
 And one quick thing about the dose axis. So it's usually on a log scale, which just means each step is ten times more drug than the one before. And that's what gives the curve this nice S shape.
 
@@ -689,9 +689,9 @@ So basically, more drug means more receptors bound, which means a bigger effect,
 [tabs: Potency → Efficacy]`,
       notes: `So now using these curves, there are two ways we can compare drugs, and that's potency and efficacy. And these get mixed up all the time, but they're actually really different.
 
-[click Potency] So potency is how much drug you need to get an effect. And we measure this with something called the EC50, which is the dose that gives you half of the drug's maximum effect. So if we look at drug A and drug B, they both reach the same maximum effect, but drug A gets there with a lot less drug. So drug A has a lower EC50, which means it's more potent.
+So potency is how much drug you need to get an effect. And we measure this with something called the EC50, which is the dose that gives you half of the drug's maximum effect. So if we look at drug A and drug B, they both reach the same maximum effect, but drug A gets there with a lot less drug. So drug A has a lower EC50, which means it's more potent.
 
-[click Efficacy] Then efficacy is the biggest effect a drug can produce, no matter how much of it you give. And we call this the Emax, so the top of the curve. So if we compare drug A and drug C, you can see drug C levels off at half the effect. So no matter how much of drug C we give, it's never going to reach drug A's effect. So this is basically like a partial agonist.
+Then efficacy is the biggest effect a drug can produce, no matter how much of it you give. And we call this the Emax, so the top of the curve. So if we compare drug A and drug C, you can see drug C levels off at half the effect. So no matter how much of drug C we give, it's never going to reach drug A's effect. So this is basically like a partial agonist.
 
 And in practice, efficacy usually matters more than potency. So a more potent drug isn't necessarily stronger, it just means you need less of it.`,
       say: 'Potency is how much drug you need (EC50); efficacy is the biggest effect it can give (Emax).', clear: true, actions: pvActions, items: pvItems },
@@ -700,11 +700,11 @@ And in practice, efficacy usually matters more than potency. So a more potent dr
 [tabs: Wide → Narrow]`,
       notes: `So the next thing is the therapeutic index, which is basically a measure of how safe a drug is. So it tells us how far apart the dose that helps is from the dose that causes harm.
 
-So we work it out by taking the TD50, which is the dose that's toxic in half of people, and dividing it by the ED50, which is the dose that works in half of people. [point to the formula]
+So we work it out by taking the TD50, which is the dose that's toxic in half of people, and dividing it by the ED50, which is the dose that works in half of people.
 
-[click Wide] So here's a drug with a wide therapeutic index. So you can see the green curve, where the drug helps, is really far away from the red curve, where it becomes toxic. So there's a big safety margin, and lots of room for error. An example of this would be penicillin.
+So here's a drug with a wide therapeutic index. So you can see the green curve, where the drug helps, is really far away from the red curve, where it becomes toxic. So there's a big safety margin, and lots of room for error. An example of this would be penicillin.
 
-[click Narrow] But now look at a drug with a narrow therapeutic index. So the helpful dose and the toxic dose are really close together, so it's really easy to accidentally give too much. So for drugs like warfarin, lithium or digoxin, doctors actually check the levels in the blood regularly to make sure they stay in that safe window.
+But now look at a drug with a narrow therapeutic index. So the helpful dose and the toxic dose are really close together, so it's really easy to accidentally give too much. So for drugs like warfarin, lithium or digoxin, doctors actually check the levels in the blood regularly to make sure they stay in that safe window.
 
 So basically, the bigger the therapeutic index, the safer the drug.`,
       say: 'The therapeutic index compares the toxic dose to the helpful dose; the wider it is, the safer the drug.', clear: true, actions: tiActions, items: tiItems },
@@ -712,37 +712,37 @@ So basically, the bigger the therapeutic index, the safer the drug.`,
     { script: `${Qs('Do all drugs act on receptors?', 'What are the other main drug targets?', 'Examples of each')}`,
       notes: `So up until now we've mostly been talking about receptors, but it's important to know that not every drug works on a receptor. So there are actually four main types of targets that drugs act on.
 
-[point to Receptors] So first we have receptors, which we've already covered, so the drug either switches them on or blocks them, like morphine at opioid receptors.
+So first we have receptors, which we've already covered, so the drug either switches them on or blocks them, like morphine at opioid receptors.
 
-[point to Enzymes] Then we have enzymes. So here the drug blocks an enzyme so it can't make its product. So for example, aspirin and ibuprofen block an enzyme called COX, which makes the signals that cause pain and inflammation.
+Then we have enzymes. So here the drug blocks an enzyme so it can't make its product. So for example, aspirin and ibuprofen block an enzyme called COX, which makes the signals that cause pain and inflammation.
 
-[point to Transporters] Then we have transporters. So these are basically pumps that clear chemicals away, and if a drug blocks them, more of that chemical stays around. So SSRIs, like fluoxetine, block the transporter that clears serotonin away, so more serotonin stays in the synapse.
+Then we have transporters. So these are basically pumps that clear chemicals away, and if a drug blocks them, more of that chemical stays around. So SSRIs, like fluoxetine, block the transporter that clears serotonin away, so more serotonin stays in the synapse.
 
-[point to Ion channels] And then lastly ion channels. So here the drug basically plugs the channel so ions can't flow through it. So lidocaine, which is a local anaesthetic, blocks sodium channels in nerves, and that's why it makes things go numb.`,
+And then lastly ion channels. So here the drug basically plugs the channel so ions can't flow through it. So lidocaine, which is a local anaesthetic, blocks sodium channels in nerves, and that's why it makes things go numb.`,
       say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, items: targetItems },
     // Slide 16: receptor types.
     { script: `${Qs('What are the four main receptor types?', 'How does each one pass on its signal?', 'Which is fastest and which is slowest?')}
 [optional: press "Show the signals"]`,
       notes: `Ok so now let's go back to receptors, because there are actually four main types of receptors, and the main difference between them is how they pass the signal into the cell, and how fast they do it.
 
-[point to Ion channel] So first we have ligand-gated ion channels. So when the ligand binds, a channel opens up and ions rush into the cell. And these are the fastest, so they work in milliseconds. An example would be the nicotinic acetylcholine receptor.
+So first we have ligand-gated ion channels. So when the ligand binds, a channel opens up and ions rush into the cell. And these are the fastest, so they work in milliseconds. An example would be the nicotinic acetylcholine receptor.
 
-[point to GPCR] Then we have G-protein-coupled receptors, or GPCRs. So when the ligand binds, it activates a G-protein on the inside of the cell, which then passes the signal on through messengers like cAMP. These work in seconds, and they're actually the most common drug target out there. So things like adrenaline's beta receptors, or opioid receptors.
+Then we have G-protein-coupled receptors, or GPCRs. So when the ligand binds, it activates a G-protein on the inside of the cell, which then passes the signal on through messengers like cAMP. These work in seconds, and they're actually the most common drug target out there. So things like adrenaline's beta receptors, or opioid receptors.
 
-[point to Enzyme-linked] Then we have enzyme-linked receptors. So when the ligand binds, the receptor's own enzyme switches on inside the cell. So these take minutes to hours, and the insulin receptor is a good example.
+Then we have enzyme-linked receptors. So when the ligand binds, the receptor's own enzyme switches on inside the cell. So these take minutes to hours, and the insulin receptor is a good example.
 
-[point to Intracellular] And then lastly intracellular receptors. So these are actually inside the cell, so the ligand has to cross the membrane first, then it binds the receptor, and that changes which genes get switched on. So because it's changing genes, these are the slowest, so hours to days. And steroid hormones like cortisol and oestrogen work this way.`,
+And then lastly intracellular receptors. So these are actually inside the cell, so the ligand has to cross the membrane first, then it binds the receptor, and that changes which genes get switched on. So because it's changing genes, these are the slowest, so hours to days. And steroid hormones like cortisol and oestrogen work this way.`,
       say: 'The four receptor types pass signals in different ways, from millisecond ion channels to slow intracellular receptors.', clear: true, actions: typeActions, items: typeItems },
     // Slide 17: tolerance.
     { script: `${Qs('What is tolerance?', 'What is downregulation (and desensitisation)?', 'What is upregulation?', 'Why do withdrawal and rebound effects happen?')}
 [tabs: Normal → Too much stimulation → Too little stimulation]`,
       notes: `So lastly for this section, we need to talk about tolerance. So tolerance is when you need more and more of a drug to get the same effect. And one of the big reasons this happens is that cells actually adjust how many receptors they have to keep things balanced.
 
-[click Normal] So normally, a cell has a certain number of receptors, and every now and then a signal comes along and switches some of them on. So everything's balanced.
+So normally, a cell has a certain number of receptors, and every now and then a signal comes along and switches some of them on. So everything's balanced.
 
-[click Too much stimulation] But now let's say someone takes a drug like an opioid every day. So those receptors are being switched on way too much, for way too long. So the cell responds by pulling some of the receptors inside and making fewer of them, and this is called downregulation. And the ones that are left also respond less, which is called desensitisation. So now the same dose has less of an effect, and that's tolerance. And if they suddenly stop taking the drug, there are now too few receptors for the body's normal signals, and that's what causes withdrawal.
+But now let's say someone takes a drug like an opioid every day. So those receptors are being switched on way too much, for way too long. So the cell responds by pulling some of the receptors inside and making fewer of them, and this is called downregulation. And the ones that are left also respond less, which is called desensitisation. So now the same dose has less of an effect, and that's tolerance. And if they suddenly stop taking the drug, there are now too few receptors for the body's normal signals, and that's what causes withdrawal.
 
-[click Too little stimulation] And it works the other way too. So if a receptor is being blocked for a long time, like if someone takes a beta-blocker every day, the cell makes more receptors to try and catch more of the signal. So this is called upregulation. So the cell becomes extra sensitive, and if they suddenly stop the drug, you can get a rebound effect, like a racing heart.
+And it works the other way too. So if a receptor is being blocked for a long time, like if someone takes a beta-blocker every day, the cell makes more receptors to try and catch more of the signal. So this is called upregulation. So the cell becomes extra sensitive, and if they suddenly stop the drug, you can get a rebound effect, like a racing heart.
 
 So basically, cells adjust their receptors depending on how much they're being stimulated, and that's a big part of why tolerance and withdrawal happen.`,
       say: 'Cells adjust their receptors: too much stimulation means fewer receptors (tolerance), too little means more.', clear: true, actions: tolActions, items: tolItems },
