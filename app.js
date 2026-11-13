@@ -1523,17 +1523,23 @@
     flushNotes();
     const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
     notes.key = 'wb-notes-' + player.scene.id + '-' + n;
+    notes.def = '';
     // a slide can bring default notes (`notes` on its first step); the user's own saved notes win
     const first = n ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
+    notes.def = (first && first.notes) || '';
     const saved = lsGet(notes.key);
-    notes.text.value = saved !== null ? saved : (first && first.notes) || '';
+    // an empty saved note (the panel saves on every slide change) never hides the slide's own notes
+    notes.text.value = saved && saved.trim() ? saved : notes.def;
     notes.title.textContent = n ? `Notes: slide ${n}` : 'Notes';
     notes.saved.textContent = '';
   }
   function flushNotes() {
     if (!notes.key || !notes.text) return;
     clearTimeout(notes.timer);
-    if (lsSet(notes.key, notes.text.value)) notes.saved.textContent = 'Saved';
+    const v = notes.text.value;
+    // unchanged default notes aren't stored, so later updates to them still show up
+    if (notes.def && (v === notes.def || !v.trim())) { try { localStorage.removeItem(notes.key); } catch (_) { /* ignore */ } notes.saved.textContent = ''; return; }
+    if (lsSet(notes.key, v)) notes.saved.textContent = 'Saved';
   }
   if (notes.text) {
     notes.text.addEventListener('input', () => {
