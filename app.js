@@ -1507,53 +1507,63 @@
   }
 
   // ---------- speaker notes (side panel, never on the board or in recordings) ----------
+  // Two boxes per slide: 📜 key points (the slide's `notes` + the user's edits, wb-notes-…) and ✏️ the
+  // user's own notes (empty to start, wb-mynotes-…). The view shows one of them or both stacked
+  // ('script' / 'mine' / 'both', saved in wb-notes-tab).
   const notes = {
     panel: document.getElementById('notesPanel'),
-    text: document.getElementById('notesText'),
     title: document.getElementById('notesTitle'),
     saved: document.getElementById('notesSaved'),
     toggle: document.getElementById('notesToggle'),
-    key: null,
-    timer: 0,
-    // two tabs: 'script' = the slide's script + the user's edits to it (wb-notes-…),
-    // 'mine' = the user's own notes, empty to start (wb-mynotes-…)
-    tab: 'script',
+    view: 'script',
+    boxes: {
+      script: { el: document.getElementById('notesText'), wrap: document.getElementById('notesBoxScript'), prefix: 'wb-notes-', key: null, def: '', timer: 0 },
+      mine: { el: document.getElementById('notesMine'), wrap: document.getElementById('notesBoxMine'), prefix: 'wb-mynotes-', key: null, def: '', timer: 0 },
+    },
   };
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
+  // bullet lists read more easily with a blank line between the points
+  const spaceBullets = (t) => t.replace(/\n+(?=\s*[•\-–] )/g, '\n\n');
   function loadNotes() {
-    if (!notes.text) return;
+    if (!notes.boxes.script.el) return;
     flushNotes();
     const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
-    const mine = notes.tab === 'mine';
-    notes.key = (mine ? 'wb-mynotes-' : 'wb-notes-') + player.scene.id + '-' + n;
-    // a slide can bring default notes (`notes` on its first step); the user's own saved notes win
-    const first = n && !mine ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
-    notes.def = (first && first.notes) || '';
-    notes.text.placeholder = mine ? 'Your own notes for this slide…' : 'Talking points for this slide…';
-    const saved = lsGet(notes.key);
-    // an empty saved note (the panel saves on every slide change) never hides the slide's own notes
-    notes.text.value = saved && saved.trim() ? saved : notes.def;
+    for (const [name, b] of Object.entries(notes.boxes)) {
+      if (!b.el) continue;
+      b.key = b.prefix + player.scene.id + '-' + n;
+      // a slide can bring default key points (`notes` on its first step); the user's own saved version wins
+      const first = n && name === 'script' ? player.scene.steps.find((st, i) => slideOf(i) === n - 1) : null;
+      b.def = first && first.notes ? spaceBullets(first.notes) : '';
+      const saved = lsGet(b.key);
+      // an empty saved note never hides the slide's own key points
+      b.el.value = saved && saved.trim() ? saved : b.def;
+    }
     notes.title.textContent = n ? `Notes: slide ${n}` : 'Notes';
     notes.saved.textContent = '';
   }
-  function flushNotes() {
-    if (!notes.key || !notes.text) return;
-    clearTimeout(notes.timer);
-    const v = notes.text.value;
-    // unchanged default notes aren't stored, so later updates to them still show up
-    if (notes.def && (v === notes.def || !v.trim())) { try { localStorage.removeItem(notes.key); } catch (_) { /* ignore */ } notes.saved.textContent = ''; return; }
-    if (lsSet(notes.key, v)) notes.saved.textContent = 'Saved';
+  function flushBox(b) {
+    if (!b.key || !b.el) return;
+    clearTimeout(b.timer);
+    const v = b.el.value;
+    // unchanged default key points aren't stored, so later updates to them still show up
+    if (b.def && (v === b.def || !v.trim())) { try { localStorage.removeItem(b.key); } catch (_) { /* ignore */ } return; }
+    if (!b.def && !v && lsGet(b.key) === null) return;
+    if (lsSet(b.key, v)) notes.saved.textContent = 'Saved';
   }
-  if (notes.text) {
-    notes.text.addEventListener('input', () => {
-      notes.saved.textContent = '…';
-      clearTimeout(notes.timer);
-      notes.timer = setTimeout(flushNotes, 400);
-    });
-    notes.text.addEventListener('blur', flushNotes);
-    // keep typing in the notes from triggering board shortcuts
-    notes.text.addEventListener('keydown', (e) => e.stopPropagation());
+  function flushNotes() { Object.values(notes.boxes).forEach(flushBox); }
+  if (notes.boxes.script.el) {
+    for (const b of Object.values(notes.boxes)) {
+      if (!b.el) continue;
+      b.el.addEventListener('input', () => {
+        notes.saved.textContent = '…';
+        clearTimeout(b.timer);
+        b.timer = setTimeout(() => flushBox(b), 400);
+      });
+      b.el.addEventListener('blur', () => flushBox(b));
+      // keep typing in the notes from triggering board shortcuts
+      b.el.addEventListener('keydown', (e) => e.stopPropagation());
+    }
     const setOpen = (open) => {
       notes.panel.hidden = !open;
       notes.toggle.classList.toggle('active', open);
@@ -1562,20 +1572,23 @@
     };
     notes.toggle.addEventListener('click', () => setOpen(notes.panel.hidden));
     let size = parseFloat(lsGet('wb-notes-size')) || 17;
-    const applySize = () => { notes.text.style.fontSize = size + 'px'; lsSet('wb-notes-size', String(size)); };
+    const applySize = () => { Object.values(notes.boxes).forEach((b) => b.el && (b.el.style.fontSize = size + 'px')); lsSet('wb-notes-size', String(size)); };
     document.getElementById('notesSmaller').addEventListener('click', () => { size = Math.max(12, size - 2); applySize(); });
     document.getElementById('notesBigger').addEventListener('click', () => { size = Math.min(32, size + 2); applySize(); });
     applySize();
     if (lsGet('wb-notes-open') === '1') setOpen(true);
-    const tabBtns = { script: document.getElementById('notesTabScript'), mine: document.getElementById('notesTabMine') };
-    const setTab = (t) => {
-      if (t !== notes.tab) { flushNotes(); notes.tab = t; lsSet('wb-notes-tab', t); }
-      Object.entries(tabBtns).forEach(([k, b]) => { if (b) { b.classList.toggle('active', k === t); b.setAttribute('aria-selected', String(k === t)); } });
-      if (player.scene) { notes.key = null; loadNotes(); }
+    const viewBtns = { script: document.getElementById('notesTabScript'), mine: document.getElementById('notesTabMine'), both: document.getElementById('notesTabBoth') };
+    const setView = (v) => {
+      notes.view = v;
+      lsSet('wb-notes-tab', v);
+      Object.entries(viewBtns).forEach(([k, btn]) => { if (btn) { btn.classList.toggle('active', k === v); btn.setAttribute('aria-selected', String(k === v)); } });
+      if (notes.boxes.script.wrap) notes.boxes.script.wrap.hidden = v === 'mine';
+      if (notes.boxes.mine.wrap) notes.boxes.mine.wrap.hidden = v === 'script';
+      notes.panel.classList.toggle('both', v === 'both');
     };
-    Object.entries(tabBtns).forEach(([k, b]) => b && b.addEventListener('click', () => setTab(k)));
-    notes.tab = lsGet('wb-notes-tab') === 'mine' ? 'mine' : 'script';
-    Object.entries(tabBtns).forEach(([k, b]) => b && b.classList.toggle('active', k === notes.tab));
+    Object.entries(viewBtns).forEach(([k, btn]) => btn && btn.addEventListener('click', () => setView(k)));
+    const v0 = lsGet('wb-notes-tab');
+    setView(v0 === 'mine' || v0 === 'both' ? v0 : 'script');
     window.addEventListener('beforeunload', flushNotes);
   }
 
