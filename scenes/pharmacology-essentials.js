@@ -153,7 +153,7 @@
     ],
   }];
 
-  // =================================================================== slide 4: endogenous vs exogenous
+  // =================================================================== slide 6: endogenous vs exogenous
   const C4 = { endo: 60, exo: 820, w: 720, y: 115, h: 560 };
   const endoP = [C4.endo + 200, 425], exoP = [C4.exo + 200, 425];
   const colHead = (x, c, head, sub, def) => [
@@ -213,7 +213,7 @@
       ] },
   ];
 
-  // =================================================================== slide 5: pharmacokinetics vs pharmacodynamics
+  // =================================================================== slide 7: pharmacokinetics vs pharmacodynamics
   const TABS = [{ id: 'both5', text: 'Side by side', c: DARK }, { id: 'pk5', text: 'Pharmacokinetics', c: PK }, { id: 'pd5', text: 'Pharmacodynamics', c: PD }];
   const TW = 360, TX = (i) => 260 + i * (TW + 20);
   const tabBar = (active) => TABS.flatMap((t, i) => [
@@ -363,7 +363,7 @@
 • Caffeine, alcohol, nicotine: drugs, but not medicines
 • Every medicine is a drug; not every drug is a medicine`,
       say: 'A drug is any chemical that changes how the body works; medicines are drugs used to treat or prevent disease.', clear: true, actions: drugActions, items: drugItems },
-      // Slide 4: endogenous vs exogenous.
+      // Slide 6: endogenous vs exogenous.
       { script: `${Qs('What does endogenous mean?', 'What does exogenous mean?', 'Examples of each', 'Can an endogenous substance be a drug? (insulin, adrenaline)')}
 [click the green side, then the orange side, then the key point]`,
         notes: `• Endogenous = made inside the body (endo = within)
@@ -373,7 +373,7 @@
 • Key point: endogenous substances can be given as drugs (insulin for diabetes, adrenaline in an EpiPen)
 • Same molecule, but given from outside = exogenous`,
       say: 'Endogenous substances are made by the body; exogenous ones come from outside, like most drugs.', clear: true, actions: endoExoActions, items: endoExoItems },
-      // Slide 5: pharmacokinetics vs pharmacodynamics.
+      // Slide 7: pharmacokinetics vs pharmacodynamics.
       { script: `${Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?', 'What are A-D-M-E?')}
 [tabs: Side by side → Pharmacokinetics → Pharmacodynamics]`,
         notes: `• PK = what the BODY does to the drug (kinetics = movement)

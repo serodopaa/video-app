@@ -51,11 +51,11 @@
   const polyline = (pts, c, w = 6, op = 1) => (pts.length > 1 ? `<polyline points="${pts.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ')}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" opacity="${op}"/>` : '');
   const band = (G, p, v0, v1, fill, op = 0.14) => `<rect x="${G.x0}" y="${f1(p.y(v1))}" width="${G.x1 - G.x0}" height="${f1(p.y(v0) - p.y(v1))}" fill="${fill}" opacity="${op}"/>`;
 
-  // ================================================================ slide 22: part 3 intro
+  // ================================================================ slide 24: part 3 intro
   const SECTIONS = [
     ['A', 'Absorption', ABS, 'Routes\nGetting absorbed\nBioavailability and\nfirst-pass', (cx, cy) => capsule(cx, cy, 0.7, -30)],
     ['D', 'Distribution', DIS, 'Into the tissues\nProtein binding\nBrain and placenta', (cx, cy) => person(cx, cy + 6, 0.32, '#e3f4e8', '#6fa77f') + [[-14, -10], [12, 4], [-4, 22], [16, -26]].map(([dx, dy]) => `<circle cx="${cx + dx}" cy="${cy + dy}" r="6" fill="${DIS}"/>`).join('')],
-    ['M', 'Metabolism', MET, 'Phase I and II\nCYP450 enzymes\nProdrugs\nInduction / inhibition', (cx, cy) => liverShape(cx, cy, 0.8)],
+    ['M', 'Metabolism', MET, 'Phase I and II\nCYP450, genetics\nProdrugs\nInduction / inhibition', (cx, cy) => liverShape(cx, cy, 0.8)],
     ['E', 'Excretion', EXC, 'The kidneys\nOther routes', (cx, cy) => kidneyShape(cx - 22, cy, 0.9) + kidneyShape(cx + 26, cy, 0.9)],
     ['⏱', 'Drug levels\nover time', TIME, 'Concentration curve\nHalf-life, clearance\nFirst vs zero order\nSteady state and\ndosing', (cx, cy) => {
       const pts = []; for (let t = 0; t <= 8; t += 0.2) pts.push([cx - 60 + t * 15, cy + 34 - bateman(t, 0.35) * 90]);
@@ -81,7 +81,7 @@
     }),
   ];
 
-  // ================================================================ slide 23: routes of administration
+  // ================================================================ slide 25: routes of administration
   const BODY = [420, 500], BS = 1.55;
   const ROUTES = {
     ent: { c: ABS, rows: [
@@ -184,7 +184,7 @@
     ] })),
   ];
 
-  // ================================================================ slide 24: getting absorbed
+  // ================================================================ slide 26: getting absorbed
   const MEM = { top: 470, bot: 530 };
   const FAT = [150, 330, 510], BIG = [240, 420, 600];
   // Click a factor card on the right: its animation plays on the left (one at a time).
@@ -270,7 +270,7 @@
     ] },
   ];
 
-  // ================================================================ slide 25: bioavailability and first-pass
+  // ================================================================ slide 27: bioavailability and first-pass
   const NODE = { y: 400, xs: [150, 390, 630, 880] };
   const nodeBox = (i, head, art, c) => `${rr(NODE.xs[i] - 85, NODE.y - 75, 170, 150, c, '#ffffff', 3, 18)}${art}${T(NODE.xs[i], NODE.y + 108, 21, c)(head)}`;
   const nodes = nodeBox(0, 'Dose', capsule(NODE.xs[0], NODE.y, 0.75, -30), DARK)
@@ -322,7 +322,7 @@
     ] },
   ];
 
-  // ================================================================ slide 26: distribution and volume of distribution
+  // ================================================================ slide 28: distribution and volume of distribution
   const VES = { y0: 420, y1: 520 };
   const tissueSpots = [[150, 300], [300, 250], [470, 320], [640, 260], [820, 300], [210, 630], [400, 680], [590, 620], [780, 690], [900, 610]];
   const VD = tabsOf([{ id: 'small22', text: 'Stays in the blood (small Vd)', c: PK }, { id: 'large22', text: 'Spreads into tissues (large Vd)', c: DIS }], 230, 560);
@@ -359,7 +359,7 @@
     ] },
   ];
 
-  // ================================================================ slide 27: plasma protein binding
+  // ================================================================ slide 29: plasma protein binding
   const ALB = [[220, 330], [500, 300], [780, 340], [330, 600], [650, 610]];
   const albumin = (x, y) => `<path d="M ${x - 70} ${y} C ${x - 72} ${y - 50} ${x - 20} ${y - 66} ${x + 10} ${y - 58} C ${x + 60} ${y - 64} ${x + 80} ${y - 20} ${x + 68} ${y + 10} C ${x + 74} ${y + 50} ${x + 20} ${y + 64} ${x - 10} ${y + 54} C ${x - 50} ${y + 66} ${x - 76} ${y + 36} ${x - 70} ${y} Z" fill="#fde9b8" stroke="#c89a3a" stroke-width="4"/>`;
   const spot = (i, k) => { const [x, y] = ALB[i]; return k ? [x + 58, y - 34] : [x - 52, y + 38]; };
@@ -398,7 +398,7 @@
     ] },
   ];
 
-  // ================================================================ slide 28: barriers: brain and placenta
+  // ================================================================ slide 30: barriers: brain and placenta
   const BAR = { y0: 112, top: 400, bot: 470, y1: 600 };
   const wall = (x0, x1, tight) => {
     let out = '', x = x0 + 4;
@@ -442,7 +442,7 @@
     txt('Only fat-soluble gets in', 1180, 540, 21, MET, { align: 'center', bold: true, at: 1.4, anim: 'fade', duration: 0.3 }),
   ] }];
 
-  // ================================================================ slide 29: why metabolism, phase I and II
+  // ================================================================ slide 31: why metabolism, phase I and II
   const MC = (i) => 60 + i * 375, MW = 355;
   const STAGES = [
     { c: EXO, head: 'Fat-soluble drug', mol: (cx, cy) => drugMol(cx, cy, 1.1), text: 'Easy to absorb… but hard to\nget rid of: the kidneys just\nsoak it back up.', v: 0.12 },
@@ -471,7 +471,7 @@
     ...[1, 2, 3].flatMap((i) => at([...stageItems(i), svgItem(arrow(MC(i) - 34, 360, MC(i) + 8, 360, STAGES[i].c, 6))], (i - 1) * 1.4)),
   ] }];
 
-  // ================================================================ slide 30: cytochrome P450
+  // ================================================================ slide 32: cytochrome P450
   const CYPS = [['CYP3A4', 0.5, MET], ['CYP2D6', 0.25, PK], ['CYP2C9 / 2C19', 0.15, ABS], ['others', 0.1, '#8a8f98']];
   const GG = { x0: 900, x1: 1500, y0: 340, y1: 640 };
   const pG = plot(GG);
@@ -515,7 +515,7 @@
     txt(cypText[q.id][0], 1190, 780, 20, cypText[q.id][1], { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.3 }),
   ] }));
 
-  // ================================================================ slide 31: prodrugs and active metabolites
+  // ================================================================ slide 33: prodrugs and active metabolites
   const PR = tabsOf([{ id: 'usual27', text: 'Usual', c: DARK }, { id: 'pro27', text: 'Prodrug', c: DIS }, { id: 'act27', text: 'Active metabolite', c: MET }], 170, 400);
   const BOXL = [90, 280, 300, 280], BOXR = [660, 280, 300, 280];
   const molBox = ([x, y, w, h], name, active) => `${rr(x, y, w, h, active ? DIS : '#9aa1ad', '#ffffff', 3, 18)}${drugMol(x + w / 2 - 14, y + 120, 1, '')}
@@ -543,7 +543,7 @@
     txt(v.cap, 530, 700, 22, v.c, { align: 'center', bold: true, at: 2.9, anim: 'fade', duration: 0.4 }),
   ] }));
 
-  // ================================================================ slide 32: enzyme induction and inhibition
+  // ================================================================ slide 34: enzyme induction and inhibition
   const IG = { x0: 820, x1: 1500, y0: 300, y1: 560 };
   const IN = tabsOf([{ id: 'n28', text: 'Normal', c: DIS }, { id: 'ind28', text: 'Inducer', c: '#8a8f98' }, { id: 'inh28', text: 'Inhibitor', c: TIME }], 170, 400);
   const pac = (x, y, c = MET, blocked = false) => `<path d="M ${x} ${y} L ${x + 24} ${y - 14} A 28 28 0 1 0 ${x + 24} ${y + 14} Z" fill="${c}" stroke="#4a1f8a" stroke-width="3" opacity="${blocked ? 0.45 : 1}"/>${blocked ? `<line x1="${x - 22}" y1="${y - 22}" x2="${x + 22}" y2="${y + 22}" stroke="${TIME}" stroke-width="6"/><line x1="${x - 22}" y1="${y + 22}" x2="${x + 22}" y2="${y - 22}" stroke="${TIME}" stroke-width="6"/>` : ''}`;
@@ -579,7 +579,7 @@
     ...card(780, 620, 760, 240, v.c, v.head, v.body, 19),
   ] }));
 
-  // ================================================================ slide 33: excretion
+  // ================================================================ slide 36: excretion
   const NEPH = { cap: [190, 330], tubY: 330, capY: 480, x1: 880, urineY: 780 };
   const nephron = `${rr(60, 112, 940, 748, '#d9dce3', '#ffffff', 2)}
     <path d="M 70 300 L 150 315" stroke="#c0392b" stroke-width="18" stroke-linecap="round" fill="none"/>${T(72, 270, 16, '#8e1d24', 700, 'start')('blood in')}
@@ -613,7 +613,7 @@
     { type: 'mover', path: [[NEPH.cap[0], NEPH.capY], [430, NEPH.capY], [430, NEPH.tubY], [NEPH.x1, NEPH.tubY], [NEPH.x1, NEPH.urineY + 20]], r: 10, color: '#a77be8', count: 1, speed: 4.2, smooth: false, phase: 0.3 },
   ] }];
 
-  // ================================================================ slide 34: drug levels over time
+  // ================================================================ slide 37: drug levels over time
   const GC = { x0: 170, x1: 940, y0: 240, y1: 760 };
   const pC = plot(GC);
   const MEC = 0.3, MTC = 0.85, KC = 0.35, TMAXX = 10;
@@ -648,7 +648,7 @@
     { ...svgItem(ctGraph(1, true)), at: 4.0, duration: 0.3 },
   ] }];
 
-  // ================================================================ slide 35: half-life and clearance
+  // ================================================================ slide 38: half-life and clearance
   const GH = { x0: 170, x1: 940, y0: 260, y1: 760 };
   const pH = plot(GH);
   const NH = 5;
@@ -716,7 +716,7 @@
       ...ZO.bar('first33'),
       ...frameTrack([[0, 0], [5, 1], [30, 1]], ([u]) => zoGraph('first', u), 12),
       svgItem(enzymesBusy(false)),
-      ...card(1030, 190, 510, 670, EXC, 'FIRST-ORDER (MOST DRUGS)', 'The same FRACTION goes each hour:\n−50, −25, −12.5…\n\nLots of drug → lots removed;\na little drug → a little removed.\n\nThe enzymes have spare room, so\nthey keep up with whatever\'s there.\n\n→ a fixed HALF-LIFE (slide 35)', 21),
+      ...card(1030, 190, 510, 670, EXC, 'FIRST-ORDER (MOST DRUGS)', 'The same FRACTION goes each hour:\n−50, −25, −12.5…\n\nLots of drug → lots removed;\na little drug → a little removed.\n\nThe enzymes have spare room, so\nthey keep up with whatever\'s there.\n\n→ a fixed HALF-LIFE (slide 38)', 21),
     ] },
     { id: 'zero33', label: 'Zero-order', group: 'zo', stay: true, drawn: false, items: [
       ...ZO.bar('zero33'),
@@ -726,7 +726,7 @@
     ] },
   ];
 
-  // ================================================================ slide 37: steady state, loading vs maintenance doses
+  // ================================================================ slide 40: steady state, loading vs maintenance doses
   const GS = { x0: 170, x1: 940, y0: 270, y1: 740 };
   const pS = plot(GS);
   const NS = 7, YMAX = 2.6, SWIN = [0.85, 2.3];
@@ -773,14 +773,14 @@
 
   // ================================================================ the slides (added after part 2)
   scene.steps.push(
-    // Slide 22: part 3 intro.
+    // Slide 24: part 3 intro.
     { script: Qs('What is part 3 about?', 'What does ADME stand for?'),
       notes: `• Part 3 = pharmacokinetics: what the BODY does to the DRUG
 • Structure: ADME = absorption, distribution, metabolism, excretion
 • Then drug levels over time: the concentration curve, half-life and clearance, first- vs zero-order, steady state and dosing
 • Why it matters: PK decides how fast a drug works, how strong it gets and how long it lasts → how we dose it`,
       say: 'Part 3: pharmacokinetics, what the body does to the drug.', clear: true, items: introItems },
-    // Slide 23: routes of administration.
+    // Slide 25: routes of administration.
     { script: `${Qs('What are the routes of administration?', 'Enteral vs parenteral?', 'Which routes are fast and which are slow?')}
 [tabs: Enteral → Parenteral → Compare the speed]`,
       notes: `• Route = how the drug gets into the body; it decides how FAST and how MUCH gets in
@@ -793,7 +793,7 @@
 • Inhaled: very fast (asthma inhalers); transdermal patch: slow and steady (nicotine patch)
 • Compare the speed (click the routes in the legend to show / hide them): same dose, the route changes how fast the level rises, how high it gets and how long it lasts (IV instant; oral slow and lower; patch low and steady)`,
       say: 'Drugs can be given through the gut (enteral) or any other way (parenteral), and the route decides how fast and how much gets in.', clear: true, actions: routeActions, items: routeItems },
-    // Slide 24: getting absorbed.
+    // Slide 26: getting absorbed.
     { script: `${Qs('How do drugs cross into the body?', 'Why are fat-soluble drugs absorbed easily and charged drugs poorly?', 'What affects how well a drug is absorbed?')}
 [click the factor cards 1–5 on the right]`,
       notes: `• Absorption = the drug getting from where it was given into the blood
@@ -808,7 +808,7 @@
 • Food can slow or block absorption (calcium in milk binds tetracyclines); some drugs on an empty stomach, others with food (NSAIDs)
 • Blood flow and surface area: villi give the small intestine a huge surface, and blood carries the drug away → most oral absorption happens there, not the stomach`,
       say: 'Most drugs slip through membranes; small, fat-soluble drugs get absorbed most easily.', clear: true, actions: absActions, items: absItems },
-    // Slide 25: bioavailability and first-pass.
+    // Slide 27: bioavailability and first-pass.
     { script: `${Qs('What is bioavailability?', 'What is first-pass metabolism?', 'Why is oral bioavailability often low?')}
 [tabs: IV → Oral → Sublingual]`,
       notes: `• Bioavailability (F) = the fraction of a dose that reaches the bloodstream unchanged
@@ -818,7 +818,7 @@
 • That's why oral doses are often bigger than IV doses
 • Sublingual skips the liver → much higher F (e.g. nitroglycerin for chest pain)`,
       say: 'Bioavailability is how much of a dose reaches the blood; first-pass metabolism in the liver lowers it for swallowed drugs.', clear: true, actions: bioActions, items: bioItems },
-    // Slide 26: distribution.
+    // Slide 28: distribution.
     { script: `${Qs('What is distribution?', 'What is the volume of distribution?', 'Small vs large Vd: what does it mean?')}
 [tabs: Stays in the blood → Spreads into tissues]`,
       notes: `• Distribution = the drug travelling from the blood into the body's tissues
@@ -828,7 +828,7 @@
 • Large Vd: spreads into tissues (small, fat-soluble drugs) → low blood level for the same dose
 • Some drugs are stored in fat and linger (e.g. THC)`,
       say: 'Volume of distribution describes whether a drug stays in the blood or spreads into the tissues.', clear: true, actions: distActions, items: distItems },
-    // Slide 27: plasma protein binding.
+    // Slide 29: plasma protein binding.
     { script: `${Qs('What is plasma protein binding?', 'Why does only free drug work?', 'What happens when a drug is displaced?')}
 [tabs: Normal → A second drug is added]`,
       notes: `• Many drugs travel in the blood stuck to proteins, mostly albumin
@@ -838,7 +838,7 @@
 • e.g. warfarin is ~99% bound: a little displacement → big jump in free drug → bleeding risk
 • Low albumin (liver disease, malnutrition) also means more free drug`,
       say: 'Many drugs are carried bound to albumin, and only the free drug works.', clear: true, actions: pbActions, items: pbItems },
-    // Slide 28: barriers.
+    // Slide 30: barriers.
     { script: `${Qs('What is the blood-brain barrier?', 'Which drugs get into the brain?', 'Do drugs cross the placenta?')}
 [click the panels to send the drugs in]`,
       notes: `• Most capillaries are leaky: drugs pass through the gaps between cells
@@ -847,7 +847,7 @@
 • Get in: alcohol, diazepam, morphine; kept out: loperamide (an opioid for diarrhoea, no high), many antibiotics
 • The placenta is not much of a barrier: most drugs reach the baby → extra care with medicines in pregnancy`,
       say: 'The blood-brain barrier lets mostly small, fat-soluble drugs into the brain; the placenta lets most drugs through.', clear: true, actions: barActions, items: barItems },
-    // Slide 29: metabolism, phase I and II.
+    // Slide 31: metabolism, phase I and II.
     { script: `${Qs('Why are drugs metabolised?', 'What happens in Phase I?', 'What happens in Phase II?')}
 [click to build it step by step]`,
       notes: `• Metabolism = the body chemically changing a drug, mostly in the LIVER
@@ -857,7 +857,7 @@
 • Result: water-soluble → excreted in the urine (or bile); usually inactive
 • Not every drug goes through both phases, or in that order`,
       say: 'Metabolism, mostly in the liver, makes drugs water-soluble in two phases so they can be excreted.', clear: true, actions: metActions, items: metItems },
-    // Slide 30: cytochrome P450.
+    // Slide 32: cytochrome P450.
     { script: `${Qs('What are CYP450 enzymes?', 'Which ones matter most?', 'How do genes change drug levels?')}
 [chips: Normal → Poor metaboliser → Ultra-rapid]`,
       notes: `• Cytochrome P450 (CYP) = a family of enzymes, mostly in the liver, that do most Phase I metabolism
@@ -868,7 +868,7 @@
 • Ultra-rapid metaboliser: drug cleared too fast → doesn't work
 • For a prodrug it flips: e.g. ultra-rapid CYP2D6 + codeine → too much morphine (dangerous)`,
       say: 'CYP450 enzymes in the liver break down most drugs, and genetic differences change how fast.', clear: true, actions: cypActions, items: cypItems },
-    // Slide 31: prodrugs and active metabolites.
+    // Slide 33: prodrugs and active metabolites.
     { script: `${Qs('What is a prodrug?', 'What is an active metabolite?', 'Does metabolism always switch a drug off?')}
 [tabs: Usual → Prodrug → Active metabolite]`,
       notes: `• Usually metabolism switches a drug OFF (active drug → inactive metabolite) → the effect ends
@@ -877,7 +877,7 @@
 • Active metabolite: the broken-down form still works → the effect lasts longer
 • e.g. diazepam → desmethyldiazepam (very long-acting)`,
       say: 'Metabolism usually switches drugs off, but prodrugs are switched on and some metabolites stay active.', clear: true, actions: prActions, items: prItems },
-    // Slide 32: enzyme induction and inhibition.
+    // Slide 34: enzyme induction and inhibition.
     { script: `${Qs('What is enzyme induction?', 'What is enzyme inhibition?', 'How do they cause drug interactions?')}
 [tabs: Normal → Inducer → Inhibitor]`,
       notes: `• Some drugs and foods change how many CYP enzymes there are, or how well they work → this changes the levels of OTHER drugs
@@ -887,7 +887,7 @@
 • Inhibitors: grapefruit juice, clarithromycin, fluconazole → e.g. statin levels rise → muscle damage
 • Induction takes days to weeks (new enzyme is made); inhibition can happen within hours`,
       say: 'Enzyme inducers lower other drugs’ levels and inhibitors raise them, causing drug interactions.', clear: true, actions: indActions, items: indItems },
-    // Slide 33: excretion.
+    // Slide 36: excretion.
     { script: `${Qs('How do the kidneys remove drugs?', 'What are filtration, secretion and reabsorption?', 'What are the other routes of excretion?')}
 [click the nephron to watch it work]`,
       notes: `• Excretion = the drug leaving the body; the kidneys are the main route
@@ -898,7 +898,7 @@
 • Other routes: bile → faeces; lungs (anaesthetic gases, alcohol breath test); breast milk; sweat and saliva
 • Kidney disease → drugs build up → lower doses`,
       say: 'The kidneys remove drugs by filtration and secretion, while fat-soluble drugs get reabsorbed.', clear: true, actions: excActions, items: excItems },
-    // Slide 34: drug levels over time.
+    // Slide 37: drug levels over time.
     { script: `${Qs('What does a concentration-time curve show?', 'What are Cmax and Tmax?', 'What is the therapeutic window?')}
 [click the graph to give a dose]`,
       notes: `• After a dose, the level in the blood RISES (absorption) then FALLS (metabolism and excretion)
@@ -908,7 +908,7 @@
 • Duration of action = how long the level stays above the "works" line
 • Links back to the therapeutic index from part 2`,
       say: 'After a dose the level rises then falls, and it needs to stay in the therapeutic window to work safely.', clear: true, actions: ctActions, items: ctItems },
-    // Slide 35: half-life and clearance.
+    // Slide 38: half-life and clearance.
     { script: `${Qs('What is half-life?', 'How long until a drug is gone?', 'What is clearance and what slows it?')}
 [click the graph to watch it halve]`,
       notes: `• Half-life (t½) = the time for the drug level to fall by HALF
@@ -918,7 +918,7 @@
 • Lower clearance → longer half-life → the drug builds up
 • What lowers clearance: kidney or liver disease, older age, newborns, genetics, enzyme inhibitors → lower or less frequent doses`,
       say: 'Half-life is the time for the level to halve; lower clearance means a longer half-life.', clear: true, actions: hlActions, items: hlItems },
-    // Slide 36: first-order vs zero-order elimination.
+    // Slide 39: first-order vs zero-order elimination.
     { script: `${Qs('What is first-order elimination?', 'What is zero-order elimination?', 'Why is zero-order dangerous?')}
 [tabs: First-order → Zero-order]`,
       notes: `• Two ways the body can remove a drug
@@ -929,7 +929,7 @@
 • e.g. alcohol (~1 unit per hour), phenytoin, high-dose aspirin (can switch from first- to zero-order at high doses)
 • Danger: a small dose increase can cause a big jump in level → toxicity; levels come down slowly`,
       say: 'Most drugs are removed at a constant fraction per hour (first-order), but some at a constant amount (zero-order).', clear: true, actions: zoActions, items: zoItems },
-    // Slide 37: steady state, loading vs maintenance doses.
+    // Slide 40: steady state, loading vs maintenance doses.
     { script: `${Qs('What is steady state?', 'How long does it take to reach?', 'Loading vs maintenance doses?')}
 [tabs: Maintenance doses → Loading + maintenance]`,
       notes: `• With repeated doses, each dose adds a bit more than is removed, so the level builds up

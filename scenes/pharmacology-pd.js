@@ -583,7 +583,7 @@
     ...CN.bar(null),
     svgItem(nerve(false)),
     ...card(1030, 190, 510, 330, ENDO, 'ION CHANNELS', 'Pores that let ions (Na⁺, K⁺, Ca²⁺,\nCl⁻) flow across a membrane\n→ electrical signals in nerves,\nheart and muscle.\n\nDrugs can BLOCK them (most\ncommon) or help OPEN them.', 19),
-    ...exCard(ENDO, '• Lidocaine: blocks Na⁺ channels\n   → numbness\n• Amlodipine: blocks Ca²⁺ channels\n   → lower blood pressure\n• Some anti-epileptics block Na⁺\n   channels → calm overactive nerves\n• Benzodiazepines OPEN the GABA-A\n   Cl⁻ channel more (slide 13)'),
+    ...exCard(ENDO, '• Lidocaine: blocks Na⁺ channels\n   → numbness\n• Amlodipine: blocks Ca²⁺ channels\n   → lower blood pressure\n• Some anti-epileptics block Na⁺\n   channels → calm overactive nerves\n• Benzodiazepines OPEN the GABA-A\n   Cl⁻ channel more (slide 15)'),
     ...CN.hot,
   ];
   const chanActions = [
@@ -985,23 +985,23 @@
 
   // ---------------------------------------------------------------- the slides (added after part 1)
   scene.steps.push(
-    // Slide 6: part 2 intro.
+    // Slide 8: part 2 intro.
     { script: `${Qs('What is part 2 about?', 'What will we cover in pharmacodynamics?')}`,
       notes: `• Part 2 = pharmacodynamics: what the drug does to the body
 • Goal: understand how drugs actually produce their effects
 • Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → enzymes, transporters, ion channels → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
-    // Slide 7: drug targets.
+    // Slide 9: drug targets.
     { script: `${Qs('Where do drugs act?', 'What are the four main drug targets?', 'What does each target do normally, and what does the drug change?')}
 [tabs: Normally (no drug) → With the drug]`,
       notes: `• First, the big picture: drugs act on 4 main types of target (receptors are the most common, but not the only one)
-• Receptors come next (slides 8–13); enzymes, transporters and ion channels each get their own slide after that (14–16)
+• Receptors come next (slides 10–15); enzymes, transporters and ion channels each get their own slide after that (16–18)
 • Receptors: switched on or blocked (morphine at opioid receptors)
 • Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
 • Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
 • Ion channels: plugged so ions can't flow (lidocaine blocks Na⁺ channels → numbness)`,
       say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, actions: targetActions, items: targetItems },
-    // Slide 8: receptors and binding.
+    // Slide 10: receptors and binding.
     { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
 [click the left side to bind]`,
       notes: `• Receptor = a protein (usually on the cell surface) with a pocket only the right molecule fits (lock and key)
@@ -1010,7 +1010,7 @@
 • The shape change switches it ON → a message is passed into the cell
 • This is the basis for agonists and antagonists`,
       say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
-    // Slide 9: receptor types.
+    // Slide 11: receptor types.
     { script: `${Qs('What are the four main receptor types?', 'How does each one pass on its signal?', 'Which is fastest and which is slowest?')}
 [optional: press "Show the signals"]`,
       notes: `• 4 receptor types differ in how they pass the signal on, and how fast
@@ -1019,7 +1019,7 @@
 • Enzyme-linked: receptor's own enzyme switches on; minutes–hours (insulin receptor)
 • Intracellular: ligand crosses the membrane, changes which genes are on; hours–days (steroids: cortisol, oestrogen)`,
       say: 'The four receptor types pass signals in different ways, from millisecond ion channels to slow intracellular receptors.', clear: true, actions: typeActions, items: typeItems },
-    // Slide 10: affinity and selectivity.
+    // Slide 12: affinity and selectivity.
     { script: `${Qs('What is affinity?', 'Specificity vs selectivity: what is the difference?', 'Why does low selectivity cause side effects?')}
 [▶ Watch them bind · Specificity: Low → High dose · Selectivity grid: high sel. low → high dose, then low sel. low → high dose]`,
       notes: `• Affinity = how TIGHTLY a drug binds its receptor
@@ -1034,7 +1034,7 @@
 • Most drugs are selective, not truly specific
 • Ideal drug: high affinity AND high selectivity`,
       say: 'Affinity is how tightly a drug binds; specificity and selectivity are how choosy it is, and poor selectivity causes side effects.', clear: true, actions: affSelActions, items: affSelItems },
-    // Slide 11: agonists.
+    // Slide 13: agonists.
     { script: `${Qs('What is a full agonist?', 'What is a partial agonist?', 'What happens when a partial and a full agonist are both around?')}
 [tabs: Full agonist → Partial agonist → Partial + full together]`,
       notes: `• Agonist = binds AND activates a receptor
@@ -1043,7 +1043,7 @@
 • Partial + full together: the partial agonist takes the spot → response capped at the partial level
 • So a partial agonist can block a full agonist → why buprenorphine is used for opioid addiction`,
       say: 'Full agonists switch a receptor fully on; partial agonists only partly, and can even block full agonists.', clear: true, actions: agoActions, items: agoItems },
-    // Slide 12: antagonists.
+    // Slide 14: antagonists.
     { script: `${Qs('What is an antagonist?', 'Competitive vs noncompetitive: what is the difference?', 'Reversible vs irreversible')}
 [tabs: Competitive → Noncompetitive]`,
       notes: `• Antagonist = binds but does NOT activate → blocks agonists
@@ -1053,7 +1053,7 @@
 • Example: ketamine (NMDA receptors)
 • Reversible (lets go, most drugs) vs irreversible (binds for good → cell must make new receptors)`,
       say: 'Antagonists bind without switching the receptor on; competitive ones can be outcompeted, noncompetitive ones cannot.', clear: true, actions: antActions, items: antItems },
-    // Slide 13: allosteric modulators.
+    // Slide 15: allosteric modulators.
     { script: `${Qs('What is an allosteric modulator?', 'Positive vs negative modulators', 'Example: benzodiazepines and GABA')}
 [tabs: GABA alone → GABA + benzodiazepine → Benzodiazepine alone]`,
       notes: `• Allosteric modulator = binds a DIFFERENT site (allo = other) and turns the response up or down
@@ -1063,7 +1063,7 @@
 • GABA + benzodiazepine → same GABA, much bigger effect
 • Benzodiazepine alone → almost no effect (it only boosts what's already there)`,
       say: 'Allosteric modulators bind a different site and turn the response up or down, like benzodiazepines boosting GABA.', clear: true, actions: modActions, items: modItems },
-    // Slide 14: drugs that act on enzymes.
+    // Slide 16: drugs that act on enzymes.
     { script: `${Qs('What do enzymes do?', 'How do enzyme inhibitors work?', 'Reversible vs irreversible inhibitors?')}
 [tabs: Normal → Reversible inhibitor → Irreversible inhibitor]`,
       notes: `• Enzyme = a protein that speeds up a reaction: turns a starting molecule into a product
@@ -1073,7 +1073,7 @@
 • Aspirin: irreversibly blocks COX in platelets, which can't make new COX → one dose lasts ~a week (why low-dose aspirin thins the blood)
 • Examples: statins (cholesterol-making enzyme), ACE inhibitors such as ramipril (lower blood pressure), NSAIDs / aspirin (COX → less pain and inflammation)`,
       say: 'Enzyme inhibitors block an enzyme so less product is made, either reversibly or for good.', clear: true, actions: enzActions, items: enzItems },
-    // Slide 15: drugs that act on transporters.
+    // Slide 17: drugs that act on transporters.
     { script: `${Qs('What do transporters do?', 'How do SSRIs work?', 'How do proton pump inhibitors work?')}
 [tabs: Normal → Reuptake blocked (SSRI) → Acid pump blocked (PPI)]`,
       notes: `• Transporter = a protein that MOVES things across a cell membrane
@@ -1085,7 +1085,7 @@
 • PPIs (omeprazole) switch off the stomach's acid pump → much less acid (reflux, ulcers)
 • Digoxin blocks the Na⁺/K⁺ pump in heart cells`,
       say: 'Transporter-blocking drugs stop a chemical being moved, like SSRIs keeping serotonin around or PPIs switching off the acid pump.', clear: true, actions: transActions, items: transItems },
-    // Slide 16: drugs that act on ion channels.
+    // Slide 18: drugs that act on ion channels.
     { script: `${Qs('What do ion channels do?', 'How does lidocaine make you numb?', 'How do calcium channel blockers lower blood pressure?')}
 [tabs: Nerve: normal → Nerve + lidocaine → Calcium channel blocker]`,
       notes: `• Ion channel = a pore that lets ions (Na⁺, K⁺, Ca²⁺, Cl⁻) flow across a membrane → electrical signals in nerves, heart and muscle
@@ -1093,9 +1093,9 @@
 • Normally: Na⁺ channels open one after another along a nerve, carrying the signal (e.g. pain) to the brain
 • Lidocaine plugs Na⁺ channels where it's injected → the signal can't get past → numb (dental work, stitches)
 • Calcium channel blockers (amlodipine): Ca²⁺ makes blood-vessel muscle squeeze; blocking it → muscle relaxes → vessel widens → lower blood pressure
-• Some anti-epileptics block Na⁺ channels; benzodiazepines OPEN the GABA-A Cl⁻ channel more (slide 13)`,
+• Some anti-epileptics block Na⁺ channels; benzodiazepines OPEN the GABA-A Cl⁻ channel more (slide 15)`,
       say: 'Ion channel drugs mostly block channels, like lidocaine stopping nerve signals or calcium channel blockers relaxing blood vessels.', clear: true, actions: chanActions, items: chanItems },
-    // Slide 17: dose–response curves.
+    // Slide 19: dose–response curves.
     { script: `${Qs('What is a dose-response curve?', 'Why is it S-shaped?', 'How does it link to receptors being bound?')}
 [click the graph to raise the dose]`,
       notes: `• Dose–response curve = how the effect changes as the dose goes up
@@ -1104,7 +1104,7 @@
 • High dose: nearly all receptors bound → effect levels off (maximum)
 • Dose axis is usually a log scale (each step = 10× more) → S-shaped curve`,
       say: 'A dose-response curve shows the effect rising with dose until nearly every receptor is bound.', clear: true, actions: drActions, items: drItems },
-    // Slide 18: potency vs efficacy.
+    // Slide 20: potency vs efficacy.
     { script: `${Qs('What is potency? (EC50)', 'What is efficacy? (Emax)', 'Which matters more?')}
 [tabs: Potency → Efficacy]`,
       notes: `• Two different ways to compare drugs (often confused)
@@ -1115,7 +1115,7 @@
 • A vs C: C can never reach A's effect (like a partial agonist)
 • Efficacy usually matters more than potency; more potent ≠ stronger`,
       say: 'Potency is how much drug you need (EC50); efficacy is the biggest effect it can give (Emax).', clear: true, actions: pvActions, items: pvItems },
-    // Slide 19: therapeutic index.
+    // Slide 21: therapeutic index.
     { script: `${Qs('What is the therapeutic index?', 'How is it calculated? (TD50 ÷ ED50)', 'Wide vs narrow: why does it matter?')}
 [tabs: Wide → Narrow]`,
       notes: `• Therapeutic index = how SAFE a drug is (gap between the helpful and the harmful dose)
@@ -1125,7 +1125,7 @@
 • Narrow TI → easy to overdose (warfarin, lithium, digoxin) → blood levels monitored
 • Bigger TI = safer drug`,
       say: 'The therapeutic index compares the toxic dose to the helpful dose; the wider it is, the safer the drug.', clear: true, actions: tiActions, items: tiItems },
-    // Slide 20: receptor regulation (up and down).
+    // Slide 22: receptor regulation (up and down).
     { script: `${Qs('What is tolerance?', 'What is downregulation (and desensitisation)?', 'What is upregulation?', 'Why do withdrawal and rebound effects happen?')}
 [tabs: Normal → Too much stimulation → Too little stimulation]`,
       notes: `• Receptor regulation = cells adjust how many receptors they have (and how strongly they respond) to stay balanced
@@ -1138,7 +1138,7 @@
 • Too little stimulation (e.g. daily beta-blocker) → upregulation: more receptors → extra sensitive
 • Stop suddenly → rebound (e.g. racing heart)`,
       say: 'Cells regulate their receptors: too much stimulation means fewer receptors, too little means more.', clear: true, actions: tolActions, items: tolItems },
-    // Slide 21: the placebo effect.
+    // Slide 23: the placebo effect.
     { script: `${Qs('What is a placebo?', 'What is the placebo effect?', 'How do we know a drug really works?', 'Why does a placebo work, and what can it not do?')}
 [tabs: What is a placebo? → A fair test → Why does it work?]`,
       notes: `• Placebo = a dummy treatment with NO active drug (e.g. a sugar pill, salt-water injection) that looks exactly like the real thing

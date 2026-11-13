@@ -21,10 +21,10 @@
 
   // ---------- base view: the four parts of the course ----------
   const PARTS = [
-    ['PART 1', 'Foundations', C1, 'slides 1–5', 'What is pharmacology?\nWhat is a drug?\nEndogenous vs exogenous\nPK vs PD'],
-    ['PART 2', 'Pharmacodynamics', C2, 'slides 6–21', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nEnzymes, transporters,\nion channels\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
-    ['PART 3', 'Pharmacokinetics', C3, 'slides 22–37', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
-    ['PART 4', 'Drug safety', C4, 'slides 38–42', 'Adverse drug reactions\nDrug toxicity\nDrug–drug interactions\nTolerance and dependence'],
+    ['PART 1', 'Foundations', C1, 'slides 1–7', 'What is pharmacology?\nWhat is a drug?\nDrug names and classes\nIndications, contraindications\nEndogenous vs exogenous\nPK vs PD'],
+    ['PART 2', 'Pharmacodynamics', C2, 'slides 8–23', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nEnzymes, transporters,\nion channels\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
+    ['PART 3', 'Pharmacokinetics', C3, 'slides 24–40', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nPharmacogenomics\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
+    ['PART 4', 'Drug safety', C4, 'slides 41–46', 'Adverse drug reactions\nDrug toxicity\nSpecial populations\nDrug–drug interactions\nTolerance and dependence'],
   ];
   const baseItems = PARTS.flatMap(([p, t, c, sl, list], i) => {
     const x = 60 + i * 375, w = 355;
@@ -154,7 +154,7 @@
   ];
 
   scene.steps.push(
-    // Slide 43: course recap.
+    // Slide 47: course recap.
     { script: `${Qs('What did the whole course cover?', 'How do PK, PD and safety fit together?', 'What are the key takeaways?')}
 [tabs: The big picture → Follow one drug (click the tiles 1–8) → Key takeaways]`,
       notes: `• Start with the 4 parts on screen: foundations → pharmacodynamics → pharmacokinetics → drug safety

@@ -62,15 +62,17 @@ dependencies. Open `index.html` in a browser.
 - `scenes/affinity-specificity.js` – also shares its receptor / ligand artwork and animation helpers as
   `window.WB_LIGAND_ART` (`track` = a moving picture via `move`; `frameTrack` = per-frame pictures for
   things that change shape, e.g. gauges); `agonist-antagonist.js` uses them (load it after).
-- `scenes/pharmacology-pd.js` – part 2 (pharmacodynamics, slides 6–21) of the `pharmacology-essentials` topic: it appends its slides to
+- `scenes/pharmacology-pd.js` – part 2 (pharmacodynamics, slides 8–23) of the `pharmacology-essentials` topic: it appends its slides to
   that scene (one video) and reuses `window.WB_PHARM_ART` from `pharmacology-essentials.js`; load it right after that file.
-- `scenes/pharmacology-pk.js` – part 3 (pharmacokinetics, slides 22–37) of the same topic; reuses `window.WB_PHARM_PD`
+- `scenes/pharmacology-pk.js` – part 3 (pharmacokinetics, slides 24–40) of the same topic; reuses `window.WB_PHARM_PD`
   (cards, tabs, graph helpers) shared by `pharmacology-pd.js`; load it right after that file.
-- `scenes/pharmacology-safety.js` – part 4 (drug safety and interactions, slides 38–42) of the same topic; load it right
-  after `pharmacology-pk.js`. (Slide 21 = placebo, end of part 2; slide 36 = first- vs zero-order, part 3.)
-- `scenes/pharmacology-recap.js` – slide 43, the course recap (big picture / follow ibuprofen / key takeaways); load it
-  last. Part 2 order: targets, receptors & binding, receptor types, affinity…, allosteric (13), enzymes (14), transporters (15),
-  ion channels (16), dose–response…, receptor regulation (20), placebo (21).
+- `scenes/pharmacology-safety.js` – part 4 (drug safety and interactions, slides 41–46) of the same topic; load it right
+  after `pharmacology-pk.js`. (Slide 23 = placebo, end of part 2; slide 39 = first- vs zero-order, part 3.)
+- `scenes/pharmacology-recap.js` – slide 47, the course recap (big picture / follow ibuprofen / key takeaways); load it
+  last. Part 2 order: targets, receptors & binding, receptor types, affinity…, allosteric (15), enzymes (16), transporters (17),
+  ion channels (18), dose–response…, receptor regulation (22), placebo (23).
+- `scenes/pharmacology-extra.js` – loaded LAST: splices in drug names & classes (4), indications /
+  contraindications (5), pharmacogenomics (33) and special populations (44), plus their `renumber` entry.
 - Inserting slides mid-topic: give the scene `renumber: [{ key, before: [old slide numbers] }]` (or `move: { old: new }` for reordered slides); app.js
   (`applyRenumbers`) then moves the user's saved per-slide drawings / notes / prompter text to the new numbers once.
 - `scenes/*.js` – one explainer per file. **Most requests ("add an animation
