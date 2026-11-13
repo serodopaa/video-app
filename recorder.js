@@ -902,6 +902,13 @@
     vids: [makeVideo(), makeVideo()], cur: 0, nextReady: -1, token: 0,
   };
   const pvLen = (i) => clipLen(pv.list[i]);
+  // like the export: between two DIFFERENT clips the sound fades out/in over 0.15 s and the picture
+  // crossfades from the previous clip's last frame over 0.3 s (real time)
+  const PV_CLIP_FADE = 0.15, PV_XFADE = 0.3;
+  const pvNewClipNext = () => pv.idx >= 0 && pv.idx < pv.list.length - 1 && pv.list[pv.idx + 1]._ci !== pv.list[pv.idx]._ci;
+  const pvLast = document.createElement('canvas'); pvLast.width = pvCanvas.width; pvLast.height = pvCanvas.height;
+  const pvLastCtx = pvLast.getContext('2d');
+  pv.xfStart = -1;
   const clamp01 = (v, max) => Math.max(0, Math.min(max, v));
   const pvVid = () => pv.vids[pv.cur];
   const pvOther = () => pv.vids[1 - pv.cur];
@@ -932,6 +939,7 @@
     let i = pv.starts.findIndex((s, k) => g < s + pvLen(k));
     if (i < 0) i = pv.list.length - 1;
     const token = ++pv.token;
+    pv.xfStart = -1;
     const v = pvVid();
     v.pause();
     if (v._clip !== pv.list[i] && pvOther()._clip === pv.list[i]) pv.cur = 1 - pv.cur; // already loaded there
@@ -952,20 +960,29 @@
   function pvTick() {
     if (!pv.active) return;
     const v = pvVid(), c = pv.list[pv.idx];
-    if (c && v._clip === c && v.readyState >= 2) pvCtx.drawImage(v, 0, 0, pvCanvas.width, pvCanvas.height);
-    if (c && pv.playing && !pv.dragging && !v._fadingOut && v.currentTime >= c.out - 0.06) { v._fadingOut = true; fadeTo(v, 0); }
+    if (c && v._clip === c && v.readyState >= 2) {
+      pvCtx.drawImage(v, 0, 0, pvCanvas.width, pvCanvas.height);
+      if (pv.xfStart >= 0) {
+        const k = (performance.now() - pv.xfStart) / (PV_XFADE * 1000);
+        if (k < 1 && pv.playing) { pvCtx.globalAlpha = 1 - k; pvCtx.drawImage(pvLast, 0, 0); pvCtx.globalAlpha = 1; } else pv.xfStart = -1;
+      }
+    }
+    const fadeLead = pvNewClipNext() ? PV_CLIP_FADE * speed : 0.06; // media seconds before the end
+    if (c && pv.playing && !pv.dragging && !v._fadingOut && v.currentTime >= c.out - fadeLead) { v._fadingOut = true; fadeTo(v, 0, fadeLead === 0.06 ? undefined : PV_CLIP_FADE); }
     if (c && pv.playing && !pv.dragging && (v.ended || v.currentTime >= c.out - 0.03)) {
       v._fadingOut = false;
       if (pv.idx < pv.list.length - 1) {
         if (pv.nextReady === pv.idx + 1) {
-          // instant cut to the parked next clip
+          // cut to the parked next clip (crossfaded if it's a new clip)
+          const newClip = pvNewClipNext();
+          if (newClip) { pvLastCtx.drawImage(pvCanvas, 0, 0); pv.xfStart = performance.now(); }
           silence(v);
           v.pause();
           pv.cur = 1 - pv.cur;
           pv.idx++;
           silence(pvVid());
-          pvVid().play().then(() => fadeTo(pvVid(), clipGain(pv.list[pv.idx]))).catch(() => {});
-          pvCtx.drawImage(pvVid(), 0, 0, pvCanvas.width, pvCanvas.height);
+          pvVid().play().then(() => fadeTo(pvVid(), clipGain(pv.list[pv.idx]), newClip ? PV_CLIP_FADE : undefined)).catch(() => {});
+          if (!newClip) pvCtx.drawImage(pvVid(), 0, 0, pvCanvas.width, pvCanvas.height);
           pvPreloadNext();
         } else {
           v.pause(); // next one is still loading: hold the last frame
