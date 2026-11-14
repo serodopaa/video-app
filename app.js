@@ -1289,7 +1289,7 @@
           const id = sc.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const pats = [
             [new RegExp(`^wb-ink-${id}-s(\\d+)$`), (i) => `wb-ink-${sc.id}-s${nn(i + 1) - 1}`],
-            ...['wb-notes-', 'wb-mynotes-', 'wb-tp-', 'wb-tps-'].map((p) => [new RegExp(`^${p}${id}-(\\d+)$`), (n) => `${p}${sc.id}-${n ? nn(n) : 0}`]),
+            ...['wb-notes-', 'wb-mynotes-', 'wb-topic-', 'wb-tp-', 'wb-tps-'].map((p) => [new RegExp(`^${p}${id}-(\\d+)$`), (n) => `${p}${sc.id}-${n ? nn(n) : 0}`]),
           ];
           const moves = [];
           for (let i = 0; i < localStorage.length; i++) {
@@ -1567,6 +1567,9 @@
       b.el.value = saved && saved.trim() ? saved : b.def;
     }
     notes.title.textContent = n ? `Notes: slide ${n}` : 'Notes';
+    // the slide's topic (the user's own label, saved per slide)
+    const topicEl = document.getElementById('notesTopic');
+    if (topicEl) { topicEl.dataset.key = `wb-topic-${player.scene.id}-${n}`; topicEl.value = lsGet(topicEl.dataset.key) || ''; topicEl.disabled = !n; }
     notes.saved.textContent = '';
   }
   function flushBox(b) {
@@ -1609,6 +1612,11 @@
       catch (_) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
       btn.textContent = '✓'; setTimeout(() => { btn.textContent = old; }, 1500);
     };
+    const topicEl = document.getElementById('notesTopic');
+    if (topicEl) {
+      topicEl.addEventListener('input', () => { if (topicEl.dataset.key) lsSet(topicEl.dataset.key, topicEl.value); });
+      topicEl.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') topicEl.blur(); });
+    }
     document.getElementById('notesCopy').addEventListener('click', (e) => {
       flushNotes();
       const pts = notes.boxes.script.el.value.trim(), mine = notes.boxes.mine.el.value.trim();
@@ -1619,10 +1627,10 @@
       flushNotes();
       const id = player.scene.id, n = slideCount(), out = [];
       for (let k = 1; k <= n; k++) {
-        const v = (lsGet(`wb-mynotes-${id}-${k}`) || '').trim();
-        if (v) out.push(`Slide ${k}: ${v}`);
+        const topic = (lsGet(`wb-topic-${id}-${k}`) || '').trim(), v = (lsGet(`wb-mynotes-${id}-${k}`) || '').trim();
+        if (topic || v) out.push(`Slide ${k}:\nSlide topic: ${topic}\nSlide script: ${v}`);
       }
-      if (!out.length) { alert('There are no "My notes" in this topic yet.'); return; }
+      if (!out.length) { alert('There are no slide topics or "My notes" in this topic yet.'); return; }
       copyText(out.join('\n\n'), e.currentTarget);
     });
     applySize();
@@ -1894,7 +1902,7 @@
     const idx = scenes.indexOf(sc);
     loadScene(0); // leave first (this saves the topic's ink), then wipe it
     try {
-      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-', 'wb-mynotes-' + sc.id + '-', 'wb-tp-' + sc.id + '-', 'wb-tps-' + sc.id + '-'];
+      const prefixes = ['wb-ink-' + sc.id, 'wb-notes-' + sc.id + '-', 'wb-mynotes-' + sc.id + '-', 'wb-topic-' + sc.id + '-', 'wb-tp-' + sc.id + '-', 'wb-tps-' + sc.id + '-'];
       Object.keys(localStorage).filter((k) => prefixes.some((p) => k.startsWith(p))).forEach((k) => localStorage.removeItem(k));
     } catch (_) { /* storage unavailable */ }
     [...historyBySlide.keys()].filter((k) => k.startsWith('wb-ink-' + sc.id)).forEach((k) => historyBySlide.delete(k));

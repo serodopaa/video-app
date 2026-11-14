@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=202611141125" />
+  <link rel="stylesheet" href="style.css?v=202611141129" />
 </head>
 <body>
   <header class="toolbar" id="toolbar">
@@ -86,7 +86,7 @@
   <aside class="notes" id="notesPanel" hidden>
     <div class="notes-head">
       <b id="notesTitle">Notes</b>
-      <span class="notes-hint">Only you see these. Not in the video.</span>
+      <input id="notesTopic" class="notes-topic" type="text" spellcheck="true" placeholder="✎ Click to add this slide's topic" title="This slide's topic (saved; used by 📋 All)" />
       <div class="notes-tabs" role="tablist">
         <button id="notesTabScript" role="tab" title="Only the slide's key points (yours to edit; your edits are saved)">📜 Points</button>
         <button id="notesTabMine" role="tab" title="Only your own notes for this slide (starts empty)">✏️ Mine</button>
@@ -107,7 +107,7 @@
       <button id="notesSmaller" title="Smaller text">A−</button>
       <button id="notesBigger" title="Bigger text">A+</button>
       <button id="notesCopy" title="Copy this slide's notes (what's shown: key points, my notes, or both)">📋</button>
-      <button id="notesCopyAll" title="Copy MY notes for every slide in this topic, as &quot;Slide 1: …&quot;">📋 All</button>
+      <button id="notesCopyAll" title="Copy every slide's topic and my notes, as &quot;Slide 1: / Slide topic: / Slide script:&quot;">📋 All</button>
       <span id="notesSaved" class="notes-saved"></span>
     </div>
   </aside>
@@ -212,25 +212,25 @@
   </dialog>
 
   <!-- Explainer scenes. Add a new file in scenes/ and a <script> line here. -->
-  <script src="scenes/neuron.js?v=202611141125"></script>
-  <script src="scenes/epsp-ipsp.js?v=202611141125"></script>
-  <script src="scenes/brain-midsagittal.js?v=202611141125"></script>
-  <script src="scenes/brain-art.js?v=202611141125"></script>
-  <script src="scenes/brain-views.js?v=202611141125"></script>
-  <script src="scenes/protein-structure.js?v=202611141125"></script>
-  <script src="scenes/na-k-pump.js?v=202611141125"></script>
-  <script src="scenes/affinity-specificity.js?v=202611141125"></script>
-  <script src="scenes/agonist-antagonist.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-essentials.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-pd.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-pk.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-safety.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-recap.js?v=202611141125"></script>
-  <script src="scenes/pharmacology-extra.js?v=202611141125"></script>
-  <script src="app.js?v=202611141125"></script>
-  <script src="vendor/fix-webm-duration.js?v=202611141125"></script>
-  <script src="vendor/mp4-muxer.js?v=202611141125"></script>
-  <script src="exporter.js?v=202611141125"></script>
-  <script src="recorder.js?v=202611141125"></script>
+  <script src="scenes/neuron.js?v=202611141129"></script>
+  <script src="scenes/epsp-ipsp.js?v=202611141129"></script>
+  <script src="scenes/brain-midsagittal.js?v=202611141129"></script>
+  <script src="scenes/brain-art.js?v=202611141129"></script>
+  <script src="scenes/brain-views.js?v=202611141129"></script>
+  <script src="scenes/protein-structure.js?v=202611141129"></script>
+  <script src="scenes/na-k-pump.js?v=202611141129"></script>
+  <script src="scenes/affinity-specificity.js?v=202611141129"></script>
+  <script src="scenes/agonist-antagonist.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-essentials.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-pd.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-pk.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-safety.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-recap.js?v=202611141129"></script>
+  <script src="scenes/pharmacology-extra.js?v=202611141129"></script>
+  <script src="app.js?v=202611141129"></script>
+  <script src="vendor/fix-webm-duration.js?v=202611141129"></script>
+  <script src="vendor/mp4-muxer.js?v=202611141129"></script>
+  <script src="exporter.js?v=202611141129"></script>
+  <script src="recorder.js?v=202611141129"></script>
 </body>
 </html>

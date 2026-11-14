@@ -96,7 +96,8 @@ that slide, Esc / clicking away cancels.
 Every scene in the menu is a **topic**, and topics are isolated: ink (`wb-ink-<id>`), notes
 (📝 panel, two boxes: 📜 Key points = the slide's `notes` (bullets get a blank line between them) + the user's
 edits in `wb-notes-<id>-<n>`; ✏️ My notes = the user's own, empty to start, `wb-mynotes-<id>-<n>`; view buttons
-Points / Mine / Both (side by side; the panel widens), saved in `wb-notes-tab`) and recorded clips (IndexedDB `clips`, field `scene` = scene id) are all
+Points / Mine / Both (side by side; the panel widens), saved in `wb-notes-tab`) plus a per-slide topic field under the panel title (`wb-topic-<id>-<n>`); 📋 copies this slide's notes, 📋 All copies
+"Slide N: / Slide topic: / Slide script: (my notes)" for the whole topic and recorded clips (IndexedDB `clips`, field `scene` = scene id) are all
 keyed by the scene id. Users can make quick empty topics with ➕ (saved in localStorage
 `wb-topics`, deletable with 🗑️); topics Claude builds are scene files in `scenes/` (e.g.
 `epsp-ipsp.js`) and can't be deleted from the UI. `app.js` fires `wb-scene` on every topic

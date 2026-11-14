@@ -528,3 +528,7 @@ button, select {
 .ts-hint { font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
 .ts-warn { color: #b0521c; }
 .ts-foot { display: flex; gap: 8px; justify-content: flex-end; }
+
+.notes-topic { width: 100%; box-sizing: border-box; margin-top: 4px; padding: 5px 8px; font: 600 14px Lexend, Inter, system-ui, sans-serif; color: var(--ink); border: 1px dashed transparent; border-radius: 6px; background: transparent; }
+.notes-topic:hover { border-color: var(--line); background: #fff; }
+.notes-topic:focus { outline: none; border: 1px solid #f0b46a; background: #fff; }
