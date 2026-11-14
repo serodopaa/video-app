@@ -34,55 +34,136 @@
   ];
 
   // ================================================================ drug names and classes (new slide 4)
-  const NM = tabsOf([{ id: 'nm4', text: 'Three names', c: BLUE }, { id: 'cl4', text: 'Ways to classify', c: PURPLE }, { id: 'sx4', text: 'Name clues', c: ORANGE }], 170, 400);
+  // Follows the script: three NAMES (chemical → generic + active/inactive ingredients → brand + patents),
+  // then three ways to CLASSIFY (target & mechanism → what it treats → chemical structure).
+  const NT = [
+    { id: 'chem4', text: 'Chemical name', c: '#6b7280' }, { id: 'gen4', text: 'Generic name', c: BLUE }, { id: 'brand4', text: 'Brand names', c: ORANGE },
+    { id: 'tgt4', text: 'By target', c: PURPLE }, { id: 'use4', text: 'By what it treats', c: TEAL }, { id: 'str4', text: 'By structure', c: '#8e3b8a' },
+  ];
+  const NTX = (i) => 60 + i * 249 + (i >= 3 ? 0 : 0), NTW = 233;
+  const nTabs = (active) => [
+    ...NT.flatMap((t, i) => [
+      { type: 'rect', x: NTX(i), y: 132, w: NTW, h: 52, color: t.c, fill: t.id === active ? t.c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+      { ...A.txt(t.text, NTX(i) + NTW / 2, 158, 21, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }), solid: true },
+    ]),
+  ];
+  const nGroupLabels = [
+    A.txt('NAMING', NTX(0) + 5, 112, 17, GREY, { bold: true }), A.txt('CLASSIFYING', NTX(3) + 5, 112, 17, GREY, { bold: true }),
+  ];
+  const NA = { x: 60, y: 200, w: 1480, h: 660 };
+  const ncover = () => svgItem(`<rect x="${NA.x}" y="${NA.y}" width="${NA.w}" height="${NA.h}" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>`, { solid: true });
+  const pt = (x, y) => `${f1(x)},${f1(y)}`;
+  const hexPts = (cx, cy, r) => [0, 1, 2, 3, 4, 5].map((k) => pt(cx + r * Math.cos(Math.PI / 6 + (k * Math.PI) / 3), cy + r * Math.sin(Math.PI / 6 + (k * Math.PI) / 3))).join(' ');
+  // ibuprofen skeleton: a benzene ring with an isobutyl tail and a propanoic acid head
+  const ibuprofen = (cx, cy, s = 1) => {
+    const L = (pts) => `<polyline points="${pts.map(([x, y]) => pt(cx + x * s, cy + y * s)).join(' ')}" fill="none" stroke="#3b4252" stroke-width="${4 * s}" stroke-linejoin="round"/>`;
+    return `<polygon points="${hexPts(cx, cy, 50 * s)}" fill="#ffffff" stroke="#3b4252" stroke-width="${4 * s}"/><circle cx="${cx}" cy="${cy}" r="${28 * s}" fill="none" stroke="#3b4252" stroke-width="${3 * s}"/>
+      ${L([[-43, -25], [-86, -50], [-130, -25], [-174, -50]])}${L([[-130, -25], [-130, 25]])}
+      ${L([[43, 25], [86, 50], [130, 25]])}${L([[86, 50], [86, 100]])}${L([[130, 25], [174, 50]])}${L([[130, 25], [130, -25]])}
+      ${T(cx + 192 * s, cy + 58 * s, 18 * s, '#c0392b', 700, 'start')('OH')}${T(cx + 130 * s, cy - 34 * s, 18 * s, '#c0392b')('O')}`;
+  };
+  // a tablet cross-section: a few active molecules among lots of inactive filler
+  const tablet = (cx, cy, rx, ry, glow = false) => {
+    let dots = '';
+    for (let i = 0; i < 70; i++) {
+      const a = (i * 2.399) % (2 * Math.PI), r = Math.sqrt((i + 0.5) / 70) * 0.86;
+      const x = cx + Math.cos(a) * rx * r, y = cy + Math.sin(a) * ry * r, active = i % 7 === 3;
+      dots += active ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${glow ? 12 : 9}" fill="${ORANGE}" stroke="#ffffff" stroke-width="2"/>` : `<circle cx="${f1(x)}" cy="${f1(y)}" r="6" fill="#c9ced8"/>`;
+    }
+    return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#f4f6fa" stroke="#9aa1ad" stroke-width="4"/>${dots}`;
+  };
+  const prodBox = (x, name, form, art, extra) => `${rr(x, 250, 300, 360, ORANGE, '#ffffff', 3, 18)}${T(x + 150, 292, 30, ORANGE)(name)}${art}
+    ${rr(x + 40, 470, 220, 46, ORANGE, ORANGE, 2, 23)}${T(x + 150, 500, 20, '#ffffff')('ibuprofen')}${T(x + 150, 545, 18, GREY)(form)}${T(x + 150, 580, 16, GREY)(extra)}`;
+  const tabletArt = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="52" ry="30" fill="#ffffff" stroke="#9aa1ad" stroke-width="4"/><line x1="${cx - 30}" y1="${cy}" x2="${cx + 30}" y2="${cy}" stroke="#c9ced8" stroke-width="3"/>`;
+  const liqcapArt = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="56" ry="28" fill="#f6c45a" stroke="#a8640a" stroke-width="4" opacity="0.9"/><ellipse cx="${cx - 18}" cy="${cy - 8}" rx="16" ry="6" fill="#ffffff" opacity="0.6"/>`;
+  const bottleArt = (cx, cy) => `<rect x="${cx - 30}" y="${cy - 54}" width="60" height="22" rx="4" fill="#c0392b"/><path d="M ${cx - 40} ${cy - 30} h 80 v 80 q 0 14 -14 14 h -52 q -14 0 -14 -14 Z" fill="#fbd9c4" stroke="#b5694a" stroke-width="4"/><rect x="${cx - 40}" y="${cy + 6}" width="80" height="44" fill="#f0a35a" opacity="0.7"/>`;
+  const sertArt = (cx, top) => `<rect x="${cx - 300}" y="${top}" width="600" height="40" fill="#fbecd6"/>${[...Array(30)].map((_, k) => `<circle cx="${cx - 290 + k * 20}" cy="${top + 7}" r="7" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/><circle cx="${cx - 290 + k * 20}" cy="${top + 33}" r="7" fill="#f4c995" stroke="#b67d3c" stroke-width="2"/>`).join('')}
+    <rect x="${cx - 40}" y="${top - 30}" width="80" height="100" rx="20" fill="#c9a8f2" stroke="#4a1f8a" stroke-width="4"/><rect x="${cx - 9}" y="${top - 30}" width="18" height="100" fill="#eef6fd" stroke="#4a1f8a" stroke-width="3"/>
+    ${capsule(cx, top - 50, 0.4, 0)}${T(cx + 60, top + 95, 17, '#4a1f8a', 700, 'start')('serotonin transporter (blocked)')}`;
+  const steroid = (cx, cy, r = 46) => {
+    const w = r * Math.sqrt(3);
+    const rings = [[cx - w, cy], [cx, cy], [cx + w / 2, cy - 1.5 * r]].map(([x, y]) => `<polygon points="${hexPts(x, y, r)}" fill="#f3e6f3" stroke="#8e3b8a" stroke-width="5"/>`).join('');
+    // ring D: a five-membered ring sharing ring C's right-hand edge
+    const ex = cx + w / 2 + w / 2, py = cy - 1.5 * r, Rp = r / (2 * Math.sin(Math.PI / 5)), pcx = ex + Rp * Math.cos(Math.PI / 5);
+    const pent = [144, 216, 288, 0, 72].map((d) => pt(pcx + Rp * Math.cos((d * Math.PI) / 180), py + Rp * Math.sin((d * Math.PI) / 180))).join(' ');
+    const px = pcx + r * 0.2;
+    return `${rings}<polygon points="${pent}" fill="#f3e6f3" stroke="#8e3b8a" stroke-width="5"/>
+      ${[['A', cx - w, cy], ['B', cx, cy], ['C', cx + w / 2, cy - 1.5 * r], ['D', px - r * 0.2, py]].map(([l, x, y]) => T(x, y + 8, 24, '#8e3b8a')(l)).join('')}`;
+  };
+  const caption = (t, c = DARK, at = 0.6) => txt(t, 800, 822, 25, c, { align: 'center', bold: true, at, anim: 'fade', duration: 0.4 });
   const namesItems = [
     title('Drug names and classes'),
-    ...NM.bar(null),
-    stage(),
-    svgItem(capsule(530, 420, 2.0, -25)),
-    txt('Every drug has several names,\nand belongs to groups (classes)', 530, 650, 26, DARK, { align: 'center', bold: true, hideDuring: ['nm4', 'cl4', 'sx4'] }),
-    ...card(1030, 190, 510, 670, DARK, 'NAMES AND CLASSES', 'One drug, three names:\nCHEMICAL: its full chemistry\nGENERIC: its official name\nBRAND: a company\'s trade name\n\nDrugs are grouped into CLASSES\n(e.g. NSAIDs, beta-blockers), so\nwhat you learn about one drug\nmostly applies to the others.', 21),
-    ...NM.hot,
+    ...nGroupLabels, ...nTabs(null),
+    svgItem(`<rect x="${NA.x}" y="${NA.y}" width="${NA.w}" height="${NA.h}" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>${rr(110, 250, 650, 520, BLUE, '#eef4fd', 3)}${rr(840, 250, 650, 520, PURPLE, '#f4effc', 3)}
+      ${T(435, 300, 34, BLUE)('NAMING')}${T(1165, 300, 34, PURPLE)('CLASSIFYING')}
+      ${T(435, 345, 20, GREY)('3 ways to name a drug')}${T(1165, 345, 20, GREY)('3 ways to group drugs')}
+      ${['Chemical name', 'Generic name', 'Brand name'].map((t, i) => `${badge(200, 430 + i * 105, String(i + 1), BLUE)}${T(240, 440 + i * 105, 30, INK, 700, 'start')(t)}`).join('')}
+      ${['By target &amp; mechanism', 'By what it treats', 'By chemical structure'].map((t, i) => `${badge(930, 430 + i * 105, String(i + 1), PURPLE)}${T(970, 440 + i * 105, 30, INK, 700, 'start')(t)}`).join('')}`),
+    ...NT.map((t, i) => ({ type: 'hotspot', x: NTX(i), y: 132, w: NTW, h: 52, action: t.id })),
   ];
+  const view = (id, items) => ({ id, label: NT.find((t) => t.id === id).text, group: 'nm', stay: true, drawn: false, items: [...nTabs(id), ncover(), ...items] });
   const namesActions = [
-    { id: 'nm4', label: 'Three names', group: 'nm', stay: true, drawn: false, items: [
-      cover(), ...sol(NM.bar('nm4')),
-      txt('Example: ibuprofen', 530, 232, 24, DARK, { align: 'center', bold: true }),
-      ...at(row(270, '#6b7280', 'CHEMICAL', '2-(4-isobutylphenyl)propanoic acid', 'describes the molecule; used by chemists'), 0),
-      ...at(row(420, BLUE, 'GENERIC', 'ibuprofen', 'the official name, the same worldwide; used by doctors (lower case)'), 0.7),
-      ...at(row(570, ORANGE, 'BRAND', 'Advil®, Nurofen®, Motrin®', 'a company\'s trade name (capital letter, ®); one drug, many brands'), 1.4),
-      txt('A generic copy has the SAME active drug, dose and effect, just usually much cheaper.', 530, 775, 19, OK, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.4 }),
-      ...sideCard(BLUE, 'THREE NAMES', 'CHEMICAL: long and exact; rarely\nused outside chemistry.\n\nGENERIC: the one to learn. Used\nin medicine and textbooks.\n\nBRAND: chosen by the company\nthat sells it; there can be many.\n\nWhen a patent ends, other\ncompanies can make GENERIC\nversions of the same drug.'),
-    ] },
-    { id: 'cl4', label: 'Ways to classify', group: 'nm', stay: true, drawn: false, items: [
-      cover(), ...sol(NM.bar('cl4')),
-      svgItem(`${capsule(530, 300, 1.0, -25)}${T(530, 368, 22, DARK)('ibuprofen')}
-        ${curve('M 470 380 C 380 420, 250 430, 230 470', PURPLE, 4)}${curve('M 530 385 L 530 470', PURPLE, 4)}${curve('M 590 380 C 680 420, 810 430, 830 470', PURPLE, 4)}`),
-      ...[[230, 'By TARGET /\nMECHANISM', 'COX inhibitor\n(an NSAID)', 'what it does in the body'], [530, 'By what it\nTREATS', 'painkiller (analgesic),\nanti-inflammatory', 'its uses'], [830, 'By CHEMICAL\nSTRUCTURE', 'propionic acid\nderivative', 'its shape']]
-        .flatMap(([x, h, main, sub], i) => at([
-          { type: 'rect', x: x - 140, y: 480, w: 280, h: 300, color: PURPLE, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
-          txt(h, x, 525, 20, PURPLE, { align: 'center', bold: true }),
-          txt(main, x, 640, 21, INK, { align: 'center', bold: true }),
-          txt(sub, x, 745, 16, GREY, { align: 'center', bold: true }),
-        ], 0.4 + i * 0.5)),
-      ...sideCard(PURPLE, 'WAYS TO CLASSIFY', 'The same drug can sit in several\nclasses at once:\n\nBy TARGET / MECHANISM: the most\nuseful for pharmacology\n(e.g. beta-blocker, SSRI)\n\nBy what it TREATS\n(e.g. antidepressant, antibiotic)\n\nBy CHEMICAL STRUCTURE\n(e.g. benzodiazepine)'),
-    ] },
-    { id: 'sx4', label: 'Name clues', group: 'nm', stay: true, drawn: false, items: [
-      cover(), ...sol(NM.bar('sx4')),
-      txt('Generic names often END with a clue to the class', 530, 235, 23, DARK, { align: 'center', bold: true }),
-      ...[['-olol', 'beta-blocker', 'atenolol, propranolol'], ['-pril', 'ACE inhibitor', 'ramipril, lisinopril'], ['-statin', 'statin (lowers cholesterol)', 'atorvastatin, simvastatin'],
-        ['-prazole', 'proton pump inhibitor', 'omeprazole, lansoprazole'], ['-triptan', 'migraine (serotonin agonist)', 'sumatriptan'], ['-azepam', 'benzodiazepine', 'diazepam, lorazepam']]
-        .flatMap(([sfx, cls, ex], i) => {
-          const y = 280 + i * 92;
-          return at([
-            { type: 'rect', x: 100, y, w: 860, h: 78, color: '#e4e7ee', fill: i % 2 ? '#ffffff' : '#f7f8fb', fillOpacity: 1, width: 2, rough: false },
-            txt(sfx, 130, y + 39, 26, ORANGE, { bold: true }),
-            txt(cls, 330, y + 39, 21, INK, { bold: true }),
-            txt(ex, 940, y + 39, 18, GREY, { align: 'right', bold: true }),
-          ], 0.3 + i * 0.35);
-        }),
-      ...sideCard(ORANGE, 'NAME CLUES', 'Drugs in the same class often\nshare an ending (a "stem").\n\nSo a new name tells you a lot:\n"bisoprolol" → -olol →\na beta-blocker.\n\n(It\'s a handy rule, not a\nguarantee.)'),
-    ] },
+    view('chem4', [
+      svgItem(`${ibuprofen(800, 400, 1.3)}`, { solid: true }),
+      txt('(RS)-2-[4-(2-methylpropyl)phenyl]propanoic acid', 800, 590, 38, '#3b4252', { align: 'center', bold: true }),
+      txt('the CHEMICAL name of ibuprofen', 800, 640, 22, GREY, { align: 'center', bold: true }),
+      txt('✓ describes the molecule\'s EXACT structure, using precise naming rules\n✓ used almost only by chemists and researchers', 330, 705, 24, INK, { bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
+      caption('…good luck asking for that at the shop!', '#6b7280', 1.4),
+    ]),
+    view('gen4', [
+      txt('ibuprofen', 400, 265, 52, BLUE, { align: 'center', bold: true }),
+      txt('the GENERIC name', 400, 315, 22, GREY, { align: 'center', bold: true }),
+      txt('✓ the most common way drugs are named\n✓ given by an official council\n✓ no company owns it\n✓ names the ACTIVE INGREDIENT', 110, 385, 25, INK, { bold: true }),
+      svgItem(tablet(1140, 430, 260, 175), { solid: true }),
+      txt('inside a tablet', 1140, 230, 20, GREY, { align: 'center', bold: true }),
+      ...frameTrack([[0, 0], [0.6, 0], [1.6, 1], [30, 1]], ([u]) => (u > 0.5 ? tablet(1140, 430, 260, 175, true) : tablet(1140, 430, 260, 175)), 4),
+      { type: 'rect', x: 760, y: 640, w: 360, h: 170, color: ORANGE, fill: '#fdf1e6', fillOpacity: 1, width: 3, rough: false, at: 1.0 },
+      txt('● ACTIVE ingredient', 780, 670, 22, ORANGE, { bold: true, at: 1.0 }),
+      txt('the chemical that causes\nthe drug\'s effect', 780, 712, 20, INK, { bold: true, at: 1.0 }),
+      { type: 'rect', x: 1140, y: 640, w: 370, h: 170, color: '#9aa1ad', fill: '#f4f6fa', fillOpacity: 1, width: 3, rough: false, at: 1.5 },
+      txt('● INACTIVE ingredients', 1160, 670, 22, '#6b7280', { bold: true, at: 1.5 }),
+      txt('inert, no effect. They dilute\nit, make it easier to take,\nmake it a tablet / powder /\nliquid', 1160, 708, 17, INK, { bold: true, at: 1.5 }),
+      { type: 'rect', x: 100, y: 640, w: 620, h: 170, color: BLUE, fill: '#eef4fd', fillOpacity: 1, width: 3, rough: false, at: 2.0 },
+      txt('Generic name = the ACTIVE\ningredient only', 410, 700, 28, BLUE, { align: 'center', bold: true, at: 2.0 }),
+    ]),
+    view('brand4', [
+      svgItem(`${prodBox(110, 'Advil®', 'tablet', tabletArt(260, 390), 'Company A')}${prodBox(450, 'Nurofen®', 'liquid capsule', liqcapArt(600, 390), 'Company B')}${prodBox(790, 'Motrin®', 'liquid (for children)', bottleArt(940, 390), 'Company C')}`, { solid: true }),
+      txt('SAME active ingredient →\nsame effect on the body', 560, 650, 26, ORANGE, { align: 'center', bold: true, at: 0.5, anim: 'fade', duration: 0.4 }),
+      txt('Different company, inactive ingredients and form', 560, 735, 21, GREY, { align: 'center', bold: true, at: 0.9, anim: 'fade', duration: 0.4 }),
+      { type: 'rect', x: 1130, y: 250, w: 380, h: 360, color: RED, fill: '#fdecea', fillOpacity: 1, width: 3, rough: false, at: 1.3 },
+      txt('EXCEPTION: PATENTS', 1320, 290, 24, RED, { align: 'center', bold: true, at: 1.3 }),
+      txt('While a company holds\nthe patent, no one else\nmay copy the drug and\nsell it under their own\nname.\n\nWhen it ends, other\ncompanies can make it.', 1155, 345, 19, INK, { bold: true, at: 1.3 }),
+      caption('Generic name = the active ingredient · Brand name = a PRODUCT that contains it', BLUE, 1.8),
+    ]),
+    view('tgt4', [
+      txt('SSRIs', 800, 255, 46, PURPLE, { align: 'center', bold: true }),
+      txt('selective serotonin reuptake inhibitors', 800, 300, 22, GREY, { align: 'center', bold: true }),
+      svgItem(sertArt(800, 470), { solid: true }),
+      ...['fluoxetine', 'sertraline', 'citalopram'].map((n, i) => ({ type: 'rect', x: 260 + i * 380 - 120, y: 610, w: 240, h: 56, color: PURPLE, fill: '#f4effc', fillOpacity: 1, width: 3, rough: false, at: 0.4 + i * 0.3 })),
+      ...['fluoxetine', 'sertraline', 'citalopram'].map((n, i) => txt(n, 260 + i * 380, 638, 26, PURPLE, { align: 'center', bold: true, at: 0.4 + i * 0.3 })),
+      txt('all bind the serotonin transporter and block reuptake', 800, 720, 24, INK, { align: 'center', bold: true, at: 1.3, anim: 'fade', duration: 0.4 }),
+      caption('SAME TARGET + SAME MECHANISM = one group', PURPLE, 1.6),
+    ]),
+    view('use4', [
+      { type: 'rect', x: 110, y: 240, w: 1380, h: 520, color: TEAL, fill: '#eaf5f6', fillOpacity: 1, width: 4, rough: false, solid: true },
+      { ...txt('ANTIDEPRESSANTS (what it treats: depression)', 800, 280, 30, TEAL, { align: 'center', bold: true }), solid: true },
+      ...[['SSRIs', 'fluoxetine, sertraline,\ncitalopram', PURPLE], ['SNRIs', 'venlafaxine,\nduloxetine', BLUE], ['MAO inhibitors', 'phenelzine', ORANGE], ['…and others', 'e.g. tricyclics', '#6b7280']]
+        .flatMap(([h, ex, c], i) => at([
+          { type: 'rect', x: 150 + i * 335, y: 340, w: 305, h: 330, color: c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
+          txt(h, 302 + i * 335, 385, 28, c, { align: 'center', bold: true }),
+          txt(i === 0 ? '(the target group\nfrom before)' : 'a different target', 302 + i * 335, 440, 18, GREY, { align: 'center', bold: true }),
+          txt(ex, 302 + i * 335, 560, 22, INK, { align: 'center', bold: true }),
+        ], 0.3 + i * 0.35)),
+      txt('different targets and mechanisms, but they all treat the same thing', 800, 715, 23, TEAL, { align: 'center', bold: true, at: 1.8, anim: 'fade', duration: 0.4 }),
+      caption('A BROADER grouping than target & mechanism', TEAL, 2.2),
+    ]),
+    view('str4', [
+      svgItem(steroid(640, 480, 62), { solid: true }),
+      txt('STEROIDS', 1150, 300, 40, '#8e3b8a', { align: 'center', bold: true }),
+      txt('all share the same core:\nFOUR rings fused together', 1150, 380, 26, INK, { align: 'center', bold: true }),
+      txt('e.g. cortisol, testosterone,\noestrogen, prednisolone', 1150, 520, 24, GREY, { align: 'center', bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
+      caption('Less common in practice: groups by target & mechanism, and by use, are used most', '#8e3b8a', 1.0),
+    ]),
   ];
 
   // ================================================================ therapeutic effects, indications, contraindications (new slide 5)
@@ -260,14 +341,20 @@
     actions: pgxActions, items: pgxItems,
   }));
   scene.steps.splice(3, 0, st({
-    script: `${Qs('What names does a drug have?', 'How are drugs grouped into classes?', 'What clues do drug names give?')}\n[tabs: Three names → Ways to classify → Name clues]`,
-    notes: `• Every drug has 3 kinds of name: chemical (exact chemistry), generic (official, use this one, lower case), brand (company trade name, capital letter, ®)
-• Example: 2-(4-isobutylphenyl)propanoic acid = ibuprofen = Advil / Nurofen / Motrin
-• Generic copies: same active drug, dose and effect; usually much cheaper (made once the patent ends)
-• Classes group similar drugs: by target / mechanism (beta-blocker, SSRI), by what they treat (antidepressant, antibiotic), by chemical structure (benzodiazepine)
-• What you learn about one drug in a class mostly applies to the others
-• Name clues (stems): -olol beta-blocker, -pril ACE inhibitor, -statin, -prazole PPI, -triptan, -azepam benzodiazepine`,
-    say: 'Drugs have chemical, generic and brand names, and are grouped into classes by target, use or structure.',
+    script: `${Qs('What are the three ways a drug is named?', 'What is an active vs inactive ingredient?', 'How do generic and brand names differ?', 'How are drugs classified?')}\n[tabs: Chemical name → Generic name → Brand names → By target → By what it treats → By structure]`,
+    notes: `• Three ways to name a drug: chemical, generic, brand
+• Chemical name: exact structure, precise rules; used by chemists / researchers (ibuprofen = (RS)-2-[4-(2-methylpropyl)phenyl]propanoic acid)
+• Generic name: most common; given by an official council; no company owns it; names the ACTIVE ingredient (ibuprofen)
+• Active ingredient = the chemical that causes the effect; inactive ingredients = inert, dilute it, make it easy to take, make it a tablet / powder / liquid
+• Brand names: Advil, Nurofen, Motrin all contain ibuprofen, made by different companies with different inactive ingredients / forms; same active ingredient → same effect
+• Exception: a patent stops other companies copying the drug until it ends
+• Generic name = the active ingredient; brand name = a product that contains it
+• Classes = groups of drugs that are similar in some way
+• By target & mechanism: SSRIs (fluoxetine, sertraline, citalopram) all block the serotonin transporter
+• By what it treats (broader): antidepressants = SSRIs + SNRIs + MAO inhibitors + others
+• By chemical structure: steroids (four fused rings)
+• Target & mechanism and what-it-treats groupings are used most`,
+    say: 'Drugs have chemical, generic and brand names, and are grouped into classes by target and mechanism, by what they treat, or by structure.',
     actions: namesActions, items: namesItems,
   }), st({
     script: `${Qs('What is a therapeutic effect?', 'What is an indication?', 'What is a contraindication?')}\n[tabs: Therapeutic effect → Indications → Contraindications]`,
