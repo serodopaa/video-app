@@ -792,7 +792,7 @@
     box(x, y, 730, 330, c), { type: 'rect', x, y, w: 730, h: 54, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
     txt(head, x + 365, y + 27, 25, '#ffffff', { align: 'center', bold: true }),
     svgItem(art(x, y)),
-    fitTxt(body, x + 352, y + 74, 356, 236, INK, 16, 26),
+    fitTxt(body, x + 352, y + 72, 360, 240, INK, 16, 32),
   ];
   const clipArt = (id, x, y, inner) => `<defs><clipPath id="${id}"><rect x="${x + 20}" y="${y + 70}" width="310" height="248" rx="12"/></clipPath></defs><g clip-path="url(#${id})">${inner}</g>`;
   const recArt = (x, y, natural) => {
@@ -830,27 +830,35 @@
   const naDot = (a, b) => `<circle cx="${a}" cy="${b}" r="15" fill="#f6d04d" stroke="#a87900" stroke-width="3"/>${T(a, b + 5, 13, '#5c4400')('Na⁺')}`;
   const NA = (x, y) => { const [cx, top] = CH_C(x, y); return [[cx - 80, top - 85], [cx + 60, top - 95], [cx + 110, top - 65]]; };
   const artChan = (x, y) => clipArt('t4', x, y, `${chanBody(x, y, true)}${NA(x, y).map(([a, b]) => naDot(a, b)).join('')}${naDot(CH_C(x, y)[0] - 20, CH_C(x, y)[1] - 70)}`);
-  const TG = tabsOf([{ id: 'norm7', text: 'Normally (no drug)', c: ENDO }, { id: 'drug7', text: 'With the drug', c: ANT }], 230, 560);
+  const TG = tabsOf([{ id: 'norm7', text: 'What they normally do', c: ENDO }, { id: 'drug7', text: 'What drugs do to them', c: ANT }], 230, 560);
+  const [E0, E1] = ENZ_C(...TCARDS[1]), [R0, R1] = TR_C(...TCARDS[2]), [C0, C1] = CH_C(...TCARDS[3]);
+  // the slide opens on what each target normally does; the second tab shows what drugs usually do to it
+  const NORM = [
+    'Proteins, usually on the outside of a cell (in its membrane), that pass a MESSAGE into the cell.',
+    'Speed up chemical reactions, e.g. COX makes prostaglandins (pain and inflammation signals).',
+    'Move molecules from one place to another, e.g. pull serotonin back into a nerve.',
+    'When open, let charged particles (ions) enter or leave a cell.',
+  ];
+  const DRUGFX = [
+    'Turn it ON (activate it), or bind and do nothing, which blocks it: nothing else can bind, so no message gets through.',
+    'Most often BLOCK it, so the reaction slows right down. e.g. aspirin and ibuprofen block COX',
+    'Most often BLOCK it, so molecules can\'t travel through. e.g. SSRIs. (Some drugs increase activity instead.)',
+    'Usually BLOCK it, so ions can\'t flow through. e.g. lidocaine. (Some drugs open channels instead.)',
+  ];
   const targetItems = [
-    title('Drug targets: where drugs act'),
+    title('Drug targets: how drugs have an effect'),
     ...TG.bar(null),
-    ...tcard(...TCARDS[0], AFF, 'RECEPTORS', 'The MOST common target. The\ndrug switches it ON (agonist) or\nblocks it (antagonist).\n(more on these next)\n\ne.g. morphine at opioid receptors', artRec),
-    ...tcard(...TCARDS[1], EXO, 'ENZYMES', 'The drug blocks an enzyme, so\nit can\'t make its product.\n\ne.g. aspirin and ibuprofen\nblock COX, which makes pain\nand inflammation signals', artEnz),
-    ...tcard(...TCARDS[2], PD, 'TRANSPORTERS', 'The drug blocks a pump that\nclears a chemical away, so more\nof it stays around.\n\ne.g. SSRIs (like fluoxetine)\nblock serotonin reuptake', artTrans),
-    ...tcard(...TCARDS[3], ENDO, 'ION CHANNELS', 'The drug plugs a channel, so\nions can\'t flow through.\n\ne.g. lidocaine blocks Na⁺\nchannels in nerves → numbness', artChan),
+    ...tcard(...TCARDS[0], AFF, 'RECEPTORS', NORM[0], (x, y) => recArt(x, y, true)),
+    ...tcard(...TCARDS[1], EXO, 'ENZYMES', NORM[1], (x, y) => enzBody(...ENZ_C(x, y)) + T(ENZ_C(x, y)[0] + 20, y + 100, 17, ENDO)('✓ pain signals made')),
+    ...tcard(...TCARDS[2], PD, 'TRANSPORTERS', NORM[2], (x, y) => clipArt('t3n', x, y, transBody(x, y))),
+    ...tcard(...TCARDS[3], ENDO, 'ION CHANNELS', NORM[3], (x, y) => clipArt('t4n', x, y, chanBody(x, y, false))),
     ...TG.hot,
   ];
-  // "normally": cover each picture and text with the no-drug version, plus the natural flow
-  const coverCard = (x, y, art, body) => [
+  const coverCard = (x, y, art, body, color) => [
     svgItem(`<rect x="${x + 4}" y="${y + 58}" width="722" height="268" fill="#ffffff"/>${art}`, { solid: true }),
-    { ...fitTxt(body, x + 352, y + 74, 356, 236, ENDO, 16, 26), solid: true },
+    { ...fitTxt(body, x + 352, y + 72, 360, 240, color, 16, 32), solid: true },
   ];
-  const [E0, E1] = ENZ_C(...TCARDS[1]), [R0, R1] = TR_C(...TCARDS[2]), [C0, C1] = CH_C(...TCARDS[3]);
   const normItems = [
-    ...coverCard(...TCARDS[0], recArt(...TCARDS[0], true), 'NORMALLY: your body\'s own\nmessengers (neurotransmitters,\nhormones) bind and switch\nit ON.'),
-    ...coverCard(...TCARDS[1], enzBody(E0, E1) + T(E0 + 20, TCARDS[1][1] + 100, 17, ENDO)('✓ pain signals made'), 'NORMALLY: the enzyme turns a\nstarting molecule into a\nproduct, e.g. COX makes\nprostaglandins (pain and\ninflammation signals).'),
-    ...coverCard(...TCARDS[2], clipArt('t3n', ...TCARDS[2], transBody(...TCARDS[2])), 'NORMALLY: a pump pulls a\nchemical back into the nerve\n(reuptake), clearing it away\nso the signal stops.'),
-    ...coverCard(...TCARDS[3], clipArt('t4n', ...TCARDS[3], chanBody(...TCARDS[3], false)), 'NORMALLY: the channel opens\nand ions (e.g. Na⁺) flow in,\nsending a nerve signal.'),
     // enzyme: starting molecules go in, products (pain signals) come out
     ...[0, 1, 2].flatMap((k) => [
       { type: 'mover', path: [[E0 + 150 + k * 10, E1 - 115], [E0 + 112, E1]], r: 9, color: '#f0a12e', count: 1, speed: 1.4 + k * 0.35 },
@@ -860,16 +868,21 @@
     ...SER(...TCARDS[2]).slice(0, 4).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [R0, R1 - 40], [R0, R1 + 60], [R0 + 30, R1 + 110]], r: 11, color: '#f0a12e', count: 1, speed: 2.2 + k * 0.3 })),
     // channel: ions flow through
     ...NA(...TCARDS[3]).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [C0, C1 - 40], [C0, C1 + 70], [C0 + 20 - k * 20, C1 + 100]], r: 13, color: '#f6d04d', count: 1, speed: 1.8 + k * 0.3 })),
+    { type: 'pulse', x: TCARDS[0][0] + 175, y: TCARDS[0][1] + 290, r: 22, color: '#3ccf6e', speed: 1.2 },
   ];
-  // "with the drug": the same flows get stuck
+  // "what drugs do": each card switches to the drug version, and the flows get stuck
   const drugItems = [
+    ...coverCard(...TCARDS[0], artRec(...TCARDS[0]), DRUGFX[0], ANT),
+    ...coverCard(...TCARDS[1], artEnz(...TCARDS[1]), DRUGFX[1], ANT),
+    ...coverCard(...TCARDS[2], artTrans(...TCARDS[2]), DRUGFX[2], ANT),
+    ...coverCard(...TCARDS[3], artChan(...TCARDS[3]), DRUGFX[3], ANT),
     ...[0, 1].map((k) => ({ type: 'mover', path: [[E0 + 150 + k * 14, E1 - 115], [E0 + 128 + k * 10, E1 - 48], [E0 + 160 + k * 14, E1 - 120]], r: 9, color: '#f0a12e', count: 1, speed: 1.6 + k * 0.4 })),
     ...SER(...TCARDS[2]).slice(0, 3).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [R0 + (k - 1) * 20, R1 - 72], [a + 10, b - 6]], r: 11, color: '#f0a12e', count: 1, speed: 2.0 + k * 0.3 })),
     ...NA(...TCARDS[3]).map(([a, b], k) => ({ type: 'mover', path: [[a, b], [C0 + (k - 1) * 14, C1 - 26], [a, b]], r: 13, color: '#f6d04d', count: 1, speed: 1.8 + k * 0.3 })),
   ];
   const targetActions = [
-    { id: 'norm7', label: 'Normally (no drug)', group: 'tg', stay: true, drawn: false, items: [...TG.bar('norm7').map((it) => ({ ...it, solid: true })), ...normItems] },
-    { id: 'drug7', label: 'With the drug', group: 'tg', stay: true, drawn: false, items: [...TG.bar('drug7').map((it) => ({ ...it, solid: true })), ...drugItems] },
+    { id: 'norm7', label: 'What they normally do', group: 'tg', stay: true, drawn: false, items: [...TG.bar('norm7').map((it) => ({ ...it, solid: true })), ...normItems] },
+    { id: 'drug7', label: 'What drugs do to them', group: 'tg', stay: true, drawn: false, items: [...TG.bar('drug7').map((it) => ({ ...it, solid: true })), ...drugItems] },
   ];
 
   // ---------------------------------------------------------------- slide: receptor types
@@ -1060,15 +1073,18 @@
 • Roadmap: drug targets → receptors & binding → receptor types → affinity / specificity / selectivity → agonists → antagonists & modulators → enzymes, transporters, ion channels → dose–response → potency vs efficacy → therapeutic index → receptor regulation → the placebo effect`,
       say: 'Part 2: pharmacodynamics, how drugs affect the body.', clear: true, items: introItems },
     // Slide 9: drug targets.
-    { script: `${Qs('Where do drugs act?', 'What are the four main drug targets?', 'What does each target do normally, and what does the drug change?')}
-[tabs: Normally (no drug) → With the drug]`,
-      notes: `• First, the big picture: drugs act on 4 main types of target (receptors are the most common, but not the only one)
-• Receptors come next (slides 10–15); enzymes, transporters and ion channels each get their own slide after that (16–18)
-• Receptors: switched on or blocked (morphine at opioid receptors)
-• Enzymes: blocked so they can't make their product (aspirin / ibuprofen block COX → less pain and inflammation)
-• Transporters: blocked so a chemical stays around (SSRIs block serotonin reuptake)
-• Ion channels: plugged so ions can't flow (lidocaine blocks Na⁺ channels → numbness)`,
-      say: 'Drugs act on four main targets: receptors, enzymes, transporters and ion channels.', clear: true, actions: targetActions, items: targetItems },
+    { script: `${Qs('How does a drug have an effect on the body?', 'What do receptors, enzymes, transporters and ion channels normally do?', 'What do drugs usually do to each one?')}
+[tabs: What they normally do → What drugs do to them]`,
+      notes: `• Drugs mostly have their effect by acting on receptors, enzymes, transporters or ion channels
+• Receptors: proteins, usually on the outside of the cell (membrane), that pass a message into the cell
+• Enzymes: speed up chemical reactions
+• Transporters: move molecules from one place to another
+• Ion channels: when open, let charged ions enter or leave a cell
+• Drugs + receptors: turn it ON (activate), or bind and do nothing → blocks it, so nothing else can bind and no message gets through
+• Drugs + enzymes: by far most often BLOCK it → the reaction slows right down
+• Drugs + transporters: most often BLOCK it → molecules can't travel through
+• Drugs + ion channels: usually BLOCK it → ions can't flow; some drugs increase transporter / channel activity instead`,
+      say: 'Drugs act mostly on receptors, enzymes, transporters and ion channels, usually by switching them on or blocking them.', clear: true, actions: targetActions, items: targetItems },
     // Slide 10: receptors and binding.
     { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
 [click the left side to bind]`,
