@@ -106,13 +106,14 @@
   const P2 = { drug: [925, 470], body: [1370, 520] };
   // the drug ⇄ body picture (drawn at 800..1540 × 120..860, shrunk into the bottom-left box)
   const P2S = 0.64, P2X = 60 + (700 - 740 * P2S) / 2, P2Y = 378;
-  const COVERS = [['How drugs work in the body', PD], ['How the body handles drugs', PK], ['What drugs are used for\n(therapeutics)', ENDO],
-    ['Side effects and toxicity', DRUG], ['How much to give (dosing)', EXO], ['Drug discovery and development', '#0b7a8a']];
+  const COVERS = [['How drugs work in the body', PD], ['How the body handles drugs', PK], ['What drugs are used for', ENDO, 'the symptoms and conditions they treat'],
+    ['Side effects and toxicity', DRUG], ['How much to give (dosing)', EXO]];
+  const CY = (i) => 254 + i * 74, SAFE = '#1f8a4c', DISC = '#0b7a8a';
   const pharmItems = [
     title('What is pharmacology?'),
     box(60, 120, 700, 230, DARK, '#f4f6fa'),
     txt('PHARMACOLOGY', 410, 165, 34, DARK, { align: 'center', bold: true }),
-    txt('The study of DRUGS and how they\ninteract with living things.', 410, 240, 28, INK, { align: 'center', bold: true }),
+    txt('The study of how DRUGS interact with\nliving organisms, and how the BODY\ninteracts with the drug.', 410, 228, 27, INK, { align: 'center', bold: true }),
     // the two-way picture: drug ↔ body (bottom left)
     svgItem(`${rr(60, 370, 700, 490, '#d9dce3', '#fbfcfe', 2)}
       <g transform="translate(${P2X - 800 * P2S} ${P2Y - 120 * P2S}) scale(${P2S})">
@@ -120,15 +121,26 @@
       ${T(P2.drug[0], 590, 38, DRUG)('DRUG')}${T(P2.body[0], 790, 38, '#2c5a92')('BODY')}
       ${curve('M 950 385 C 1030 220, 1180 220, 1260 320', PD, 8)}
       ${curve('M 1260 640 C 1170 760, 1020 760, 950 600', PK, 8)}
-      ${T(1080, 225, 36, PD)('acts on')}${T(1080, 815, 36, PK)('acts on')}
+      ${T(1100, 225, 36, PD)('the drug acts on the body')}${T(1000, 830, 36, PK)('the body acts on the drug')}
       ${T(1170, 168, 38, DARK)('It works BOTH ways')}</g>`),
     // what it covers (right side, the focus)
     box(800, 120, 740, 740, DARK, '#ffffff'),
     txt('Pharmacology covers…', 840, 175, 34, DARK, { bold: true }),
-    ...COVERS.flatMap(([t, c], i) => {
-      const y = 265 + i * 102;
-      return [svgItem(`<circle cx="858" cy="${y}" r="16" fill="${c}"/>`), txt(t, 895, y, 30, INK, { bold: true })];
-    }),
+    // 1–5: what you need to give drugs safely
+    svgItem(`${rr(822, 212, 696, 452, SAFE, '#f1f9f3', 2.5, 14)}
+      <path d="M 846 ${CY(3)} H 834 V ${CY(4)} H 846" fill="none" stroke="${DARK}" stroke-width="3"/>`),
+    ...COVERS.flatMap(([t, c, sub], i) => [
+      svgItem(`<circle cx="864" cy="${CY(i)}" r="15" fill="${c}"/>`),
+      txt(t, 898, CY(i) - (sub ? 8 : 0), 29, INK, { bold: true }),
+      ...(sub ? [txt(sub, 898, CY(i) + 24, 18, GREY, { bold: true })] : []),
+    ]),
+    txt('↳ side effects depend on the dose', 898, CY(4) + 34, 17, GREY, { bold: true }),
+    txt('→ all needed to give drugs to people SAFELY', 1170, 634, 22, SAFE, { align: 'center', bold: true }),
+    // 6: discovering and creating new drugs
+    svgItem(`${rr(822, 684, 696, 156, DISC, '#eaf5f6', 2.5, 14)}<circle cx="864" cy="728" r="15" fill="${DISC}"/>
+      ${molecule(1440, 770, 0.5, DISC)}`),
+    txt('Drug discovery and development', 898, 728, 29, INK, { bold: true }),
+    txt('finding and creating new drugs:\nalmost endless possible molecules', 898, 784, 19, DISC, { bold: true }),
   ];
 
   // =================================================================== slide 3: what is a drug?
@@ -410,7 +422,8 @@
         notes: `• Definition: the study of drugs and how they interact with living things
 • Word origin: pharmakon (Greek) = drug / medicine / poison + -logy = study of
 • Poison link: almost any drug becomes harmful at a high enough dose
-• What it covers: how drugs work, how the body handles them, uses, side effects / toxicity, dosing, drug discovery and development
+• What it covers: how drugs work, how the body handles them, what they're used for (symptoms / conditions), side effects and toxicity (linked to dosing): all needed to give drugs safely
+• Also: discovering and creating new drugs (an almost endless number of possible molecules)
 • It works BOTH ways: drug → body and body → drug (sets up PK vs PD later)`,
         say: 'Pharmacology is the study of drugs and how they interact with living things, in both directions.', clear: true, items: pharmItems },
       // Slide 3: what is a drug?
