@@ -1602,6 +1602,29 @@
     const applySize = () => { Object.values(notes.boxes).forEach((b) => b.el && (b.el.style.fontSize = size + 'px')); lsSet('wb-notes-size', String(size)); };
     document.getElementById('notesSmaller').addEventListener('click', () => { size = Math.max(12, size - 2); applySize(); });
     document.getElementById('notesBigger').addEventListener('click', () => { size = Math.min(32, size + 2); applySize(); });
+    // copy buttons: this slide's notes (whatever the view shows), or MY notes for every slide in the topic
+    const copyText = async (text, btn) => {
+      const old = btn.textContent;
+      try { await navigator.clipboard.writeText(text); }
+      catch (_) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+      btn.textContent = '✓'; setTimeout(() => { btn.textContent = old; }, 1500);
+    };
+    document.getElementById('notesCopy').addEventListener('click', (e) => {
+      flushNotes();
+      const pts = notes.boxes.script.el.value.trim(), mine = notes.boxes.mine.el.value.trim();
+      const text = notes.view === 'script' ? pts : notes.view === 'mine' ? mine : [pts && `KEY POINTS\n${pts}`, mine && `MY NOTES\n${mine}`].filter(Boolean).join('\n\n');
+      copyText(text, e.currentTarget);
+    });
+    document.getElementById('notesCopyAll').addEventListener('click', (e) => {
+      flushNotes();
+      const id = player.scene.id, n = slideCount(), out = [];
+      for (let k = 1; k <= n; k++) {
+        const v = (lsGet(`wb-mynotes-${id}-${k}`) || '').trim();
+        if (v) out.push(`Slide ${k}: ${v}`);
+      }
+      if (!out.length) { alert('There are no "My notes" in this topic yet.'); return; }
+      copyText(out.join('\n\n'), e.currentTarget);
+    });
     applySize();
     if (lsGet('wb-notes-open') === '1') setOpen(true);
     const viewBtns = { script: document.getElementById('notesTabScript'), mine: document.getElementById('notesTabMine'), both: document.getElementById('notesTabBoth') };
