@@ -132,48 +132,86 @@
   ];
 
   // =================================================================== slide 3: what is a drug?
-  // A 3-step flow (click to build it): a chemical → it interacts with the body (binds a target) → it changes how the body works
-  const F = { y0: 300, h: 330, xs: [60, 560, 1060], w: 480 };
-  const R3 = { x: 800, top: 540 };
-  const flowCard = (i, head, c) => [box(F.xs[i], F.y0, F.w, F.h, c), svgItem(badge(F.xs[i] + 40, F.y0 + 40, String(i + 1), c)), txt(head, F.xs[i] + 75, F.y0 + 40, 25, c, { bold: true })];
+  // Definition on top, then 4 tabs that follow the script: what drugs do → natural or lab-made → medicine vs drug → not always good
+  const OK3 = '#1f8a4c', BAD3 = '#c0392b', NAT = '#2e7d32', LAB = '#2f6fde';
+  const DT = [{ id: 'do3', text: 'What drugs do', c: PD }, { id: 'src3', text: 'Natural or lab-made?', c: NAT }, { id: 'med3', text: 'Medicine vs drug', c: LAB }, { id: 'bad3', text: 'Not always good', c: BAD3 }];
+  const DTX = (i) => 60 + i * 375, DTW = 355;
+  const dTabs = (active) => DT.flatMap((t, i) => [
+    { type: 'rect', x: DTX(i), y: 250, w: DTW, h: 58, color: t.c, fill: t.id === active ? t.c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+    { ...txt(t.text, DTX(i) + DTW / 2, 279, 24, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }), solid: true },
+  ]);
+  const AREA = { x: 60, y: 328, w: 1480, h: 532 };
+  const cover3 = () => svgItem(`<rect x="${AREA.x}" y="${AREA.y}" width="${AREA.w}" height="${AREA.h}" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>`, { solid: true });
+  // tab 1: three effects, each a before → after bar
+  const EFF = [['❤️', 'Heart rate', 'a stimulant speeds it up', 0.45, 0.85, '▲'], ['🤕', 'Pain', 'ibuprofen reduces how much you feel', 0.8, 0.3, '▼'], ['⚡', 'Alertness', 'caffeine makes you more alert', 0.35, 0.8, '▲']];
+  const effBars = (u) => EFF.map(([icon, name, sub, a, b, arr], i) => {
+    const y = 400 + i * 140, v = a + (b - a) * u, c = b > a ? BAD3 : OK3;
+    return `${T(120, y + 14, 44, INK)(icon)}${T(175, y, 30, INK, 700, 'start')(name)}${T(175, y + 36, 20, GREY, 700, 'start')(sub)}
+      ${rr(700, y - 18, 600, 40, '#c9ced8', '#eef0f4', 2, 20)}<rect x="700" y="${y - 18}" width="${(600 * v).toFixed(1)}" height="40" rx="20" fill="${u > 0 ? c : '#9aa1ad'}"/>
+      ${u >= 1 ? T(1345, y + 14, 40, c)(arr) : ''}`;
+  }).join('');
+  // tab 2: where drugs come from
+  const poppy = (cx, cy) => `<path d="M ${cx} ${cy + 20} C ${cx + 6} ${cy + 70}, ${cx - 6} ${cy + 110}, ${cx} ${cy + 150}" stroke="#4f8a3a" stroke-width="7" fill="none"/>
+    ${[[-30, -6], [30, -6], [0, -34], [0, 22]].map(([dx, dy]) => `<ellipse cx="${cx + dx}" cy="${cy + dy}" rx="34" ry="28" fill="#e0402f" stroke="#a52a1c" stroke-width="3"/>`).join('')}<circle cx="${cx}" cy="${cy - 4}" r="16" fill="#2b2b2b"/>`;
+  const mold = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="80" ry="36" fill="#eef6fb" stroke="#8aa3cc" stroke-width="4"/>
+    ${[[-30, -6, 16], [10, 4, 20], [36, -10, 12], [-6, -14, 10]].map(([dx, dy, r]) => `<circle cx="${cx + dx}" cy="${cy + dy}" r="${r}" fill="#6fae5a" opacity="0.85"/>`).join('')}`;
+  const flask = (cx, cy) => `<path d="M ${cx - 16} ${cy - 60} L ${cx - 16} ${cy - 10} L ${cx - 56} ${cy + 50} Q ${cx - 62} ${cy + 66} ${cx - 44} ${cy + 66} L ${cx + 44} ${cy + 66} Q ${cx + 62} ${cy + 66} ${cx + 56} ${cy + 50} L ${cx + 16} ${cy - 10} L ${cx + 16} ${cy - 60} Z" fill="#e6f0fb" stroke="${LAB}" stroke-width="4"/>
+    <path d="M ${cx - 40} ${cy + 30} L ${cx + 40} ${cy + 30} L ${cx + 52} ${cy + 54} Q ${cx + 54} ${cy + 62} ${cx + 44} ${cy + 62} L ${cx - 44} ${cy + 62} Q ${cx - 54} ${cy + 62} ${cx - 52} ${cy + 54} Z" fill="#7fb2f0"/>`;
+  const srcItems = [
+    svgItem(`${rr(90, 350, 860, 400, NAT, '#f1f8ef', 3)}${rr(980, 350, 530, 400, LAB, '#eef4fd', 3)}
+      ${T(520, 392, 28, NAT)('From NATURE')}${T(1245, 392, 28, LAB)('Made in a LAB')}
+      ${poppy(270, 520)}${T(270, 712, 22, INK)('poppy → MORPHINE')}${T(270, 738, 17, GREY)('(painkiller)')}
+      ${mold(730, 560)}${T(730, 712, 22, INK)('mould → PENICILLIN')}${T(730, 738, 17, GREY)('(antibiotic)')}
+      ${flask(1245, 540)}${T(1245, 680, 22, INK)('e.g. ibuprofen,')}${T(1245, 708, 22, INK)('most modern medicines')}`, { solid: true }),
+    txt('Where it comes from doesn\'t matter: if it changes the body, it\'s a drug.', 800, 805, 26, DARK, { align: 'center', bold: true, at: 0.6, anim: 'fade', duration: 0.4 }),
+  ];
+  // tab 3: medicines are a smaller circle inside drugs
+  const medItems = [
+    svgItem(`<ellipse cx="560" cy="580" rx="470" ry="222" fill="#eef4fd" stroke="${LAB}" stroke-width="4"/>
+      <ellipse cx="420" cy="610" rx="245" ry="165" fill="#e8f6ec" stroke="${OK3}" stroke-width="4"/>
+      ${T(560, 385, 30, LAB)('DRUGS')}${T(420, 498, 28, OK3)('MEDICINES')}
+      ${T(420, 545, 18, GREY)('used to prevent, diagnose')}${T(420, 567, 18, GREY)('or treat disease')}
+      ${['ibuprofen', 'insulin', 'antibiotics'].map((t, i) => T(420, 625 + i * 40, 23, INK)(t)).join('')}
+      ${['caffeine', 'nicotine'].map((t, i) => T(830, 520 + i * 44, 23, INK)(t)).join('')}
+      ${rr(745, 615, 170, 50, BAD3, '#fdecea', 3, 25)}${T(830, 648, 24, BAD3)('alcohol')}`, { solid: true }),
+    { type: 'pulse', x: 830, y: 640, r: 50, color: '#e0606a', speed: 1.4, at: 0.8 },
+    { type: 'rect', x: 1060, y: 360, w: 450, h: 470, color: BAD3, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false, at: 1.0 },
+    txt('Is alcohol a medicine?', 1285, 400, 26, BAD3, { align: 'center', bold: true, at: 1.0 }),
+    txt('✓ Sometimes used as a\n   painkiller or a disinfectant\n\n✗ A Saturday night drink isn\'t\n   treating a disease\n\n→ a DRUG, but usually\n   not a medicine', 1090, 470, 22, INK, { bold: true, at: 1.0 }),
+    txt('Every medicine is a drug, but not every drug is a medicine.', 560, 832, 23, DARK, { align: 'center', bold: true, at: 1.4, anim: 'fade', duration: 0.4 }),
+  ];
+  // tab 4: wanted vs unwanted effects
+  const badItems = [
+    svgItem(`${capsule(800, 400, 1.0, -25)}${T(800, 465, 22, DARK)('the same drug changes the body in more than one way')}
+      ${curve('M 740 480 C 640 500, 520 510, 480 540', OK3, 5)}${curve('M 860 480 C 960 500, 1080 510, 1120 540', BAD3, 5)}`, { solid: true }),
+    { type: 'rect', x: 140, y: 555, w: 620, h: 210, color: OK3, fill: '#eaf6ee', fillOpacity: 1, width: 3, rough: false, at: 0.3 },
+    txt('WANTED effects', 450, 590, 26, OK3, { align: 'center', bold: true, at: 0.3 }),
+    txt('ibuprofen: ✓ less pain\nalcohol: ✓ feel relaxed', 180, 655, 24, INK, { bold: true, at: 0.3 }),
+    { type: 'rect', x: 840, y: 555, w: 620, h: 210, color: BAD3, fill: '#fdecea', fillOpacity: 1, width: 3, rough: false, at: 0.9 },
+    txt('UNWANTED = SIDE EFFECTS', 1150, 590, 26, BAD3, { align: 'center', bold: true, at: 0.9 }),
+    txt('ibuprofen: ✗ stomach irritation\nalcohol: ✗ slower reactions,\n   hangover', 880, 655, 24, INK, { bold: true, at: 0.9 }),
+    txt('A drug doesn\'t have to treat a disease, or only do good things.', 800, 812, 25, DARK, { align: 'center', bold: true, at: 1.5, anim: 'fade', duration: 0.4 }),
+  ];
   const drugItems = [
     title('What is a drug?'),
-    box(60, 115, 1480, 150, DRUG, '#fdf1f0'),
-    txt('DRUG', 120, 190, 44, DRUG, { bold: true }),
-    txt('Any chemical substance that CHANGES HOW THE BODY WORKS\nwhen it gets into the body.', 300, 190, 30, INK, { bold: true }),
-    { ...svgItem(`${[0, 1, 2].map((i) => rr(F.xs[i], F.y0, F.w, F.h, '#c9ced8', '#f7f8fa', 2.5) + T(F.xs[i] + F.w / 2, F.y0 + F.h / 2 + 8, 26, '#9aa1ad')(String(i + 1))).join('')}`), hideDuring: 'd3' },
-    { type: 'hotspot', x: 60, y: F.y0, w: 1480, h: F.h, action: 'd3' },
-    // examples: medicines and not-medicines
-    txt('Medicines', 60, 690, 24, ENDO, { bold: true }),
-    txt('ibuprofen · antibiotics · insulin · antidepressants', 60, 730, 23, INK, { bold: true }),
-    txt('Not medicines… still drugs', 830, 690, 24, EXO, { bold: true }),
-    txt('caffeine · alcohol · nicotine', 830, 730, 23, INK, { bold: true }),
-    box(60, 775, 1480, 80, '#c9ced8', '#f7f8fa'),
-    txt('Medicines are drugs used to prevent, diagnose or treat disease. Every medicine is a drug,\nbut not every drug is a medicine.', 800, 815, 22, DARK, { align: 'center', bold: true }),
+    box(60, 112, 1480, 118, DRUG, '#fdf1f0'),
+    txt('DRUG', 120, 171, 44, DRUG, { bold: true }),
+    txt('A chemical substance that changes the way the body\nis STRUCTURED or the way it FUNCTIONS.', 300, 153, 30, INK, { bold: true }),
+    ...dTabs(null),
+    cover3(),
+    svgItem(`${capsule(640, 560, 1.6, -25)}${molecule(900, 560, 1.3)}`),
+    txt('Click a tab above ↑', 800, 760, 24, '#9aa1ad', { align: 'center', bold: true, hideDuring: DT.map((t) => t.id) }),
+    ...DT.map((t, i) => ({ type: 'hotspot', x: DTX(i), y: 250, w: DTW, h: 58, action: t.id })),
   ];
-  const drugActions = [{
-    id: 'd3', label: 'Build the definition', stay: true, drawn: false,
-    items: [
-      ...flowCard(0, 'A chemical substance', DRUG).map((it) => ({ ...it, at: 0 })),
-      { ...svgItem(capsule(F.xs[0] + 150, 470, 1.3, -30) + molecule(F.xs[0] + 350, 470, 1.05)), at: 0.1 },
-      txt('a medicine, caffeine, alcohol…', F.xs[0] + F.w / 2, F.y0 + 300, 20, GREY, { align: 'center', bold: true, at: 0.1 }),
-      ...flowCard(1, 'Interacts with the body', PD).map((it) => ({ ...it, at: 1.2 })),
-      { ...svgItem(`<defs><clipPath id="d3c"><rect x="${F.xs[1] + 3}" y="${F.y0 + 75}" width="${F.w - 6}" height="${F.h - 80}" rx="14"/></clipPath></defs><g clip-path="url(#d3c)">${panel(F.xs[1], F.xs[1] + F.w, F.y0 + 75, R3.top, R3.top + 50, F.y0 + F.h)}${receptor(R3.x, R3.top, 'tri', 'blue', 0.85)}</g>`), at: 1.2 },
-      ...track([[0, R3.x + 150, 420], [1.0, R3.x, R3.top + DOCK.tri * 0.85], [30, R3.x, R3.top + DOCK.tri * 0.85]], ([x, y]) => ligand('tri', x, y, 'amber', 1, 0.85), null, 1.4),
-      { ...svgItem(contacts(R3.x, R3.top, 'tri', 4, 0.85)), at: 2.5, duration: 0.3 },
-      txt('binds a target,\ne.g. a receptor', F.xs[1] + 395, F.y0 + 130, 18, GREY, { align: 'center', bold: true, at: 1.4 }),
-      ...flowCard(2, 'Changes how it works', ENDO).map((it) => ({ ...it, at: 2.8 })),
-      { ...svgItem(`${['Heart rate', 'Pain', 'Alertness'].map((t, i) => {
-        const y = F.y0 + 125 + i * 65, up = i === 0;
-        return T(F.xs[2] + 50, y + 8, 24, INK, 700, 'start')(t) + rr(F.xs[2] + 210, y - 16, 200, 32, '#d9dce3', '#eef0f4', 2, 10)
-          + `<rect x="${F.xs[2] + 210}" y="${y - 16}" width="${up ? 160 : i === 1 ? 50 : 120}" height="32" rx="10" fill="${up ? DRUG : i === 1 ? ENDO : PD}"/>`
-          + T(F.xs[2] + 440, y + 9, 26, up ? DRUG : i === 1 ? ENDO : PD)(i === 1 ? '▼' : '▲');
-      }).join('')}`), at: 3.0 },
-      txt('e.g. speeds up the heart, eases pain', F.xs[2] + F.w / 2, F.y0 + 300, 20, GREY, { align: 'center', bold: true, at: 3.0 }),
-      { type: 'arrow', from: [F.xs[0] + F.w + 6, F.y0 + F.h / 2], to: [F.xs[1] - 6, F.y0 + F.h / 2], color: DARK, width: 5, rough: false, at: 1.0 },
-      { type: 'arrow', from: [F.xs[1] + F.w + 6, F.y0 + F.h / 2], to: [F.xs[2] - 6, F.y0 + F.h / 2], color: DARK, width: 5, rough: false, at: 2.7 },
-    ],
-  }];
+  const drugActions = [
+    { id: 'do3', label: 'What drugs do', group: 'dr3', stay: true, drawn: false, items: [...dTabs('do3'), cover3(),
+      ...frameTrack([[0, 0], [0.4, 0], [2.4, 1], [30, 1]], ([u]) => effBars(u), 12),
+      txt('before → after taking the drug', 1000, 360, 18, GREY, { align: 'center', bold: true }),
+      txt('It can change how the body WORKS (function) or how it\'s BUILT (structure).', 800, 820, 23, DARK, { align: 'center', bold: true, at: 2.4, anim: 'fade', duration: 0.4 })] },
+    { id: 'src3', label: 'Natural or lab-made?', group: 'dr3', stay: true, drawn: false, items: [...dTabs('src3'), cover3(), ...srcItems] },
+    { id: 'med3', label: 'Medicine vs drug', group: 'dr3', stay: true, drawn: false, items: [...dTabs('med3'), cover3(), ...medItems] },
+    { id: 'bad3', label: 'Not always good', group: 'dr3', stay: true, drawn: false, items: [...dTabs('bad3'), cover3(), ...badItems] },
+  ];
 
   // =================================================================== slide 6: endogenous vs exogenous
   const C4 = { endo: 60, exo: 820, w: 720, y: 115, h: 560 };
@@ -376,15 +414,16 @@
 • It works BOTH ways: drug → body and body → drug (sets up PK vs PD later)`,
         say: 'Pharmacology is the study of drugs and how they interact with living things, in both directions.', clear: true, items: pharmItems },
       // Slide 3: what is a drug?
-      { script: `${Qs('What is a drug?', 'What does a drug actually do? (chemical → interacts with the body → changes how it works)', 'Is every drug a medicine?')}
-[click the boxes to build the definition step by step]`,
-        notes: `• Definition: any chemical that changes how the body works once it gets in
-• Break it down: 1) a chemical 2) interacts with the body (usually binds a target, e.g. a receptor) 3) changes how it works
-• Examples of the change: heart rate, pain, alertness
-• Medicine = a drug used to prevent, diagnose or treat disease
-• Caffeine, alcohol, nicotine: drugs, but not medicines
-• Every medicine is a drug; not every drug is a medicine`,
-      say: 'A drug is any chemical that changes how the body works; medicines are drugs used to treat or prevent disease.', clear: true, actions: drugActions, items: drugItems },
+      { script: `${Qs('What is a drug?', 'Are drugs always made in a lab?', 'Is every drug a medicine?', 'Do drugs always do good things?')}
+[tabs: What drugs do → Natural or lab-made? → Medicine vs drug → Not always good]`,
+        notes: `• Definition: a chemical substance that changes the way the body is structured or functions
+• Examples: something that speeds up your heart rate; ibuprofen reducing pain; caffeine making you more alert
+• Misconception: drugs aren't always synthetic / lab-made; natural drugs: morphine (poppy), penicillin (mould)
+• Where it comes from doesn't matter: if it changes the body, it's a drug
+• Every medicine is a drug, but not every drug is a medicine (medicine = used to prevent, diagnose or treat disease)
+• Alcohol: sometimes a painkiller or disinfectant, but a Saturday night drink isn't treating a disease
+• A drug doesn't have to treat a disease or only do good: that's why side effects happen`,
+      say: 'A drug is any chemical that changes how the body is built or works, whether natural or lab-made, helpful or not.', clear: true, actions: drugActions, items: drugItems },
       // Slide 6: endogenous vs exogenous.
       { script: `${Qs('What does endogenous mean?', 'What does exogenous mean?', 'Examples of each', 'Can an endogenous substance be a drug? (insulin, adrenaline)')}
 [click the green side, then the orange side, then the key point]`,
