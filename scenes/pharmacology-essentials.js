@@ -226,8 +226,9 @@
   ];
 
   // =================================================================== slide 6: endogenous vs exogenous
-  const C4 = { endo: 60, exo: 820, w: 720, y: 115, h: 560 };
-  const endoP = [C4.endo + 200, 425], exoP = [C4.exo + 200, 425];
+  // Tabs follow the script: the basics (adrenaline vs caffeine) → the same chemical can be either → why it matters (adenosine vs caffeine)
+  const C4 = { endo: 60, exo: 820, w: 720, y: 180, h: 680 };
+  const endoP = [C4.endo + 200, 500], exoP = [C4.exo + 200, 500];
   const colHead = (x, c, head, sub, def) => [
     box(x, C4.y, C4.w, C4.h, c, '#ffffff'),
     { type: 'rect', x, y: C4.y, w: C4.w, h: 86, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
@@ -236,52 +237,100 @@
     txt(def, x + 400, C4.y + 150, 25, c, { bold: true }),
   ];
   const exList = (x, c, lines) => lines.flatMap(([h, b], i) => [
-    svgItem(`<circle cx="${x + 412}" cy="${C4.y + 245 + i * 95}" r="8" fill="${c}"/>`),
-    txt(h, x + 430, C4.y + 245 + i * 95, 23, INK, { bold: true }),
-    txt(b, x + 430, C4.y + 277 + i * 95, 16, GREY, { bold: true }),
+    svgItem(`<circle cx="${x + 412}" cy="${C4.y + 265 + i * 110}" r="9" fill="${c}"/>`),
+    txt(h, x + 432, C4.y + 265 + i * 110, 25, INK, { bold: true }),
+    txt(b, x + 432, C4.y + 299 + i * 110, 17, GREY, { bold: true }),
   ]);
   // inside the body: a gland that releases molecules
   const ENDO_SRC = [endoP[0] + 4, endoP[1] - 40];
   const endoPaths = [[[0, 0], [-20, -80], [-4, -140]], [[0, 0], [60, -50], [62, 70]], [[0, 0], [-62, -40], [-80, 60]], [[0, 0], [16, 110], [-28, 200]]]
     .map((p) => p.map(([dx, dy]) => [ENDO_SRC[0] + dx, ENDO_SRC[1] + dy]));
-  const endoItems = [
-    svgItem(person(...endoP, 1.0, '#e3f4e8', '#6fa77f') + `<ellipse cx="${ENDO_SRC[0]}" cy="${ENDO_SRC[1]}" rx="30" ry="20" fill="#9fd9ae" stroke="${ENDO}" stroke-width="3"/>`),
-    { type: 'text', x: endoP[0], y: C4.y + C4.h - 32, text: 'made INSIDE the body', size: 21, font: 'sans', bold: true, align: 'center', color: ENDO },
-  ];
-  const exoItems = [
-    svgItem(person(...exoP, 1.0, '#fbeee2', '#c9935c') + capsule(exoP[0] - 130, 255, 0.6, -30)),
-    { type: 'text', x: exoP[0], y: C4.y + C4.h - 32, text: 'comes from OUTSIDE', size: 21, font: 'sans', bold: true, align: 'center', color: EXO },
-  ];
+  const cup = (cx, cy, s = 1) => `<g transform="translate(${cx} ${cy}) scale(${s})"><path d="M -34 -28 H 34 L 28 34 Q 26 42 18 42 H -18 Q -26 42 -28 34 Z" fill="#ffffff" stroke="#6b4a2a" stroke-width="4"/><path d="M 34 -14 q 22 0 18 18 q -3 14 -22 12" fill="none" stroke="#6b4a2a" stroke-width="4"/><rect x="-30" y="-24" width="60" height="10" fill="#6b4a2a" opacity="0.8"/>
+    <path d="M -10 -40 q -8 -10 0 -20 M 8 -40 q -8 -10 0 -20" stroke="#9aa1ad" stroke-width="3" fill="none"/></g>`;
+  const EX6 = { x0: 60, x1: 1540 };
+  const T6 = [{ id: 'basic6', text: 'Made inside vs outside', c: DARK }, { id: 'same6', text: 'Same chemical, either way', c: PD }, { id: 'why6', text: 'Why it matters', c: PK }];
+  const T6X = (i) => 170 + i * 430, T6W = 400;
+  const tabs6 = (active) => T6.flatMap((t, i) => [
+    { type: 'rect', x: T6X(i), y: 110, w: T6W, h: 54, color: t.c, fill: t.id === active ? t.c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+    { ...txt(t.text, T6X(i) + T6W / 2, 137, 22, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }), solid: true },
+  ]);
+  const cover6 = () => svgItem(`<rect x="54" y="174" width="1492" height="692" fill="#fbfcfe"/><rect x="60" y="180" width="1480" height="680" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>`, { solid: true });
   const endoExoItems = [
     title('Endogenous vs exogenous'),
-    ...colHead(C4.endo, ENDO, 'ENDOGENOUS', 'endo = within · -genous = produced', 'Made by your\nown body'),
-    ...colHead(C4.exo, EXO, 'EXOGENOUS', 'exo = outside · -genous = produced', 'Comes from\noutside the body'),
-    ...endoItems, ...exoItems,
-    ...exList(C4.endo, ENDO, [['Hormones', 'insulin, adrenaline, cortisol'], ['Neurotransmitters', 'serotonin, dopamine'], ['Endorphins', 'the body\'s own painkillers']]),
-    ...exList(C4.exo, EXO, [['Most medicines', 'ibuprofen, antibiotics'], ['Everyday drugs', 'caffeine, alcohol, nicotine'], ['Plant / lab-made', 'morphine (poppy), aspirin']]),
-    { type: 'hotspot', x: C4.endo, y: C4.y, w: C4.w, h: C4.h, action: 'e4' },
-    { type: 'hotspot', x: C4.exo, y: C4.y, w: C4.w, h: C4.h, action: 'x4' },
-    { ...box(60, 700, 1480, 160, '#c9ced8', '#f7f8fa'), hideDuring: 'k4' },
-    { ...txt('Key point (click)', 800, 780, 26, '#9aa1ad', { align: 'center', bold: true }), hideDuring: 'k4' },
-    { type: 'hotspot', x: 60, y: 700, w: 1480, h: 160, action: 'k4' },
+    ...tabs6(null),
+    ...colHead(C4.endo, ENDO, 'ENDOGENOUS', 'endo = within · -genous = produced', 'Made INSIDE\nyour body'),
+    ...colHead(C4.exo, EXO, 'EXOGENOUS', 'exo = outside · -genous = produced', 'Comes from\nOUTSIDE your body'),
+    svgItem(person(...endoP, 1.1, '#e3f4e8', '#6fa77f') + `<ellipse cx="${ENDO_SRC[0]}" cy="${ENDO_SRC[1]}" rx="30" ry="20" fill="#9fd9ae" stroke="${ENDO}" stroke-width="3"/>`),
+    svgItem(person(...exoP, 1.1, '#fbeee2', '#c9935c') + cup(exoP[0] - 130, 300, 0.9)),
+    txt('made INSIDE the body', endoP[0], C4.y + C4.h - 30, 21, ENDO, { align: 'center', bold: true }),
+    txt('comes from OUTSIDE', exoP[0], C4.y + C4.h - 30, 21, EXO, { align: 'center', bold: true }),
+    ...exList(C4.endo, ENDO, [['Adrenaline', 'from your adrenal glands'], ['Adenosine', 'makes you sleepy'], ['Hormones', 'insulin, cortisol']]),
+    ...exList(C4.exo, EXO, [['Caffeine', 'coffee, tea'], ['Most medicines', 'ibuprofen, antibiotics'], ['Alcohol, nicotine', 'drinks, cigarettes']]),
+    { type: 'hotspot', x: C4.endo, y: C4.y + 90, w: C4.w, h: C4.h - 90, action: 'e4' },
+    { type: 'hotspot', x: C4.exo, y: C4.y + 90, w: C4.w, h: C4.h - 90, action: 'x4' },
+    ...T6.map((t, i) => ({ type: 'hotspot', x: T6X(i), y: 110, w: T6W, h: 54, action: t.id })),
+  ];
+  // tab 2: adrenaline made by the body vs given with an EpiPen
+  const adren = (cx, cy, s = 1) => `<g transform="translate(${cx} ${cy}) scale(${s})"><polygon points="-26,-22 26,-22 34,8 0,30 -34,8" fill="#f6c45a" stroke="#a8640a" stroke-width="4"/>${A.T(0, 8, 16, '#7a4a08')('A')}</g>`;
+  const epipen = (cx, cy) => `<g transform="translate(${cx} ${cy}) rotate(-35)"><rect x="-80" y="-16" width="150" height="32" rx="14" fill="#f6c45a" stroke="#a8640a" stroke-width="4"/><rect x="70" y="-12" width="26" height="24" rx="6" fill="${EXO}"/><rect x="-80" y="-16" width="40" height="32" rx="10" fill="#2f6fde"/>${A.T(5, 7, 15, '#7a4a08')('EpiPen')}</g>`;
+  const sameItems = [
+    cover6(),
+    svgItem(`${rr(90, 210, 600, 560, ENDO, '#f1f9f3', 3)}${rr(910, 210, 600, 560, EXO, '#fdf4ec', 3)}
+      ${person(330, 470, 0.95, '#e3f4e8', '#6fa77f')}<ellipse cx="312" cy="470" rx="18" ry="12" fill="#9fd9ae" stroke="${ENDO}" stroke-width="3"/><ellipse cx="350" cy="470" rx="18" ry="12" fill="#9fd9ae" stroke="${ENDO}" stroke-width="3"/>
+      ${A.T(480, 480, 18, ENDO, 700, 'start')('adrenal glands')}
+      ${person(1150, 470, 0.95, '#fbeee2', '#c9935c')}${epipen(1290, 560)}
+      ${A.T(390, 250, 26, ENDO)('Your body makes it')}${A.T(1210, 250, 26, EXO)('Given with an EpiPen')}
+      ${A.T(390, 730, 30, ENDO)('ENDOGENOUS')}${A.T(1210, 730, 30, EXO)('EXOGENOUS')}
+      ${adren(800, 400, 1.6)}${A.T(800, 480, 24, DARK)('adrenaline')}${A.T(800, 515, 20, GREY)('the SAME chemical')}
+      ${curve('M 720 400 L 640 400', DARK, 4)}${curve('M 880 400 L 960 400', DARK, 4)}`, { solid: true }),
+    ...[0, 1, 2].map((k) => ({ type: 'mover', path: [[330, 470], [300 + k * 30, 380 - k * 20], [260 + k * 50, 330]], r: 10, color: '#f0a12e', count: 1, speed: 1.8 + k * 0.3 })),
+    { type: 'mover', path: [[1255, 585], [1200, 560], [1160, 520]], r: 10, color: '#f0a12e', count: 1, speed: 1.6 },
+    txt('What matters is HOW the chemical got into your body.', 800, 818, 30, PD, { align: 'center', bold: true, at: 0.8, anim: 'fade', duration: 0.4 }),
+  ];
+  // tab 3: adenosine (endogenous) vs caffeine (exogenous) at the adenosine receptor
+  const R6 = { x: 400, top: 650, s: 1.2 };
+  const R6D = R6.top + DOCK.tri * R6.s;
+  const caff = (cx, cy, s = 1) => `<g transform="translate(${cx} ${cy}) scale(${s})"><rect x="-38" y="-52" width="76" height="28" rx="7" fill="#6b4a2a" stroke="#3b2814" stroke-width="4"/><polygon points="-31,-26 31,-26 0,27" fill="#a77b52" stroke="#3b2814" stroke-width="4" stroke-linejoin="round"/></g>`;
+  const tagAt = (x, y, t, c) => `<rect x="${x - 110}" y="${y - 22}" width="220" height="36" rx="18" fill="#ffffff" stroke="${c}" stroke-width="2.5"/>${A.T(x, y + 3, 18, c)(t)}`;
+  const meter6 = (v) => {
+    const x = 870, y = 220, w = 150, h = 610, ih = h - 110, fh = ih * v, c = v > 0.5 ? '#7b3fd0' : '#e8890c';
+    return `${rr(x, y, w, h, '#d9dce3', '#ffffff', 2, 16)}${A.T(x + w / 2, y + 36, 22, INK)('Sleepiness')}
+      ${rr(x + w / 2 - 32, y + 60, 64, ih, '#c9ced8', '#eef0f4', 2, 12)}<rect x="${x + w / 2 - 32}" y="${(y + 60 + ih - fh).toFixed(1)}" width="64" height="${fh.toFixed(1)}" rx="12" fill="${c}"/>
+      ${A.T(x + w / 2, y + h - 20, 22, c)(v > 0.5 ? '😴 sleepy' : '⚡ alert')}`;
+  };
+  const whyBase = `${rr(80, 200, 770, 640, '#d9dce3', '#ffffff', 2)}<defs><clipPath id="w6"><rect x="82" y="202" width="766" height="636" rx="14"/></clipPath></defs>
+    <g clip-path="url(#w6)">${panel(82, 848, 202, R6.top, R6.top + 56, 838)}${receptor(R6.x, R6.top, 'tri', 'blue', R6.s)}</g>
+    ${A.T(R6.x + 100, R6.top - 30, 20, '#2c5a92', 700, 'start')('adenosine receptor')}`;
+  const whyItems = [
+    cover6(),
+    svgItem(whyBase, { solid: true }),
+    // 1. adenosine binds → sleepy
+    ...track([[0, 170, 300], [1.2, R6.x, R6D], [3.6, R6.x, R6D], [4.4, 180, 330], [5.6, 180, 330], [6.6, R6.x + 10, R6.top - 131 * R6.s - 60], [7.2, R6.x + 10, R6.top - 131 * R6.s - 60], [8.0, 180, 330], [30, 180, 330]],
+      ([x, y]) => ligand('tri', x, y, 'amber', 1, R6.s) + tagAt(x, y - 92, 'adenosine (endogenous)', '#a8640a')),
+    { ...svgItem(contacts(R6.x, R6.top, 'tri', 4, R6.s) + `<rect x="${R6.x - 110}" y="${R6.top - 172}" width="220" height="176" rx="44" fill="none" stroke="#3ccf6e" stroke-width="10" opacity="0.55"/>`), at: 1.3, duration: 0.2, until: 2.3 },
+    // 2. caffeine takes the spot and blocks it → alert
+    ...track([[0, 700, 380], [4.2, 700, 380], [5.2, R6.x, R6D], [30, R6.x, R6D]], ([x, y]) => caff(x, y, R6.s) + tagAt(x, y - 104, 'caffeine (exogenous)', '#6b4a2a')),
+    ...frameTrack([[0, 0.15], [1.3, 0.15], [2.8, 0.85], [5.2, 0.85], [6.8, 0.2], [30, 0.2]], ([v]) => meter6(v), 12),
+    txt('adenosine binds → you feel sleepy', 465, 795, 21, '#7b3fd0', { align: 'center', bold: true, at: 1.6, until: 2.6, anim: 'fade', duration: 0.3 }),
+    txt('caffeine blocks the receptor →\nadenosine can\'t bind → more alert', 465, 780, 21, '#b0521c', { align: 'center', bold: true, at: 6.0, anim: 'fade', duration: 0.3 }),
+    { type: 'rect', x: 1050, y: 200, w: 470, h: 640, color: PK, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+    { type: 'rect', x: 1050, y: 200, w: 470, h: 58, color: PK, fill: PK, fillOpacity: 1, width: 3, rough: false, solid: true },
+    { ...txt('WHY IT MATTERS', 1285, 229, 25, '#ffffff', { align: 'center', bold: true }), solid: true },
+    { ...txt('The body is built to work with\nits OWN (endogenous) chemicals.\n\nMany drugs look similar to them,\nso they can act on the same\nreceptors, in similar but\ndifferent ways.\n\nCaffeine "hijacks" the receptor\nmade for adenosine.', 1075, 300, 22, INK, { bold: true }), solid: true },
   ];
   const endoExoActions = [
-    { id: 'e4', label: 'Endogenous: made inside', stay: true, drawn: false,
+    { id: 'basic6', label: 'Made inside vs outside', group: 'ee6', stay: true, drawn: false, items: [...tabs6('basic6')] },
+    { id: 'same6', label: 'Same chemical, either way', group: 'ee6', stay: true, drawn: false, items: [...tabs6('same6'), ...sameItems] },
+    { id: 'why6', label: 'Why it matters', group: 'ee6', stay: true, drawn: false, items: [...tabs6('why6'), ...whyItems] },
+    { id: 'e4', label: 'Endogenous: made inside', hidden: true, stay: true, drawn: false,
       items: [
         { type: 'pulse', x: ENDO_SRC[0], y: ENDO_SRC[1], r: 34, color: '#3ccf6e', speed: 1.2 },
         ...endoPaths.map((path, i) => ({ type: 'mover', path, r: 9, color: ENDO, count: 2, speed: 2.2 + i * 0.3, smooth: true })),
       ] },
-    { id: 'x4', label: 'Exogenous: from outside', stay: true, drawn: false,
+    { id: 'x4', label: 'Exogenous: from outside', hidden: true, stay: true, drawn: false,
       items: [
-        { type: 'mover', path: [[exoP[0] - 130, 255], [exoP[0] - 60, 270], [exoP[0], exoP[1] - 130], [exoP[0], exoP[1] - 60], [exoP[0] + 10, exoP[1] + 20]], char: '💊', size: 44, count: 1, speed: 3.2, smooth: true },
+        { type: 'mover', path: [[exoP[0] - 130, 300], [exoP[0] - 60, 320], [exoP[0], exoP[1] - 130], [exoP[0], exoP[1] - 60], [exoP[0] + 10, exoP[1] + 20]], r: 11, color: '#6b4a2a', count: 1, speed: 3.2, smooth: true },
         { type: 'pulse', x: exoP[0] + 10, y: exoP[1] + 20, r: 30, color: '#f0a050', speed: 1.4 },
-      ] },
-    { id: 'k4', label: 'Key point: insulin', stay: true, drawn: false,
-      items: [
-        box(60, 700, 1480, 160, DARK, '#f4f6fa'),
-        txt('KEY POINT', 100, 740, 22, DARK, { bold: true }),
-        txt('Most drugs are exogenous, but the body\'s own substances can be given as drugs too.', 100, 785, 25, INK, { bold: true }),
-        txt('Insulin for diabetes or adrenaline (EpiPen) for allergic reactions: the SAME molecule, but now it comes from outside.', 100, 828, 21, GREY, { bold: true }),
       ] },
   ];
 
@@ -438,15 +487,16 @@
 • A drug doesn't have to treat a disease or only do good: that's why side effects happen`,
       say: 'A drug is any chemical that changes how the body is built or works, whether natural or lab-made, helpful or not.', clear: true, actions: drugActions, items: drugItems },
       // Slide 6: endogenous vs exogenous.
-      { script: `${Qs('What does endogenous mean?', 'What does exogenous mean?', 'Examples of each', 'Can an endogenous substance be a drug? (insulin, adrenaline)')}
-[click the green side, then the orange side, then the key point]`,
-        notes: `• Endogenous = made inside the body (endo = within)
-• Examples: hormones (insulin, adrenaline, cortisol), neurotransmitters (serotonin, dopamine), endorphins
-• Exogenous = comes from outside the body (exo = outside)
-• Examples: most medicines, caffeine / alcohol / nicotine, plant- or lab-made (morphine, aspirin)
-• Key point: endogenous substances can be given as drugs (insulin for diabetes, adrenaline in an EpiPen)
-• Same molecule, but given from outside = exogenous`,
-      say: 'Endogenous substances are made by the body; exogenous ones come from outside, like most drugs.', clear: true, actions: endoExoActions, items: endoExoItems },
+      { script: `${Qs('What do endogenous and exogenous mean?', 'Can the same chemical be both?', 'Why does it matter for drugs? (adenosine vs caffeine)')}
+[tabs: Made inside vs outside (click each side) → Same chemical, either way → Why it matters]`,
+        notes: `• Endogenous = the chemical was made INSIDE your body (e.g. your body making its own adrenaline)
+• Exogenous = it came from OUTSIDE your body (e.g. caffeine)
+• The same chemical can be either: adrenaline your body makes = endogenous; adrenaline from an EpiPen = exogenous
+• What matters is HOW the chemical got into your body
+• Why it matters: the body is built to work with endogenous chemicals; many drugs are similar to them and act in similar but different ways
+• Adenosine (endogenous) binds adenosine receptors → you feel sleepy
+• Caffeine (exogenous) blocks those receptors → adenosine can't bind → you feel less sleepy: it hijacks a receptor built for adenosine`,
+      say: 'Endogenous chemicals are made by the body, exogenous ones come from outside, and drugs often mimic or block the body\u2019s own.', clear: true, actions: endoExoActions, items: endoExoItems },
       // Slide 7: pharmacokinetics vs pharmacodynamics.
       { script: `${Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?', 'What are A-D-M-E?')}
 [tabs: Side by side → Pharmacokinetics → Pharmacodynamics]`,
