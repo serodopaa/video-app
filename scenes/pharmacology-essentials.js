@@ -358,14 +358,28 @@
     txt(part, x + 360, 822, 21, c, { align: 'center', bold: true }),
   ];
   const pkpdItems = [
-    title('Pharmacokinetics vs pharmacodynamics'),
+    title('Pharmacodynamics vs pharmacokinetics'),
     ...sideCard(820, PK, 'PHARMACOKINETICS', 'What the BODY does to the DRUG', 'kinetics = movement', [
       ['A', 'Absorption', 'gets from where it was given into the blood'], ['D', 'Distribution', 'travels in the blood to the tissues'],
       ['M', 'Metabolism', 'is broken down (mostly in the liver)'], ['E', 'Excretion', 'is removed (mostly by the kidneys)']], 'covered in depth in PART 3'),
     ...sideCard(60, PD, 'PHARMACODYNAMICS', 'What the DRUG does to the BODY', 'dynamics = power (Greek dynamis)', [
-      ['1', 'Target', 'what it binds (e.g. a receptor)'], ['2', 'Mechanism', 'what binding does (activate or block)'],
+      ['1', 'Target', 'what it binds (e.g. a receptor or enzyme)'], ['2', 'Mechanism', 'what binding does (activate or block)'],
       ['3', 'Effect', 'the change in the body (and side effects)'], ['4', 'Dose–response', 'how the effect grows with the dose']], 'covered in depth in PART 2'),
+    { type: 'hotspot', x: 60, y: 320, w: 1480, h: 470, action: 'ibu7' },
   ];
+  // click either card: the same points for one drug, ibuprofen
+  const IBU = '#c0392b';
+  const ibuLines = (x, c, lines) => [
+    { type: 'rect', x: x + 12, y: 270, w: 696, h: 46, color: '#ffffff', fill: '#ffffff', fillOpacity: 1, width: 1, rough: false },
+    svgItem(capsule(x + 220, 293, 0.42, -25)),
+    txt('Example: ibuprofen', x + 380, 293, 24, IBU, { align: 'center', bold: true }),
+    ...lines.map((t, i) => ({ type: 'rect', x: x + 116, y: 396 + i * 105, w: 590, h: 32, color: '#ffffff', fill: '#ffffff', fillOpacity: 1, width: 1, rough: false })),
+    ...lines.map((t, i) => txt(t, x + 118, 410 + i * 105, 21, IBU, { bold: true, at: 0.3 + i * 0.35, anim: 'fade', duration: 0.3 })),
+  ];
+  const ibuActions = [{ id: 'ibu7', label: 'Example: ibuprofen', stay: true, drawn: false, items: [
+    ...ibuLines(60, PD, ['binds and blocks the COX enzymes', '→ less prostaglandin is made', '→ less pain, fever, inflammation', 'a bigger dose → a bigger effect (up to a max)']),
+    ...ibuLines(820, PK, ['swallowed, absorbed from the gut', 'carried in the blood to the tissues', 'broken down in the liver', 'removed in the urine']).map((it) => (it.at !== undefined ? { ...it, at: it.at + 1.5 } : it)),
+  ] }];
   // ---- full view: pharmacokinetics (body with A-D-M-E, plus the drug level in the blood over time) ----
   const BOD = [430, 560];
   const ORG = { mouth: [BOD[0], 365], gut: [BOD[0], 572], liver: [BOD[0] - 28, 495], heart: [BOD[0] + 22, 440], kidney: [BOD[0] + 52, 560], out: [BOD[0] + 150, 800] };
@@ -499,15 +513,14 @@
 • Caffeine (exogenous) blocks those receptors → adenosine can't bind → you feel less sleepy: it hijacks a receptor built for adenosine`,
       say: 'Endogenous chemicals are made by the body, exogenous ones come from outside, and drugs often mimic or block the body\u2019s own.', clear: true, actions: endoExoActions, items: endoExoItems },
       // Slide 7: pharmacokinetics vs pharmacodynamics.
-      { script: Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?'),
-        notes: `• PK = what the BODY does to the drug (kinetics = movement)
-• ADME: absorption, distribution, metabolism (mostly liver), excretion (mostly kidneys)
-• Drug level in the blood rises (A + D) then falls (M + E)
-• PK decides how fast a drug works, how high the level gets, how long it lasts
-• PD = what the DRUG does to the body (dynamis = power)
-• Drug binds its target → effect; dose–response: more drug → bigger effect up to a maximum
-• Link back to "it works both ways" from slide 2`,
-      say: 'Pharmacokinetics is what the body does to the drug; pharmacodynamics is what the drug does to the body.', clear: true, items: pkpdItems },
+      { script: `${Qs('What is pharmacodynamics?', 'What is pharmacokinetics?', 'How do they differ? (ibuprofen example)')}
+[click a card for the ibuprofen example]`,
+        notes: `• Most of this course: pharmacodynamics and pharmacokinetics
+• Pharmacodynamics = what the DRUG does to the body; pharmacokinetics = what the BODY does to the drug
+• Ibuprofen, PD: what it binds (COX enzymes), the mechanism (blocks them → less prostaglandin), the effect (less pain, fever, inflammation, plus side effects), how the response changes with the dose
+• Ibuprofen, PK: how the body absorbs it, distributes it through the blood and tissues, metabolises it (liver) and excretes it (urine)
+• PD = how the drug has its effect on the body; PK = what the body does to the drug`,
+      say: 'Pharmacokinetics is what the body does to the drug; pharmacodynamics is what the drug does to the body.', clear: true, actions: ibuActions, items: pkpdItems },
     ],
   });
 })();
