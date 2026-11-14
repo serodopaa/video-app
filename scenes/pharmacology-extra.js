@@ -178,42 +178,42 @@
     ...IC.bar(null),
     stage(),
     svgItem(capsule(530, 420, 2.0, -25)),
-    txt('When should a drug be used,\nand when should it NOT?', 530, 650, 26, DARK, { align: 'center', bold: true, hideDuring: ['te5', 'ind5', 'ci5'] }),
-    ...card(1030, 190, 510, 670, DARK, 'THREE KEY WORDS', 'THERAPEUTIC EFFECT: the effect\nyou WANT from the drug\n\nINDICATION: a reason TO use it\n(what it\'s for)\n\nCONTRAINDICATION: a reason NOT\nto use it (the risk outweighs the\nbenefit)\n\nExample all the way through:\nibuprofen', 21),
+    txt('Example: SSRIs (antidepressants)', 530, 600, 26, PURPLE, { align: 'center', bold: true }),
+    txt('When should a drug be used,\nand when should it NOT?', 530, 690, 24, DARK, { align: 'center', bold: true, hideDuring: ['te5', 'ind5', 'ci5'] }),
+    ...card(1030, 190, 510, 670, DARK, 'THREE KEY WORDS', 'THERAPEUTIC EFFECT: the effect\nyou WANT from the drug\n\nINDICATION: a reason TO use it\n(a condition or symptoms)\n\nCONTRAINDICATION: a reason NOT\nto use it\n\nExample all the way through:\nSSRIs', 21),
     ...IC.hot,
   ];
   const icActions = [
     { id: 'te5', label: 'Therapeutic effect', group: 'ic', stay: true, drawn: false, items: [
       cover(), ...sol(IC.bar('te5')),
-      svgItem(`${capsule(530, 280, 1.0, -25)}${T(530, 345, 21, DARK)('ibuprofen blocks COX')}
+      svgItem(`${capsule(530, 280, 1.0, -25)}${T(530, 345, 21, DARK)('an antidepressant (e.g. an SSRI)')}
         ${curve('M 470 360 C 400 400, 300 410, 290 440', OK, 5)}${curve('M 590 360 C 660 400, 760 410, 770 440', ORANGE, 5)}`),
       ...at([
         { type: 'rect', x: 100, y: 455, w: 380, h: 330, color: OK, fill: '#eaf6ee', fillOpacity: 1, width: 3, rough: false },
-        txt('THERAPEUTIC effects\n(wanted)', 290, 495, 21, OK, { align: 'center', bold: true }),
-        txt('✓ less pain\n✓ less fever\n✓ less inflammation', 140, 620, 22, INK, { bold: true }),
+        txt('THERAPEUTIC effect\n(what you WANT)', 290, 495, 21, OK, { align: 'center', bold: true }),
+        txt('✓ the symptoms of\n   depression ease', 135, 620, 23, INK, { bold: true }),
       ], 0.4),
       ...at([
         { type: 'rect', x: 580, y: 455, w: 380, h: 330, color: ORANGE, fill: '#fdf1e6', fillOpacity: 1, width: 3, rough: false },
-        txt('SIDE effects\n(unwanted)', 770, 495, 21, ORANGE, { align: 'center', bold: true }),
-        txt('! stomach irritation\n! ulcers, bleeding\n! kidney strain', 620, 620, 22, INK, { bold: true }),
+        txt('SIDE effects\n(what you DON\'T want)', 770, 495, 21, ORANGE, { align: 'center', bold: true }),
+        txt('! nausea\n! trouble sleeping\n! headaches\n! sexual side effects', 620, 620, 22, INK, { bold: true }),
       ], 1.0),
-      txt('Same action (blocking COX) causes both!', 530, 820, 20, DARK, { align: 'center', bold: true, at: 1.6, anim: 'fade', duration: 0.4 }),
-      ...sideCard(OK, 'THERAPEUTIC EFFECT', 'The effect you WANT: the reason\nthe drug is given.\n\nSide effects come from the very\nsame action, in other parts of\nthe body (COX also protects the\nstomach and kidneys).\n\nPrescribing = weighing the\nbenefit against the harm.'),
+      txt('Therapeutic effects = wanted · side effects = unwanted', 530, 820, 20, DARK, { align: 'center', bold: true, at: 1.6, anim: 'fade', duration: 0.4 }),
+      ...sideCard(OK, 'THERAPEUTIC EFFECT', 'The effect you actually WANT from\nthe drug: the reason it\'s given.\n\ne.g. an antidepressant → the\ndepression symptoms go away.\n\nSIDE EFFECTS are the unwanted\neffects the same drug has on\nthe body.'),
     ] },
     { id: 'ind5', label: 'Indications', group: 'ic', stay: true, drawn: false, items: [
       cover(), ...sol(IC.bar('ind5')),
-      txt('INDICATIONS for ibuprofen (reasons TO use it)', 530, 240, 23, BLUE, { align: 'center', bold: true }),
-      ...[['Pain', 'headache, toothache, period pain, back pain'], ['Fever', 'e.g. with a cold or flu'], ['Inflammation', 'sprains, arthritis'], ['After an injury', 'swelling and pain together']]
+      txt('INDICATIONS for SSRIs (reasons TO use them)', 530, 240, 23, BLUE, { align: 'center', bold: true }),
+      ...[['Depression', 'the main one'], ['Anxiety', 'e.g. generalised anxiety, panic disorder'], ['OCD', 'obsessive-compulsive disorder'], ['PTSD', 'post-traumatic stress disorder']]
         .flatMap(([h, sub], i) => at(tickRow(330 + i * 120, true, h, sub, BLUE), 0.3 + i * 0.4)),
-      ...sideCard(BLUE, 'INDICATION', 'A condition or situation where\nthe drug SHOULD be used:\nwhat it\'s for.\n\nIndications come from evidence\n(trials against placebo).\n\nThey\'re listed on the patient\nleaflet as "what this medicine\nis used for".'),
+      ...sideCard(BLUE, 'INDICATION', 'Simply a reason to USE a drug:\na condition or symptoms the\nperson has.\n\nOne drug can have several\nindications. SSRIs are used for\ndepression, but also anxiety,\nOCD and PTSD.'),
     ] },
     { id: 'ci5', label: 'Contraindications', group: 'ic', stay: true, drawn: false, items: [
       cover(), ...sol(IC.bar('ci5')),
-      txt('CONTRAINDICATIONS for ibuprofen (reasons NOT to use it)', 530, 240, 23, RED, { align: 'center', bold: true }),
-      ...[['Stomach ulcer or bleeding', 'it makes ulcers worse'], ['Severe kidney or heart failure', 'it strains the kidneys and holds in fluid'], ['Late pregnancy (3rd trimester)', 'it can harm the baby\'s heart'], ['Allergy to NSAIDs', 'e.g. it has triggered asthma or a rash before']]
-        .flatMap(([h, sub], i) => at(tickRow(330 + i * 120, false, h, sub, RED), 0.3 + i * 0.4)),
-      txt('Caution (use carefully): asthma, older age, taking warfarin', 530, 815, 19, ORANGE, { align: 'center', bold: true, at: 2.0, anim: 'fade', duration: 0.4 }),
-      ...sideCard(RED, 'CONTRAINDICATION', 'A situation where the drug should\nNOT be used, because the risk\noutweighs the benefit.\n\nABSOLUTE: never use it.\nRELATIVE (a caution): only with\ncare, if the benefit is worth it.\n\nOften linked to the drug\'s side\neffects, or to special\npopulations (part 4).'),
+      txt('CONTRAINDICATIONS for SSRIs (reasons NOT to use them)', 530, 240, 23, RED, { align: 'center', bold: true }),
+      ...[['Bipolar disorder', 'an SSRI can trigger mania'], ['Some other medicines', 'raised bleeding risk, e.g. with blood thinners or NSAIDs'], ['Pregnancy (some SSRIs)', 'some aren\'t recommended while pregnant']]
+        .flatMap(([h, sub], i) => at(tickRow(340 + i * 140, false, h, sub, RED), 0.3 + i * 0.4)),
+      ...sideCard(RED, 'CONTRAINDICATION', 'The opposite of an indication:\na reason NOT to take a drug.\n\nAgain, it can be a condition or\nsymptoms, or another medicine\nthe person is taking.\n\nHere the risk outweighs the\nbenefit.'),
     ] },
   ];
 
@@ -358,11 +358,11 @@
     actions: namesActions, items: namesItems,
   }), st({
     script: `${Qs('What is a therapeutic effect?', 'What is an indication?', 'What is a contraindication?')}\n[tabs: Therapeutic effect → Indications → Contraindications]`,
-    notes: `• Therapeutic effect = the effect you WANT; side effects come from the same action elsewhere in the body (ibuprofen blocks COX → less pain, but stomach and kidney effects)
-• Indication = a reason TO use a drug (what it's for): ibuprofen for pain, fever, inflammation
-• Contraindication = a reason NOT to use it (risk outweighs benefit): ibuprofen with stomach ulcers / bleeding, severe kidney or heart failure, late pregnancy, NSAID allergy
-• Absolute (never) vs relative / caution (only with care): asthma, older age, taking warfarin
-• Prescribing = weighing benefit vs harm for each person`,
+    notes: `• Therapeutic effect = the effect you actually WANT from a drug (antidepressant → depression symptoms go away)
+• Side effects = the unwanted effects it has on the body (SSRIs: nausea, trouble sleeping, headaches, sexual side effects)
+• Therapeutic effects are what you want; side effects are what you don't
+• Indication = a reason TO use a drug: a condition or symptoms (SSRIs: depression, anxiety, OCD, PTSD)
+• Contraindication = the opposite, a reason NOT to take it (SSRIs: bipolar disorder → risk of mania; bleeding risk with some medicines; some not recommended in pregnancy)`,
     say: 'A therapeutic effect is the wanted effect; indications are reasons to use a drug and contraindications are reasons not to.',
     actions: icActions, items: icItems,
   }));
