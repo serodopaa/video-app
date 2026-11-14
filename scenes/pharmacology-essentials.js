@@ -70,7 +70,22 @@
   ];
 
   // =================================================================== slide 1: title
-  const TOPICS = [['1', 'What is\npharmacology?', DARK], ['2', 'What is\na drug?', DRUG], ['3', 'Endogenous vs\nexogenous', ENDO], ['4', 'Pharmacokinetics vs\npharmacodynamics', PK]];
+  // the four parts of the course
+  const RED1 = '#c0392b';
+  const TOPICS = [['1', 'Introduction', DARK, 'the basics'], ['2', 'Pharmacodynamics', PD, 'what the drug does\nto the body'],
+    ['3', 'Pharmacokinetics', PK, 'what the body does\nto the drug'], ['4', 'Drug safety', RED1, 'when drugs\ncause harm']];
+  const warnIcon = (cx, cy) => `<polygon points="${cx},${cy - 42} ${cx + 48},${cy + 38} ${cx - 48},${cy + 38}" fill="${RED1}" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/><rect x="${cx - 5}" y="${cy - 16}" width="10" height="32" rx="4" fill="#ffffff"/><circle cx="${cx}" cy="${cy + 27}" r="6" fill="#ffffff"/>`;
+  const partArt = [
+    (cx, cy) => cardArt[0](cx, cy),
+    (cx, cy) => receptor(cx, cy + 26, 'tri', 'blue', 0.42) + ligand('tri', cx, cy + 26 + DOCK.tri * 0.42, 'amber', 1, 0.42),
+    (cx, cy) => {
+      const pts = []; for (let k = 0; k <= 30; k++) { const t = k / 3; pts.push(`${(cx + 2 + t * 8).toFixed(1)},${(cy + 34 - 1.62 * (Math.exp(-0.28 * t) - Math.exp(-1.6 * t)) * 66).toFixed(1)}`); }
+      return person(cx - 52, cy + 8, 0.28) + [[-60, -4], [-46, 14], [-54, 28]].map(([dx, dy]) => `<circle cx="${cx + dx}" cy="${cy + dy}" r="5" fill="${EXO}"/>`).join('')
+        + `<line x1="${cx}" y1="${cy + 36}" x2="${cx + 86}" y2="${cy + 36}" stroke="${DARK}" stroke-width="2.5"/><line x1="${cx}" y1="${cy + 36}" x2="${cx}" y2="${cy - 36}" stroke="${DARK}" stroke-width="2.5"/>`
+        + `<polyline points="${pts.join(' ')}" fill="none" stroke="${PK}" stroke-width="4" stroke-linejoin="round"/>`;
+    },
+    (cx, cy) => warnIcon(cx, cy),
+  ];
   const titleItems = [
     svgItem(`<rect x="0" y="0" width="1600" height="900" fill="#f4f7fc"/>
       <circle cx="1410" cy="170" r="230" fill="#e3ecfb"/><circle cx="170" cy="760" r="190" fill="#f9e6e4"/>
@@ -78,11 +93,12 @@
     txt('PHARMACOLOGY', 110, 215, 104, INK, { bold: true }),
     txt('ESSENTIALS', 110, 330, 104, DRUG, { bold: true }),
     box(110, 395, 270, 64, INK, INK, { fillOpacity: 1 }), txt('FULL COURSE', 245, 428, 30, '#ffffff', { align: 'center', bold: true }),
-    txt('Part 1 · Introduction to pharmacology', 410, 428, 30, GREY, { bold: true }),
+    txt('4 parts · from the basics to drug safety', 410, 428, 30, GREY, { bold: true }),
     ...TOPICS.flatMap(([n, t, c], i) => {
       const x = 110 + i * 350;
-      return [box(x, 535, 320, 235, c), svgItem(badge(x + 38, 573, n, c) + cardArt[i](x + 160, 622)),
-        txt(t, x + 160, 712, 24, c, { align: 'center', bold: true })];
+      return [box(x, 515, 320, 285, c), svgItem(badge(x + 38, 553, n, c) + partArt[i](x + 160, 610)),
+        txt(t, x + 160, 700, 27, c, { align: 'center', bold: true }),
+        txt(TOPICS[i][3], x + 160, 745, 19, GREY, { align: 'center', bold: true })];
     }),
   ];
 
