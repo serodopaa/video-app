@@ -720,7 +720,7 @@
       ...ZO.bar('first33'),
       ...frameTrack([[0, 0], [5, 1], [30, 1]], ([u]) => zoGraph('first', u), 12),
       svgItem(enzymesBusy(false)),
-      ...card(1030, 190, 510, 670, EXC, 'FIRST-ORDER (MOST DRUGS)', 'The same FRACTION goes each hour:\n−50, −25, −12.5…\n\nLots of drug → lots removed;\na little drug → a little removed.\n\nThe enzymes have spare room, so\nthey keep up with whatever\'s there.\n\n→ a fixed HALF-LIFE (slide 38)', 21),
+      ...card(1030, 190, 510, 670, EXC, 'FIRST-ORDER (MOST DRUGS)', 'The same FRACTION goes each hour:\n−50, −25, −12.5…\n\nLots of drug → lots removed;\na little drug → a little removed.\n\nThe enzymes have spare room, so\nthey keep up with whatever\'s there.\n\n→ a fixed HALF-LIFE (slide 39)', 21),
     ] },
     { id: 'zero33', label: 'Zero-order', group: 'zo', stay: true, drawn: false, items: [
       ...ZO.bar('zero33'),

@@ -40,13 +40,13 @@
     { id: 'chem4', text: 'Chemical name', c: '#6b7280' }, { id: 'gen4', text: 'Generic name', c: BLUE }, { id: 'brand4', text: 'Brand names', c: ORANGE },
     { id: 'tgt4', text: 'By target', c: PURPLE }, { id: 'use4', text: 'By what it treats', c: TEAL }, { id: 'str4', text: 'By structure', c: '#8e3b8a' },
   ];
-  const NTX = (i) => 60 + i * 249 + (i >= 3 ? 0 : 0), NTW = 233;
-  const nTabs = (active) => [
-    ...NT.flatMap((t, i) => [
-      { type: 'rect', x: NTX(i), y: 132, w: NTW, h: 52, color: t.c, fill: t.id === active ? t.c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
-      { ...A.txt(t.text, NTX(i) + NTW / 2, 158, 21, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }), solid: true },
-    ]),
-  ];
+  // split into two slides: NAMING (tabs 0–2) and CLASSIFYING (tabs 3–5); each slide shows its own 3 tabs
+  const NTX = (i) => 170 + (i % 3) * 430, NTW = 400;
+  const groupOf = (id) => (NT.findIndex((t) => t.id === id) < 3 ? 0 : 1);
+  const nTabs = (active, g = groupOf(active)) => NT.slice(g * 3, g * 3 + 3).flatMap((t, k) => [
+    { type: 'rect', x: NTX(k), y: 120, w: NTW, h: 56, color: t.c, fill: t.id === active ? t.c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+    { ...A.txt(t.text, NTX(k) + NTW / 2, 148, 23, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }), solid: true },
+  ]);
   const nGroupLabels = [
     A.txt('NAMING', NTX(0) + 5, 112, 17, GREY, { bold: true }), A.txt('CLASSIFYING', NTX(3) + 5, 112, 17, GREY, { bold: true }),
   ];
@@ -91,17 +91,17 @@
       ${[['A', cx - w, cy], ['B', cx, cy], ['C', cx + w / 2, cy - 1.5 * r], ['D', px - r * 0.2, py]].map(([l, x, y]) => T(x, y + 8, 24, '#8e3b8a')(l)).join('')}`;
   };
   const caption = (t, c = DARK, at = 0.6) => txt(t, 800, 822, 25, c, { align: 'center', bold: true, at, anim: 'fade', duration: 0.4 });
-  const namesItems = [
-    title('Drug names and classes'),
-    ...nGroupLabels, ...nTabs(null),
-    svgItem(`<rect x="${NA.x}" y="${NA.y}" width="${NA.w}" height="${NA.h}" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>${rr(110, 250, 650, 520, BLUE, '#eef4fd', 3)}${rr(840, 250, 650, 520, PURPLE, '#f4effc', 3)}
-      ${T(435, 300, 34, BLUE)('NAMING')}${T(1165, 300, 34, PURPLE)('CLASSIFYING')}
-      ${T(435, 345, 20, GREY)('3 ways to name a drug')}${T(1165, 345, 20, GREY)('3 ways to group drugs')}
-      ${['Chemical name', 'Generic name', 'Brand name'].map((t, i) => `${badge(200, 430 + i * 105, String(i + 1), BLUE)}${T(240, 440 + i * 105, 30, INK, 700, 'start')(t)}`).join('')}
-      ${['By target &amp; mechanism', 'By what it treats', 'By chemical structure'].map((t, i) => `${badge(930, 430 + i * 105, String(i + 1), PURPLE)}${T(970, 440 + i * 105, 30, INK, 700, 'start')(t)}`).join('')}`),
-    ...NT.map((t, i) => ({ type: 'hotspot', x: NTX(i), y: 132, w: NTW, h: 52, action: t.id })),
+  const groupBase = (g, c, head, sub, list) => [
+    title(g ? 'Drug classes' : 'Drug names'),
+    ...nTabs(null, g),
+    svgItem(`<rect x="${NA.x}" y="${NA.y}" width="${NA.w}" height="${NA.h}" rx="16" fill="#fbfcfe" stroke="#d9dce3" stroke-width="2"/>${rr(300, 250, 1000, 560, c, g ? '#f4effc' : '#eef4fd', 3)}
+      ${T(800, 315, 44, c)(head)}${T(800, 368, 24, GREY)(sub)}
+      ${list.map((t, i) => `${badge(470, 470 + i * 110, String(i + 1), c)}${T(515, 482 + i * 110, 36, INK, 700, 'start')(t)}`).join('')}`),
+    ...NT.slice(g * 3, g * 3 + 3).map((t, k) => ({ type: 'hotspot', x: NTX(k), y: 120, w: NTW, h: 56, action: t.id })),
   ];
-  const view = (id, items) => ({ id, label: NT.find((t) => t.id === id).text, group: 'nm', stay: true, drawn: false, items: [...nTabs(id), ncover(), ...items] });
+  const namesItems = groupBase(0, BLUE, 'NAMING', '3 ways to name a drug', ['Chemical name', 'Generic name', 'Brand name']);
+  const classItems = groupBase(1, PURPLE, 'CLASSIFYING', '3 ways to group drugs into classes', ['By target &amp; mechanism', 'By what it treats', 'By chemical structure']);
+  const view = (id, items) => ({ id, label: NT.find((t) => t.id === id).text, group: 'nm' + groupOf(id), stay: true, drawn: false, items: [...nTabs(id), ncover(), ...items] });
   const namesActions = [
     view('chem4', [
       svgItem(`${ibuprofen(800, 400, 1.3)}`, { solid: true }),
@@ -135,6 +135,8 @@
       txt('While a company holds\nthe patent, no one else\nmay copy the drug and\nsell it under their own\nname.\n\nWhen it ends, other\ncompanies can make it.', 1155, 345, 19, INK, { bold: true, at: 1.3 }),
       caption('Generic name = the active ingredient · Brand name = a PRODUCT that contains it', BLUE, 1.8),
     ]),
+  ];
+  const classActions = [
     view('tgt4', [
       txt('SSRIs', 800, 255, 46, PURPLE, { align: 'center', bold: true }),
       txt('selective serotonin reuptake inhibitors', 800, 300, 22, GREY, { align: 'center', bold: true }),
@@ -248,7 +250,7 @@
       svgItem(three([['#eef0f4', '#9aa1ad'], ['#e3f4e8', '#6fa77f'], ['#fde3df', '#c0392b']], ['poor metaboliser', 'normal', 'ultra-rapid'], PURPLE)),
       ...frameTrack([[0, 0], [0.5, 0], [2.2, 1], [30, 1]], ([u]) => barRow([0.08 * u, 0.5 * u, 0.95 * u], ['#8a8f98', OK, RED], (u >= 1 ? ['little morphine', 'works as expected', 'TOO MUCH morphine'] : ['', '', '']), 'Morphine made from the same dose'), 12),
       ...[['no pain relief', '#8a8f98'], ['', OK], ['risk of slowed breathing', RED]].map(([t, c], i) => txt(t, PPL[i], 712, 16, c, { align: 'center', bold: true, at: 2.2, anim: 'fade', duration: 0.3 })),
-      ...sideCard(PURPLE, 'GENES CHANGE METABOLISM', 'Genes decide which version of a\nCYP enzyme you have (slide 32).\n\nCodeine needs CYP2D6 to work:\n• poor metaboliser: barely works\n• ultra-rapid: too much morphine\n   → dangerous (why codeine is\n   avoided in children and when\n   breastfeeding)\n\nFix: a different drug or dose.'),
+      ...sideCard(PURPLE, 'GENES CHANGE METABOLISM', 'Genes decide which version of a\nCYP enzyme you have (slide 33).\n\nCodeine needs CYP2D6 to work:\n• poor metaboliser: barely works\n• ultra-rapid: too much morphine\n   → dangerous (why codeine is\n   avoided in children and when\n   breastfeeding)\n\nFix: a different drug or dose.'),
     ] },
     { id: 'tgt33', label: 'Target', group: 'pgx', stay: true, drawn: false, items: [
       cover(), ...sol(GN.bar('tgt33')),
@@ -309,7 +311,7 @@
         ${curve('M 470 330 C 420 380, 370 420, 330 460', EXO, 5)}${capsule(500, 310, 0.5, -25)}${T(560, 380, 17, '#9c2a45', 700, 'start')('most drugs cross')}${T(560, 400, 17, '#9c2a45', 700, 'start')('the placenta')}
         ${rr(560, 460, 400, 280, '#e8bcc6', '#ffffff', 2, 14)}${T(585, 495, 18, '#9c2a45', 700, 'start')('Some drugs harm the baby:')}${T(585, 530, 17, INK, 700, 'start')('• valproate (epilepsy)')}${T(585, 560, 17, INK, 700, 'start')('• isotretinoin (acne)')}${T(585, 590, 17, INK, 700, 'start')('• warfarin')}${T(585, 620, 17, INK, 700, 'start')('• ACE inhibitors')}${T(585, 650, 17, INK, 700, 'start')('• NSAIDs late in pregnancy')}${T(585, 700, 16, GREY, 700, 'start')('Many drugs also pass into breast milk.')}`,
       null, null,
-      'PREGNANCY & BREASTFEEDING', 'Most drugs CROSS the placenta\nand reach the baby (slide 30).\n\nDrugs that can harm the baby are\ncalled TERATOGENS; the first\n3 months are the riskiest.\n\nPregnancy also changes PK (more\nblood, faster kidneys).\n\nMany drugs pass into breast milk.\n→ only use what\'s needed, choose\n   drugs known to be safe'),
+      'PREGNANCY & BREASTFEEDING', 'Most drugs CROSS the placenta\nand reach the baby (slide 31).\n\nDrugs that can harm the baby are\ncalled TERATOGENS; the first\n3 months are the riskiest.\n\nPregnancy also changes PK (more\nblood, faster kidneys).\n\nMany drugs pass into breast milk.\n→ only use what\'s needed, choose\n   drugs known to be safe'),
     spView('organ44', BLUE, `<ellipse cx="200" cy="420" rx="90" ry="55" fill="#b5654a" stroke="#6e3220" stroke-width="4"/>${T(200, 500, 18, '#6e3220')('liver: metabolism')}
         <path d="M 330 360 C 380 356 392 400 382 430 C 372 460 384 476 360 482 C 318 490 300 450 302 420 C 304 386 312 362 330 360 Z" fill="#a0525a" stroke="#5e262c" stroke-width="4"/>${T(345, 545, 18, '#5e262c')('kidneys: excretion')}
         ${T(270, 620, 18, BLUE)('either one failing →')}${T(270, 645, 18, BLUE)('the drug builds up')}`,
@@ -341,21 +343,25 @@
     actions: pgxActions, items: pgxItems,
   }));
   scene.steps.splice(3, 0, st({
-    script: `${Qs('What are the three ways a drug is named?', 'What is an active vs inactive ingredient?', 'How do generic and brand names differ?', 'How are drugs classified?')}\n[tabs: Chemical name → Generic name → Brand names → By target → By what it treats → By structure]`,
+    script: `${Qs('What are the three ways a drug is named?', 'What is an active vs inactive ingredient?', 'How do generic and brand names differ?')}\n[tabs: Chemical name → Generic name → Brand names]`,
     notes: `• Three ways to name a drug: chemical, generic, brand
 • Chemical name: exact structure, precise rules; used by chemists / researchers (ibuprofen = (RS)-2-[4-(2-methylpropyl)phenyl]propanoic acid)
 • Generic name: most common; given by an official council; no company owns it; names the ACTIVE ingredient (ibuprofen)
 • Active ingredient = the chemical that causes the effect; inactive ingredients = inert, dilute it, make it easy to take, make it a tablet / powder / liquid
 • Brand names: Advil, Nurofen, Motrin all contain ibuprofen, made by different companies with different inactive ingredients / forms; same active ingredient → same effect
 • Exception: a patent stops other companies copying the drug until it ends
-• Generic name = the active ingredient; brand name = a product that contains it
-• Classes = groups of drugs that are similar in some way
+• Generic name = the active ingredient; brand name = a product that contains it`,
+    say: 'Drugs have three kinds of name: chemical, generic and brand.',
+    actions: namesActions, items: namesItems,
+  }), st({
+    script: `${Qs('How are drugs classified?', 'By target and mechanism, by what they treat, or by structure?')}\n[tabs: By target → By what it treats → By structure]`,
+    notes: `• Classes = groups of drugs that are similar in some way
 • By target & mechanism: SSRIs (fluoxetine, sertraline, citalopram, paroxetine) all block the serotonin transporter
 • By what it treats (broader): antidepressants = SSRIs + SNRIs + MAO inhibitors + others
 • By chemical structure: steroids (four fused rings)
 • Target & mechanism and what-it-treats groupings are used most`,
-    say: 'Drugs have chemical, generic and brand names, and are grouped into classes by target and mechanism, by what they treat, or by structure.',
-    actions: namesActions, items: namesItems,
+    say: 'Drugs are grouped into classes by target and mechanism, by what they treat, or by chemical structure.',
+    actions: classActions, items: classItems,
   }), st({
     script: `${Qs('What is a therapeutic effect?', 'What is an indication?', 'What is a contraindication?')}\n[tabs: Therapeutic effect → Indications → Contraindications]`,
     notes: `• Therapeutic effect = the effect you actually WANT from a drug (antidepressant → depression symptoms go away)
@@ -369,4 +375,6 @@
 
   // saved per-slide work on later slides follows them (old numbers: 2 inserted before old 4, 1 before old 31, 1 before old 41)
   scene.renumber = [...(scene.renumber || []), { key: '2026-11-names-pgx-special', before: [4, 4, 31, 41] }];
+  // the names / classes slide was split in two: saved work on old slides 5+ moves down by one
+  scene.renumber = [...scene.renumber, { key: '2026-11-split-names-classes', before: [5] }];
 })();

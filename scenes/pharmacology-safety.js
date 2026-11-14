@@ -246,7 +246,7 @@
       ...TD.bar('tol37'),
       ...frameTrack([[0, 0], [3, 1], [30, 1]], ([u]) => tolGraph(u), 12),
       txt('Same dose, less effect every day', 555, 800, 20, TOL, { align: 'center', bold: true, at: 3, anim: 'fade', duration: 0.3 }),
-      ...card(1030, 190, 510, 670, TOL, 'TOLERANCE', 'Needing MORE of a drug to get\nthe same effect.\n\nWhy:\n• fewer or less responsive\n   receptors (slide 22)\n• the body breaks the drug down\n   faster (enzyme induction)\n\ne.g. opioids, alcohol, caffeine,\nbenzodiazepines', 21),
+      ...card(1030, 190, 510, 670, TOL, 'TOLERANCE', 'Needing MORE of a drug to get\nthe same effect.\n\nWhy:\n• fewer or less responsive\n   receptors (slide 23)\n• the body breaks the drug down\n   faster (enzyme induction)\n\ne.g. opioids, alcohol, caffeine,\nbenzodiazepines', 21),
     ] },
     { id: 'phys37', label: 'Physical dependence', group: 'td', stay: true, drawn: false, items: [
       ...TD.bar('phys37'),

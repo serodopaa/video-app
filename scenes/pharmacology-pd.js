@@ -667,7 +667,7 @@
     ...CN.bar(null),
     svgItem(nerve(false)),
     ...card(1030, 190, 510, 330, ENDO, 'ION CHANNELS', 'Pores that let ions (Na⁺, K⁺, Ca²⁺,\nCl⁻) flow across a membrane\n→ electrical signals in nerves,\nheart and muscle.\n\nDrugs can BLOCK them (most\ncommon) or help OPEN them.', 19),
-    ...exCard(ENDO, '• Lidocaine: blocks Na⁺ channels\n   → numbness\n• Amlodipine: blocks Ca²⁺ channels\n   → lower blood pressure\n• Some anti-epileptics block Na⁺\n   channels → calm overactive nerves\n• Benzodiazepines OPEN the GABA-A\n   Cl⁻ channel more (slide 15)'),
+    ...exCard(ENDO, '• Lidocaine: blocks Na⁺ channels\n   → numbness\n• Amlodipine: blocks Ca²⁺ channels\n   → lower blood pressure\n• Some anti-epileptics block Na⁺\n   channels → calm overactive nerves\n• Benzodiazepines OPEN the GABA-A\n   Cl⁻ channel more (slide 16)'),
     ...CN.hot,
   ];
   const chanActions = [
@@ -1194,7 +1194,7 @@
 • Normally: Na⁺ channels open one after another along a nerve, carrying the signal (e.g. pain) to the brain
 • Lidocaine plugs Na⁺ channels where it's injected → the signal can't get past → numb (dental work, stitches)
 • Calcium channel blockers (amlodipine): Ca²⁺ makes blood-vessel muscle squeeze; blocking it → muscle relaxes → vessel widens → lower blood pressure
-• Some anti-epileptics block Na⁺ channels; benzodiazepines OPEN the GABA-A Cl⁻ channel more (slide 15)`,
+• Some anti-epileptics block Na⁺ channels; benzodiazepines OPEN the GABA-A Cl⁻ channel more (slide 16)`,
       say: 'Ion channel drugs mostly block channels, like lidocaine stopping nerve signals or calcium channel blockers relaxing blood vessels.', clear: true, actions: chanActions, items: chanItems },
     // Slide 19: dose–response curves.
     { script: `${Qs('What is a dose-response curve?', 'Why is it S-shaped?', 'How does it link to receptors being bound?')}

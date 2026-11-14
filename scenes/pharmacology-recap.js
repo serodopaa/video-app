@@ -25,10 +25,10 @@
 
   // ---------- base view: the four parts of the course ----------
   const PARTS = [
-    ['PART 1', 'Foundations', C1, 'slides 1–7', 'What is pharmacology?\nWhat is a drug?\nDrug names and classes\nIndications, contraindications\nEndogenous vs exogenous\nPK vs PD'],
-    ['PART 2', 'Pharmacodynamics', C2, 'slides 8–23', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nEnzymes, transporters,\nion channels\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
-    ['PART 3', 'Pharmacokinetics', C3, 'slides 24–40', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nPharmacogenomics\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
-    ['PART 4', 'Drug safety', C4, 'slides 41–46', 'Adverse drug reactions\nDrug toxicity\nSpecial populations\nDrug–drug interactions\nTolerance and dependence'],
+    ['PART 1', 'Foundations', C1, 'slides 1–8', 'What is pharmacology?\nWhat is a drug?\nDrug names\nDrug classes\nIndications, contraindications\nEndogenous vs exogenous\nPK vs PD'],
+    ['PART 2', 'Pharmacodynamics', C2, 'slides 9–24', 'Drug targets\nReceptors and binding\nReceptor types\nAffinity, specificity, selectivity\nAgonists and antagonists\nAllosteric modulators\nEnzymes, transporters,\nion channels\nDose–response curves\nPotency vs efficacy\nTherapeutic index\nReceptor regulation\nThe placebo effect'],
+    ['PART 3', 'Pharmacokinetics', C3, 'slides 25–41', 'Routes of administration\nAbsorption, bioavailability\nDistribution, protein binding\nBrain and placenta\nMetabolism, CYP450\nPharmacogenomics\nProdrugs, induction / inhibition\nExcretion\nDrug levels over time\nHalf-life and clearance\nFirst- vs zero-order\nSteady state, loading doses'],
+    ['PART 4', 'Drug safety', C4, 'slides 42–47', 'Adverse drug reactions\nDrug toxicity\nSpecial populations\nDrug–drug interactions\nTolerance and dependence'],
   ];
   const baseItems = PARTS.flatMap(([p, t, c, sl, list], i) => {
     const x = 60 + i * 375, w = 355;
