@@ -342,28 +342,29 @@
     txt(t.text, TX(i) + TW / 2, 139, 23, t.id === active ? '#ffffff' : t.c, { align: 'center', bold: true }),
   ]);
   const tabHot = TABS.map((t, i) => ({ type: 'hotspot', x: TX(i), y: 108, w: TW, h: 62, action: t.id }));
-  const sideCard = (x, c, head, tagline, word, list) => [
-    box(x, 190, 720, 670, c, '#ffffff'),
-    { type: 'rect', x, y: 190, w: 720, h: 80, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
-    txt(head, x + 360, 230, 36, '#ffffff', { align: 'center', bold: true }),
-    txt(tagline, x + 360, 315, 30, c, { align: 'center', bold: true }),
-    txt(word, x + 360, 360, 20, GREY, { align: 'center', bold: true }),
-    ...list.flatMap(([b, h, s], i) => [
-      svgItem(badge(x + 70, 440 + i * 100, b, c)),
-      txt(h, x + 112, 430 + i * 100, 25, INK, { bold: true }),
-      txt(s, x + 112, 462 + i * 100, 19, GREY, { bold: true }),
+  // slimmed to a single side-by-side view: the two halves of the course (each covered in depth in its own part)
+  const sideCard = (x, c, head, tagline, word, list, part) => [
+    box(x, 112, 720, 748, c, '#ffffff'),
+    { type: 'rect', x, y: 112, w: 720, h: 84, color: c, fill: c, fillOpacity: 1, width: 3, rough: false },
+    txt(head, x + 360, 154, 38, '#ffffff', { align: 'center', bold: true }),
+    txt(tagline, x + 360, 245, 33, c, { align: 'center', bold: true }),
+    txt(word, x + 360, 293, 21, GREY, { align: 'center', bold: true }),
+    ...list.flatMap(([b, h, sub], i) => [
+      svgItem(`<circle cx="${x + 72}" cy="${388 + i * 105}" r="26" fill="${c}"/>${T(x + 72, 388 + i * 105 + 9, 24, '#ffffff')(b)}`),
+      txt(h, x + 118, 376 + i * 105, 29, INK, { bold: true }),
+      txt(sub, x + 118, 410 + i * 105, 21, GREY, { bold: true }),
     ]),
+    { type: 'rect', x: x + 30, y: 800, w: 660, h: 44, color: c, fill: c, fillOpacity: 0.1, width: 2, rough: false },
+    txt(part, x + 360, 822, 21, c, { align: 'center', bold: true }),
   ];
   const pkpdItems = [
     title('Pharmacokinetics vs pharmacodynamics'),
-    ...tabBar('both5'),
-    ...sideCard(60, PK, 'PHARMACOKINETICS', 'What the BODY does to the DRUG', 'kinetics = movement', [
+    ...sideCard(820, PK, 'PHARMACOKINETICS', 'What the BODY does to the DRUG', 'kinetics = movement', [
       ['A', 'Absorption', 'gets from where it was given into the blood'], ['D', 'Distribution', 'travels in the blood to the tissues'],
-      ['M', 'Metabolism', 'is broken down (mostly in the liver)'], ['E', 'Excretion', 'is removed (mostly by the kidneys)']]),
-    ...sideCard(820, PD, 'PHARMACODYNAMICS', 'What the DRUG does to the BODY', 'dynamics = power (Greek dynamis)', [
+      ['M', 'Metabolism', 'is broken down (mostly in the liver)'], ['E', 'Excretion', 'is removed (mostly by the kidneys)']], 'covered in depth in PART 3'),
+    ...sideCard(60, PD, 'PHARMACODYNAMICS', 'What the DRUG does to the BODY', 'dynamics = power (Greek dynamis)', [
       ['1', 'Target', 'what it binds (e.g. a receptor)'], ['2', 'Mechanism', 'what binding does (activate or block)'],
-      ['3', 'Effect', 'the change in the body (and side effects)'], ['4', 'Dose–response', 'how the effect grows with the dose']]),
-    ...tabHot,
+      ['3', 'Effect', 'the change in the body (and side effects)'], ['4', 'Dose–response', 'how the effect grows with the dose']], 'covered in depth in PART 2'),
   ];
   // ---- full view: pharmacokinetics (body with A-D-M-E, plus the drug level in the blood over time) ----
   const BOD = [430, 560];
@@ -498,8 +499,7 @@
 • Caffeine (exogenous) blocks those receptors → adenosine can't bind → you feel less sleepy: it hijacks a receptor built for adenosine`,
       say: 'Endogenous chemicals are made by the body, exogenous ones come from outside, and drugs often mimic or block the body\u2019s own.', clear: true, actions: endoExoActions, items: endoExoItems },
       // Slide 7: pharmacokinetics vs pharmacodynamics.
-      { script: `${Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?', 'What are A-D-M-E?')}
-[tabs: Side by side → Pharmacokinetics → Pharmacodynamics]`,
+      { script: Qs('What is pharmacokinetics?', 'What is pharmacodynamics?', 'How do you tell them apart?'),
         notes: `• PK = what the BODY does to the drug (kinetics = movement)
 • ADME: absorption, distribution, metabolism (mostly liver), excretion (mostly kidneys)
 • Drug level in the blood rises (A + D) then falls (M + E)
@@ -507,7 +507,7 @@
 • PD = what the DRUG does to the body (dynamis = power)
 • Drug binds its target → effect; dose–response: more drug → bigger effect up to a maximum
 • Link back to "it works both ways" from slide 2`,
-      say: 'Pharmacokinetics is what the body does to the drug; pharmacodynamics is what the drug does to the body.', clear: true, actions: pkpdActions, items: pkpdItems },
+      say: 'Pharmacokinetics is what the body does to the drug; pharmacodynamics is what the drug does to the body.', clear: true, items: pkpdItems },
     ],
   });
 })();
