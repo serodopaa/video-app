@@ -201,21 +201,27 @@
   const L7 = [210, 300];
   const r7Dock = dockY(R7.top, R7.s);
   const squish = 'scale(1.06 0.93)';
+  const recChips = (active) => [['b7', '▶ Activate', AGO, 560], ['blk10', '▶ Block', ANT, 776]].flatMap(([id, t, c, x]) => [
+    { type: 'rect', x, y: 128, w: 200, h: 46, color: c, fill: id === active ? c : '#ffffff', fillOpacity: 1, width: 3, rough: false, solid: true },
+    { ...txt(t, x + 100, 151, 21, id === active ? '#ffffff' : c, { align: 'center', bold: true }), solid: true },
+  ]);
   const recItems = [
     title('Receptors and binding'),
     svgItem(panel(60, 1000, 112, R7.top, R7.top + 60, 860) + receptor(R7.x, R7.top, 'tri', 'blue', R7.s)),
     txt('Outside the cell', 90, 145, 21, '#2c5a92', { bold: true }), txt('Inside the cell', 90, 835, 21, '#6b3c87', { bold: true }),
     { type: 'line', from: [700, 500], to: [R7.x + 95, 520], color: DARK, width: 2.5, rough: false },
     txt('Receptor\n(a protein)', 712, 480, 22, DARK, { bold: true }),
-    { ...svgItem(ligand('tri', ...L7, 'amber', 1, R7.s) + tagOver(...L7, 'Ligand', '#a8640a', 78)), hideDuring: 'b7' },
-    { type: 'hotspot', x: 60, y: 112, w: 940, h: 748, action: 'b7' },
-    ...card(1030, 112, 510, 225, AFF, 'RECEPTOR', 'A protein, usually on the surface of\na cell, with a pocket that only the\nright molecule fits into.\n(like a lock and key)'),
-    ...card(1030, 357, 510, 200, '#a8640a', 'LIGAND', 'Any molecule that binds a receptor:\nneurotransmitters, hormones,\nor drugs.'),
-    ...card(1030, 577, 510, 283, AGO, 'BINDING → ACTIVATION', 'When the right ligand binds, the\nreceptor CHANGES SHAPE.\n\nThat shape change switches it ON\nand passes a message into the cell.'),
+    { ...svgItem(ligand('tri', ...L7, 'amber', 1, R7.s) + tagOver(...L7, 'Ligand (e.g. a drug)', '#a8640a', 78)), hideDuring: ['b7', 'blk10'] },
+    ...recChips(null),
+    { type: 'hotspot', x: 560, y: 128, w: 200, h: 46, action: 'b7' }, { type: 'hotspot', x: 776, y: 128, w: 200, h: 46, action: 'blk10' },
+    ...card(1030, 112, 510, 200, AFF, 'RECEPTOR', 'A protein, usually on the surface of a cell, that a ligand binds to.'),
+    ...card(1030, 330, 510, 300, '#a8640a', 'LIGAND', 'The molecule that BINDS to the receptor. Think of it as the drug.\n\nIt can be endogenous (serotonin, dopamine, testosterone) or exogenous (a drug).'),
+    ...card(1030, 648, 510, 212, DARK, 'WHAT BINDING DOES', 'ACTIVATE it → changes how the cell behaves\n\nBLOCK it → stops it being activated'),
   ];
   const recActions = [{
-    id: 'b7', label: 'Bind and switch on', stay: true, drawn: false,
+    id: 'b7', label: 'Ligand activates', group: 'rb', stay: true, drawn: false,
     items: [
+      ...recChips('b7'),
       ...track([[0, ...L7], [1.3, R7.x, r7Dock], [1.85, R7.x, r7Dock]], ([x, y]) => ligand('tri', x, y, 'amber', 1, R7.s)),
       { ...svgItem(contacts(R7.x, R7.top, 'tri', 4, R7.s)), at: 1.35, duration: 0.2, until: 0.5 },
       // the shape change: the receptor squashes slightly and turns green, then it's ON
@@ -224,7 +230,17 @@
       txt('shape changes', R7.x - 230, R7.top - 200, 21, AGO, { align: 'center', bold: true, at: 1.9, anim: 'fade', duration: 0.3 }),
       { ...svgItem(glow(R7.x, R7.top, R7.s * 0.97)), at: 2.5, duration: 0.3 },
       { type: 'pulse', x: R7.x, y: R7.top + 175, r: 40, color: '#3ccf6e', speed: 1.1, at: 2.6 },
-      txt('Message passed\ninto the cell', R7.x + 200, R7.top + 165, 22, AGO, { align: 'center', bold: true, at: 2.7, anim: 'fade', duration: 0.4 }),
+      txt('Message passed into the\ncell → it changes behaviour', R7.x + 230, R7.top + 165, 22, AGO, { align: 'center', bold: true, at: 2.7, anim: 'fade', duration: 0.4 }),
+    ],
+  }, {
+    id: 'blk10', label: 'Ligand blocks', group: 'rb', stay: true, drawn: false,
+    items: [
+      ...recChips('blk10'),
+      ...track([[0, ...L7], [1.3, R7.x, r7Dock], [30, R7.x, r7Dock]], ([x, y]) => antag(x, y, R7.s) + tagOver(x, y, 'Blocking ligand', ANT, 120)),
+      { ...svgItem(offBadge(R7.x, R7.top, R7.s, '✕ BLOCKED')), at: 1.5, duration: 0.3 },
+      ...track([[0, 760, 300], [1.8, 760, 300], [2.8, R7.x + 10, R7.top - 131 * R7.s - 60], [3.3, R7.x + 10, R7.top - 131 * R7.s - 60], [4.2, 760, 330], [30, 760, 330]], ([x, y]) => ligand('tri', x, y, 'amber', 1, R7.s)),
+      txt('it can\'t get in', 760, 400, 20, ANT, { align: 'center', bold: true, at: 3.3, anim: 'fade', duration: 0.3 }),
+      txt('Blocked: the receptor\ncan\'t be activated', R7.x + 230, R7.top + 165, 22, ANT, { align: 'center', bold: true, at: 2.0, anim: 'fade', duration: 0.4 }),
     ],
   }];
 
@@ -1086,14 +1102,15 @@
 • Drugs + ion channels: usually BLOCK it → ions can't flow; some drugs increase transporter / channel activity instead`,
       say: 'Drugs act mostly on receptors, enzymes, transporters and ion channels, usually by switching them on or blocking them.', clear: true, actions: targetActions, items: targetItems },
     // Slide 10: receptors and binding.
-    { script: `${Qs('What is a receptor?', 'What is a ligand?', 'What happens when a ligand binds? (shape change → ON)')}
-[click the left side to bind]`,
-      notes: `• Receptor = a protein (usually on the cell surface) with a pocket only the right molecule fits (lock and key)
-• Ligand = any molecule that binds a receptor (neurotransmitter, hormone, drug)
-• Binding changes the receptor's SHAPE
-• The shape change switches it ON → a message is passed into the cell
-• This is the basis for agonists and antagonists`,
-      say: 'A receptor is a protein a ligand fits into; binding changes its shape, which switches it on.', clear: true, actions: recActions, items: recItems },
+    { script: `${Qs('What is a ligand?', 'Can a ligand be endogenous or exogenous?', 'What can a ligand do to a receptor? (activate or block)')}
+[buttons on the slide: Activate → Block]`,
+      notes: `• Now: how drugs interact with receptors
+• Ligand = the molecule that binds to the receptor; in this course, think of it as the drug
+• A ligand can also be a neurotransmitter (serotonin, dopamine) or a hormone (testosterone): endogenous
+• So a ligand can be endogenous or exogenous (a drug); if that's confusing, just think "ligand = drug"
+• The ligand binds to the receptor and can ACTIVATE it → the cell's behaviour changes
+• …or BLOCK it → the receptor can't be activated`,
+      say: 'A ligand is the molecule (often the drug) that binds a receptor, either activating it or blocking it.', clear: true, actions: recActions, items: recItems },
     // Slide 11: receptor types.
     { script: `${Qs('What are the four main receptor types?', 'How does each one pass on its signal?', 'Which is fastest and which is slowest?')}
 [optional: press "Show the signals"]`,
