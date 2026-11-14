@@ -1619,9 +1619,9 @@
     }
     document.getElementById('notesCopy').addEventListener('click', (e) => {
       flushNotes();
-      const pts = notes.boxes.script.el.value.trim(), mine = notes.boxes.mine.el.value.trim();
-      const text = notes.view === 'script' ? pts : notes.view === 'mine' ? mine : [pts && `KEY POINTS\n${pts}`, mine && `MY NOTES\n${mine}`].filter(Boolean).join('\n\n');
-      copyText(text, e.currentTarget);
+      const n = player.scene.steps.length ? slideOf(Math.max(0, player.step)) + 1 : 0;
+      const topic = (document.getElementById('notesTopic')?.value || '').trim(), mine = notes.boxes.mine.el.value.trim();
+      copyText(`Slide ${n}:\nSlide topic: ${topic}\nSlide script: ${mine}`, e.currentTarget);
     });
     document.getElementById('notesCopyAll').addEventListener('click', (e) => {
       flushNotes();
