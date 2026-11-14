@@ -139,15 +139,15 @@
       txt('SSRIs', 800, 255, 46, PURPLE, { align: 'center', bold: true }),
       txt('selective serotonin reuptake inhibitors', 800, 300, 22, GREY, { align: 'center', bold: true }),
       svgItem(sertArt(800, 470), { solid: true }),
-      ...['fluoxetine', 'sertraline', 'citalopram'].map((n, i) => ({ type: 'rect', x: 260 + i * 380 - 120, y: 610, w: 240, h: 56, color: PURPLE, fill: '#f4effc', fillOpacity: 1, width: 3, rough: false, at: 0.4 + i * 0.3 })),
-      ...['fluoxetine', 'sertraline', 'citalopram'].map((n, i) => txt(n, 260 + i * 380, 638, 26, PURPLE, { align: 'center', bold: true, at: 0.4 + i * 0.3 })),
+      ...['fluoxetine', 'sertraline', 'citalopram', 'paroxetine'].map((n, i) => ({ type: 'rect', x: 245 + i * 370 - 120, y: 610, w: 240, h: 56, color: PURPLE, fill: '#f4effc', fillOpacity: 1, width: 3, rough: false, at: 0.4 + i * 0.3 })),
+      ...['fluoxetine', 'sertraline', 'citalopram', 'paroxetine'].map((n, i) => txt(n, 245 + i * 370, 638, 26, PURPLE, { align: 'center', bold: true, at: 0.4 + i * 0.3 })),
       txt('all bind the serotonin transporter and block reuptake', 800, 720, 24, INK, { align: 'center', bold: true, at: 1.3, anim: 'fade', duration: 0.4 }),
       caption('SAME TARGET + SAME MECHANISM = one group', PURPLE, 1.6),
     ]),
     view('use4', [
       { type: 'rect', x: 110, y: 240, w: 1380, h: 520, color: TEAL, fill: '#eaf5f6', fillOpacity: 1, width: 4, rough: false, solid: true },
       { ...txt('ANTIDEPRESSANTS (what it treats: depression)', 800, 280, 30, TEAL, { align: 'center', bold: true }), solid: true },
-      ...[['SSRIs', 'fluoxetine, sertraline,\ncitalopram', PURPLE], ['SNRIs', 'venlafaxine,\nduloxetine', BLUE], ['MAO inhibitors', 'phenelzine', ORANGE], ['…and others', 'e.g. tricyclics', '#6b7280']]
+      ...[['SSRIs', 'fluoxetine, sertraline,\ncitalopram, paroxetine', PURPLE], ['SNRIs', 'venlafaxine,\nduloxetine', BLUE], ['MAO inhibitors', 'phenelzine', ORANGE], ['…and others', 'e.g. tricyclics', '#6b7280']]
         .flatMap(([h, ex, c], i) => at([
           { type: 'rect', x: 150 + i * 335, y: 340, w: 305, h: 330, color: c, fill: '#ffffff', fillOpacity: 1, width: 3, rough: false },
           txt(h, 302 + i * 335, 385, 28, c, { align: 'center', bold: true }),
@@ -350,7 +350,7 @@
 • Exception: a patent stops other companies copying the drug until it ends
 • Generic name = the active ingredient; brand name = a product that contains it
 • Classes = groups of drugs that are similar in some way
-• By target & mechanism: SSRIs (fluoxetine, sertraline, citalopram) all block the serotonin transporter
+• By target & mechanism: SSRIs (fluoxetine, sertraline, citalopram, paroxetine) all block the serotonin transporter
 • By what it treats (broader): antidepressants = SSRIs + SNRIs + MAO inhibitors + others
 • By chemical structure: steroids (four fused rings)
 • Target & mechanism and what-it-treats groupings are used most`,
